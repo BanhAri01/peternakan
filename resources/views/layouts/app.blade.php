@@ -104,49 +104,69 @@
             </button>
 
             <div class="collapse navbar-collapse" id="mainNav">
-                <ul class="navbar-nav ms-auto gap-1 py-2 py-xl-0">
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('owner.dashboard') ? 'active' : '' }}" href="{{ route('owner.dashboard') }}">
-                            <i class="bi bi-speedometer2 me-1"></i> Dashboard
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('daily-logs.*') ? 'active' : '' }}" href="{{ route('daily-logs.create') }}">
-                            <i class="bi bi-clipboard-plus me-1"></i> Input Panen
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('coops.*') ? 'active' : '' }}" href="{{ route('coops.index') }}">
-                            <i class="bi bi-grid-fill me-1"></i> Data Kandang
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('sales.*') ? 'active' : '' }}" href="{{ route('sales.index') }}">
-                            <i class="bi bi-receipt me-1"></i> Penjualan & Piutang
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('procurement.*') ? 'active' : '' }}" href="{{ route('procurement.index') }}">
-                            <i class="bi bi-box-seam me-1"></i> Pengadaan Pakan
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('financial.*') ? 'active' : '' }}" href="{{ route('financial.index') }}">
-                            <i class="bi bi-cash-stack me-1"></i> Laba Rugi & Kas
-                        </a>
-                    </li>
-                    @if(Route::has('grades.index'))
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('grades.*') ? 'active' : '' }}" href="{{ route('grades.index') }}">
-                            <i class="bi bi-tags me-1"></i> Kategori Grade
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('feed-stocks.*') ? 'active' : '' }}" href="{{ route('feed-stocks.index') }}">
-                            <i class="bi bi-box2-heart me-1"></i> Stok Pakan
-                        </a>
-                    </li>
-                    @endif
+                <ul class="navbar-nav ms-auto gap-1 py-2 py-xl-0 align-items-xl-center">
+                    @auth
+                        {{-- Menu yang HANYA tampil jika Login sebagai OWNER --}}
+                        @if(Auth::user()->isOwner())
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('owner.dashboard') ? 'active' : '' }}" href="{{ route('owner.dashboard') }}">
+                                    <i class="bi bi-speedometer2 me-1"></i> Dashboard
+                                </a>
+                            </li>
+                        @endif
+            
+                        {{-- Menu untuk PEKERJA dan OWNER --}}
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('daily-logs.*') ? 'active' : '' }}" href="{{ route('daily-logs.create') }}">
+                                <i class="bi bi-clipboard-plus me-1"></i> Input Panen
+                            </a>
+                        </li>
+            
+                        {{-- Menu Tambahan OWNER --}}
+                        @if(Auth::user()->isOwner())
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('coops.*') ? 'active' : '' }}" href="{{ route('coops.index') }}">
+                                    <i class="bi bi-grid-fill me-1"></i> Kandang
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('feed-stocks.*') ? 'active' : '' }}" href="{{ route('feed-stocks.index') }}">
+                                    <i class="bi bi-box-seam me-1"></i> Pakan
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('sales.*') ? 'active' : '' }}" href="{{ route('sales.index') }}">
+                                    <i class="bi bi-receipt me-1"></i> Penjualan
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('procurement.*') ? 'active' : '' }}" href="{{ route('procurement.index') }}">
+                                    <i class="bi bi-truck me-1"></i> Kulakan
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('financial.*') ? 'active' : '' }}" href="{{ route('financial.index') }}">
+                                    <i class="bi bi-cash-stack me-1"></i> Kas & Laba
+                                </a>
+                            </li>
+                        @endif
+            
+                        {{-- Info User & Tombol Logout --}}
+                        <li class="nav-item ms-xl-3 pt-2 pt-xl-0 border-top border-xl-0 d-flex align-items-center gap-2">
+                            <div class="text-end d-none d-xl-block">
+                                <span class="fw-bold d-block text-dark small leading-none">{{ Auth::user()->name }}</span>
+                                <span class="badge {{ Auth::user()->isOwner() ? 'bg-primary' : 'bg-secondary' }}" style="font-size: 0.75rem;">
+                                    {{ strtoupper(Auth::user()->role) }}
+                                </span>
+                            </div>
+                            <form action="{{ route('logout') }}" method="POST" class="d-inline">
+                                @csrf
+                                <button type="submit" class="btn btn-outline-danger btn-sm fw-bold px-3">
+                                    <i class="bi bi-power me-1"></i> Keluar
+                                </button>
+                            </form>
+                        </li>
+                    @endauth
                 </ul>
             </div>
         </div>
