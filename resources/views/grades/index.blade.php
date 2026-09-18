@@ -1,111 +1,140 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kategori Grade Telur - Layer Farm</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-        body { font-family: 'Plus Jakarta Sans', sans-serif; }
-    </style>
-</head>
-<body class="bg-[#F1F5F9] text-slate-800 antialiased min-h-screen selection:bg-indigo-500 selection:text-white">
+@extends('layouts.app')
 
-    <!-- TOP NAVIGATION BAR -->
-    <header class="bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 text-white sticky top-0 z-40 shadow-lg shadow-slate-900/10">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16 items-center">
-                <div class="flex items-center space-x-3.5">
-                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-amber-300 text-slate-950 flex items-center justify-center font-extrabold text-base shadow-md shadow-amber-500/20">
-                        LF
+@section('content')
+<div class="container py-4" style="max-width: 920px;">
+
+    <!-- Header Section -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body p-4">
+            <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-3 py-1.5 text-uppercase fw-bold mb-2">
+                <i class="bi bi-sliders me-1"></i> Master Data
+            </span>
+            <h2 class="fw-black text-dark mb-1">Pengaturan Kategori Grade Telur</h2>
+            <p class="text-muted mb-0">Atur kategori sortir telur yang digunakan pada formulir panen harian, stok gudang, dan nota penjualan.</p>
+        </div>
+    </div>
+
+    @if(session('success'))
+        <div class="alert alert-success d-flex align-items-center mb-4 rounded-3 p-3 shadow-sm border-0 bg-success-subtle text-success-emphasis" role="alert">
+            <i class="bi bi-check-circle-fill fs-4 me-3"></i>
+            <div class="fw-bold">{{ session('success') }}</div>
+        </div>
+    @endif
+
+    @if($errors->any())
+        <div class="alert alert-danger mb-4 rounded-3 p-3 shadow-sm border-0">
+            <h6 class="fw-bold mb-2"><i class="bi bi-exclamation-triangle-fill me-2"></i>Periksa isian Anda:</h6>
+            <ul class="mb-0 ps-3">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+    <!-- Form Tambah Grade Baru -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white p-4 border-bottom">
+            <h5 class="fw-black text-dark mb-0">
+                <i class="bi bi-plus-circle-fill text-primary me-2"></i>Tambah Kategori Grade Baru
+            </h5>
+        </div>
+        <div class="card-body p-4">
+            <form action="{{ route('grades.store') }}" method="POST">
+                @csrf
+                <div class="row g-3">
+                    <div class="col-md-7">
+                        <label class="form-label text-secondary small text-uppercase fw-bold">Nama Kategori Grade <span class="text-danger">*</span></label>
+                        <input type="text" name="name" value="{{ old('name') }}" placeholder="Contoh: Grade Super, Putih, Bentes" class="form-control form-control-lg fw-bold" required>
                     </div>
-                    <div>
-                        <div class="text-[10px] font-bold uppercase tracking-widest text-indigo-300/80 leading-none">Smart Farming System</div>
-                        <div class="text-base font-extrabold text-white tracking-tight leading-tight mt-0.5">Control Center</div>
+                    <div class="col-md-5">
+                        <label class="form-label text-secondary small text-uppercase fw-bold">Kode Singkat (Opsional)</label>
+                        <input type="text" name="code" value="{{ old('code') }}" placeholder="Contoh: SP, PT, BTS" class="form-control form-control-lg fw-bold">
+                    </div>
+                    <div class="col-12 mt-3">
+                        <button type="submit" class="btn btn-primary btn-lg px-4 fw-bold">
+                            <i class="bi bi-save-fill me-2"></i> Simpan Kategori Grade
+                        </button>
                     </div>
                 </div>
-
-                <nav class="flex items-center gap-1.5 sm:gap-2">
-                    <a href="{{ route('owner.dashboard') }}" class="px-3.5 py-2 text-xs font-bold text-slate-200 hover:text-white hover:bg-white/10 rounded-xl transition">
-                        Dashboard
-                    </a>
-                    <a href="{{ route('daily-logs.create') }}" class="px-3.5 py-2 text-xs font-bold text-slate-200 hover:text-white hover:bg-white/10 rounded-xl transition">
-                        Input Panen
-                    </a>
-                    <a href="{{ route('sales.index') }}" class="px-3.5 py-2 text-xs font-bold text-slate-200 hover:text-white hover:bg-white/10 rounded-xl transition">
-                        Penjualan & Piutang
-                    </a>
-                    <a href="{{ route('procurement.index') }}" class="px-3.5 py-2 text-xs font-bold text-slate-200 hover:text-white hover:bg-white/10 rounded-xl transition">
-                        Pengadaan Pakan
-                    </a>
-                    <a href="{{ route('financial.index') }}" class="px-3.5 py-2 text-xs font-bold text-slate-200 hover:text-white hover:bg-white/10 rounded-xl transition">
-                        Laba Rugi & Kas
-                    </a>
-                </nav>
-            </div>
-        </div>
-    </header>
-
-    <main class="max-w-4xl mx-auto px-4 py-8 space-y-6">
-
-        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
-            <div class="absolute top-0 left-0 w-1.5 h-full bg-slate-900"></div>
-            <span class="text-xs font-bold uppercase tracking-widest text-slate-400">Master Data</span>
-            <h1 class="text-2xl font-black text-slate-900 tracking-tight mt-0.5">Pengaturan Kategori Grade Telur</h1>
-            <p class="text-xs md:text-sm text-slate-500 mt-1">Owner dapat menambah atau mengubah grade sortir telur yang digunakan di lapangan dan penjualan.</p>
-        </div>
-
-        @if(session('success'))
-            <div class="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-bold text-center">
-                {{ session('success') }}
-            </div>
-        @endif
-
-        <!-- Form Tambah Grade -->
-        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-            <h2 class="text-base font-extrabold text-slate-900 mb-3">Tambah Kategori Grade Baru</h2>
-            <form action="{{ route('grades.store') }}" method="POST" class="flex flex-col sm:flex-row gap-3">
-                @csrf
-                <input type="text" name="name" placeholder="Nama Grade (misal: Grade Super, Telur Putih)" class="flex-1 h-11 bg-slate-50 border border-slate-300 rounded-xl px-4 font-bold text-xs" required>
-                <input type="text" name="code" placeholder="Kode (Opsional: SP, BNT)" class="w-full sm:w-40 h-11 bg-slate-50 border border-slate-300 rounded-xl px-4 font-bold text-xs">
-                <button type="submit" class="h-11 bg-slate-900 hover:bg-slate-800 text-white font-extrabold px-6 rounded-xl text-xs transition">
-                    + Simpan Grade
-                </button>
             </form>
         </div>
+    </div>
 
-        <!-- List Grade -->
-        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-            <h2 class="text-base font-extrabold text-slate-900 mb-4">Daftar Grade Telur Aktif</h2>
-            <div class="divide-y divide-slate-100">
-                @forelse($grades as $grade)
-                    <div class="py-3.5 flex justify-between items-center text-xs">
-                        <div>
-                            <span class="font-bold text-slate-900 text-sm">{{ $grade->name }}</span>
-                            @if($grade->code)
-                                <span class="ml-2 font-mono bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-bold">{{ $grade->code }}</span>
-                            @endif
-                        </div>
-                        <div class="flex items-center gap-3">
-                            <span class="px-2.5 py-0.5 rounded-full font-bold text-[10px] {{ $grade->is_active ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-400' }}">
-                                {{ $grade->is_active ? 'Aktif Digunakan' : 'Dinonaktifkan' }}
-                            </span>
-                            <form action="{{ route('grades.toggle', $grade->id) }}" method="POST">
-                                @csrf
-                                <button type="submit" class="font-bold text-indigo-600 hover:underline">
-                                    {{ $grade->is_active ? 'Nonaktifkan' : 'Aktifkan' }}
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                @empty
-                    <p class="text-slate-400 text-xs text-center py-4">Belum ada grade terdaftar.</p>
-                @endforelse
+    <!-- Tabel Daftar Grade Telur -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white p-4 border-bottom d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="fw-black text-dark mb-1">Daftar Grade Telur</h5>
+                <p class="text-muted small mb-0">Status aktif menentukan apakah grade muncul di formulir sortir panen dan penjualan.</p>
+            </div>
+            <span class="badge bg-dark fs-6 px-3 py-2 rounded-pill">
+                {{ count($grades) }} Grade Terdaftar
+            </span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Nama Kategori</th>
+                            <th>Kode Singkat</th>
+                            <th>Status Pemakaian</th>
+                            <th class="text-end pe-4">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($grades as $grade)
+                            <tr>
+                                <td class="ps-4">
+                                    <span class="fs-5 fw-bold text-dark">{{ $grade->name }}</span>
+                                </td>
+                                <td>
+                                    @if($grade->code)
+                                        <span class="badge bg-light text-dark border font-monospace fs-6 px-2.5 py-1">
+                                            {{ $grade->code }}
+                                        </span>
+                                    @else
+                                        <span class="text-muted small fst-italic">-</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    @if($grade->is_active)
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 fs-6">
+                                            <i class="bi bi-check-circle-fill me-1"></i> Aktif Digunakan
+                                        </span>
+                                    @else
+                                        <span class="badge bg-secondary-subtle text-secondary border px-3 py-2 fs-6">
+                                            <i class="bi bi-dash-circle-fill me-1"></i> Dinonaktifkan
+                                        </span>
+                                    @endif
+                                </td>
+                                <td class="text-end pe-4">
+                                    <form action="{{ route('grades.toggle', $grade->id) }}" method="POST" class="d-inline">
+                                        @csrf
+                                        <button type="submit" class="btn btn-sm {{ $grade->is_active ? 'btn-outline-danger' : 'btn-outline-success' }} fw-bold px-3 py-1.5">
+                                            @if($grade->is_active)
+                                                <i class="bi bi-x-circle me-1"></i> Nonaktifkan
+                                            @else
+                                                <i class="bi bi-check2-circle me-1"></i> Aktifkan
+                                            @endif
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="4" class="text-center py-5 text-muted">
+                                    <i class="bi bi-egg fs-2 text-secondary d-block mb-2"></i>
+                                    Belum ada kategori grade telur yang dibuat.
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
         </div>
+    </div>
 
-    </main>
-
-</body>
-</html>
+</div>
+@endsection

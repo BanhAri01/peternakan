@@ -7,6 +7,10 @@ use App\Http\Controllers\EggSaleController;
 use App\Http\Controllers\EggGradeController;
 use App\Http\Controllers\ProcurementController;
 use App\Http\Controllers\FinancialReportController;
+use App\Http\Controllers\CoopController;
+use App\Http\Controllers\ExportPdfController;
+use App\Http\Controllers\FeedStockController;
+
 
 Route::get('/', [DashboardController::class, 'index'])->name('owner.dashboard');
 
@@ -34,8 +38,10 @@ Route::post('/pengadaan/restock-pakan', [ProcurementController::class, 'storeFee
 // Laporan Arus Kas, Laba Rugi & Umur Piutang
 Route::get('/laporan-keuangan', [FinancialReportController::class, 'index'])->name('financial.index');
 
-use App\Http\Controllers\ExportPdfController;
-
 // Ekspor & Cetak Dokumen PDF
 Route::get('/penjualan/{sale}/cetak-nota', [ExportPdfController::class, 'printReceipt'])->name('sales.print-receipt');
 Route::get('/laporan/ekspor-pdf', [ExportPdfController::class, 'exportMonthlyReport'])->name('reports.monthly-pdf');
+
+Route::resource('coops', CoopController::class);
+
+Route::resource('feed-stocks', FeedStockController::class);

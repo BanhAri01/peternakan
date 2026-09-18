@@ -20,8 +20,7 @@ class Coop extends Model
         'status',
     ];
 
-    public function dailyLogs()
-    {
-        return $this->hasMany(DailyLog::class);
-    }
+    protected $casts = [
+        'chick_in_date' => 'date',
+    ];
 }
