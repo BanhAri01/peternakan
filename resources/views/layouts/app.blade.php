@@ -149,6 +149,21 @@
                                     <i class="bi bi-cash-stack me-1"></i> Kas & Laba
                                 </a>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}" href="{{ route('users.index') }}">
+                                    <i class="bi bi-people-fill me-1"></i> Pengguna
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('vaccinations.*') ? 'active' : '' }}" href="{{ route('vaccinations.index') }}">
+                                    <i class="bi bi-shield-plus me-1"></i> Vaksinasi
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('expenses.*') ? 'active' : '' }}" href="{{ route('expenses.index') }}">
+                                    <i class="bi bi-journal-bookmark-fill me-1"></i> Buku Kas
+                                </a>
+                            </li>
                         @endif
             
                         {{-- Info User & Tombol Logout --}}

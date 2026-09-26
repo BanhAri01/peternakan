@@ -11,12 +11,9 @@ use App\Http\Controllers\FinancialReportController;
 use App\Http\Controllers\CoopController;
 use App\Http\Controllers\ExportPdfController;
 use App\Http\Controllers\FeedStockController;
-
-/*
-|--------------------------------------------------------------------------
-| Web Routes - Sistem Peternakan Layer
-|--------------------------------------------------------------------------
-*/
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\VaccinationController;
+use App\Http\Controllers\ExpenseLedgerController;
 
 // =========================================================================
 // 1. RUTE TAMU (GUEST ONLY - SEBELUM LOGIN)
@@ -86,6 +83,12 @@ Route::middleware('auth')->group(function () {
 
         // CRUD Inventaris Stok Bahan Pakan (Feed Stocks)
         Route::resource('feed-stocks', FeedStockController::class);
+        Route::resource('vaccinations', VaccinationController::class);
+
+        Route::resource('expenses', ExpenseLedgerController::class);
+
+        Route::resource('users', UserController::class);
     });
 
 });
+
