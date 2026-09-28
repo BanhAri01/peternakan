@@ -26,7 +26,7 @@
                     <div class="col-md-6">
                         <label class="form-label text-secondary small text-uppercase fw-bold">Pilih Kandang <span class="text-danger">*</span></label>
                         <select id="coop_id" name="coop_id" class="form-select form-select-lg fw-bold" required>
-                            @foreach($coops as$coop)
+                            @foreach($coops as $coop)
                                 <option value="{{ $coop->id }}" 
                                     data-chick-in="{{ $coop->chick_in_date ? $coop->chick_in_date->format('Y-m-d') : '' }}"
                                     data-initial-age="{{ $coop->initial_age_weeks ?? 0 }}"
@@ -81,7 +81,7 @@
                                     'Tusuk Sayap (Wing Web)'
                                 ];
                             @endphp
-                            @foreach($methods as$m)
+                        @foreach($methods as $m)
                                 <option value="{{ $m }}" {{ old('method', $vaccination->method) == $m ? 'selected' : '' }}>{{ $m }}</option>
                             @endforeach
                         </select>
