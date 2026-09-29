@@ -2,8 +2,14 @@
 
 @section('content')
 <div class="container-fluid px-lg-5">
+    @if(session('success'))
+        <div class="alert alert-success alert-dismissible fade show shadow-sm border-0 mb-4" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i>
+            {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
 
-    <!-- Header & Filter Tanggal -->
     <div class="card shadow-sm border-0 mb-4">
         <div class="card-body p-4 d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
             <div>
@@ -14,7 +20,6 @@
                 <p class="text-muted mb-0">Evaluasi batas impas HPP, rasio konversi pakan (FCR), dan performa tiap kandang.</p>
             </div>
 
-            <!-- Tombol Pintasan Tanggal -->
             <form method="GET" action="{{ route('owner.dashboard') }}" class="d-flex flex-wrap align-items-center gap-2">
                 <a href="{{ route('owner.dashboard', ['date' => date('Y-m-d')]) }}" class="btn {{ $selectedDate === date('Y-m-d') ? 'btn-primary' : 'btn-outline-secondary' }}">
                     Hari Ini
@@ -30,15 +35,11 @@
         </div>
     </div>
 
-    <!-- 4 KPI Cards Utama -->
     <div class="row g-3 mb-4">
-        <!-- 1. HPP Telur -->
         <div class="col-md-6 col-xl-3">
             <div class="card shadow-sm border-0 border-top border-4 border-success h-100">
                 <div class="card-body p-4">
-                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1 text-uppercase fw-bold">
-                        Modal Bersih (HPP)
-                    </span>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1 text-uppercase fw-bold">Modal Bersih (HPP)</span>
                     <div class="my-3">
                         <span class="fs-1 fw-black text-dark">Rp {{ number_format($hppPerKg, 0, ',', '.') }}</span>
                         <span class="text-muted fw-bold fs-6">/ kg</span>
@@ -51,13 +52,10 @@
             </div>
         </div>
 
-        <!-- 2. Total Panen Telur -->
         <div class="col-md-6 col-xl-3">
             <div class="card shadow-sm border-0 border-top border-4 border-warning h-100">
                 <div class="card-body p-4">
-                    <span class="badge bg-warning-subtle text-dark border border-warning-subtle px-2.5 py-1 text-uppercase fw-bold">
-                        Total Panen Telur
-                    </span>
+                    <span class="badge bg-warning-subtle text-dark border border-warning-subtle px-2.5 py-1 text-uppercase fw-bold">Total Panen Telur</span>
                     <div class="my-3">
                         <span class="fs-1 fw-black text-dark">{{ number_format($totalEggKg, 1) }}</span>
                         <span class="text-warning-emphasis fw-bold fs-5">KG</span>
@@ -70,13 +68,10 @@
             </div>
         </div>
 
-        <!-- 3. Rata-rata HDP & FCR -->
         <div class="col-md-6 col-xl-3">
             <div class="card shadow-sm border-0 border-top border-4 border-primary h-100">
                 <div class="card-body p-4">
-                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2.5 py-1 text-uppercase fw-bold">
-                        Performa Farm (HDP)
-                    </span>
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2.5 py-1 text-uppercase fw-bold">Performa Farm (HDP)</span>
                     <div class="my-3">
                         <span class="fs-1 fw-black {{ $overallHdp >= 75 ? 'text-primary' : 'text-warning' }}">{{ $overallHdp }}%</span>
                         <span class="text-muted fw-bold fs-6">Rata-rata</span>
@@ -89,13 +84,10 @@
             </div>
         </div>
 
-        <!-- 4. Mortalitas -->
         <div class="col-md-6 col-xl-3">
             <div class="card shadow-sm border-0 border-top border-4 border-danger h-100">
                 <div class="card-body p-4">
-                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2.5 py-1 text-uppercase fw-bold">
-                        Penyusutan Ayam
-                    </span>
+                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2.5 py-1 text-uppercase fw-bold">Penyusutan Ayam</span>
                     <div class="my-3">
                         <span class="fs-1 fw-black {{ ($totalMortality + $totalCull) > 5 ? 'text-danger' : 'text-dark' }}">{{ $totalMortality + $totalCull }}</span>
                         <span class="text-muted fw-bold fs-6">ekor</span>
@@ -109,7 +101,6 @@
         </div>
     </div>
 
-    <!-- Rekapitulasi Sortir Grade -->
     <div class="card shadow-sm border-0 mb-4">
         <div class="card-header bg-white p-4 border-bottom d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2">
             <div>
@@ -122,6 +113,7 @@
                 </a>
             @endif
         </div>
+
         <div class="card-body p-4">
             <div class="row g-3">
                 @forelse($gradeBreakdown as $gb)
@@ -147,7 +139,6 @@
         </div>
     </div>
 
-    <!-- Bagian Grafik Tren & Proporsi -->
     <div class="row g-4 mb-4">
         <div class="col-lg-8">
             <div class="card shadow-sm border-0 h-100">
@@ -162,6 +153,7 @@
                 </div>
             </div>
         </div>
+
         <div class="col-lg-4">
             <div class="card shadow-sm border-0 h-100">
                 <div class="card-header bg-white p-4 border-bottom">
@@ -181,7 +173,6 @@
         </div>
     </div>
 
-    <!-- Rincian Tiap Kandang -->
     <div class="card shadow-sm border-0 mb-4">
         <div class="card-header bg-white p-4 border-bottom d-flex justify-content-between align-items-center">
             <div>
@@ -190,23 +181,32 @@
             </div>
             <span class="badge bg-dark fs-6 px-3 py-2 rounded-pill">{{ count($coopDetails) }} Kandang Aktif</span>
         </div>
+
         <div class="card-body p-4">
             <div class="d-flex flex-column gap-4">
                 @forelse($coopDetails as $item)
                     <div class="card border-2 shadow-none {{ $item['statusColor'] === 'rose' ? 'border-danger' : ($item['statusColor'] === 'amber' ? 'border-warning' : 'border-secondary-subtle') }}">
-                        <div class="card-header bg-light py-3 px-4 d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2">
+                        <div class="card-header bg-light py-3 px-4 d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3">
                             <div>
                                 <h5 class="fw-black text-dark mb-0 d-inline-block me-2">{{ $item['coop']->name }}</h5>
-                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Umur: {{ $item['age_weeks'] }} Minggu</span>
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Umur: {{ round($item['age_weeks']) }} Minggu</span>
                                 <div class="small fw-bold {{ $item['statusColor'] === 'rose' ? 'text-danger' : ($item['statusColor'] === 'amber' ? 'text-warning' : 'text-muted') }}">
                                     Status: {{ $item['statusNote'] }}
                                 </div>
                             </div>
-                            <div class="d-flex gap-4">
+
+                            <div class="d-flex align-items-center gap-3 flex-wrap">
+                                @if($item['log'])
+                                    <a href="{{ route('daily-logs.edit', $item['log']->id) }}" class="btn btn-outline-primary btn-sm fw-bold">
+                                        <i class="bi bi-pencil-square me-1"></i> Edit
+                                    </a>
+                                @endif
+
                                 <div>
                                     <span class="text-muted small d-block">Populasi Aktif</span>
                                     <strong class="fs-5 text-dark">{{ number_format($item['coop']->current_population) }} ekor</strong>
                                 </div>
+
                                 @if($item['log'])
                                     <div>
                                         <span class="text-muted small d-block">Penyusutan</span>
@@ -221,7 +221,6 @@
                         @if($item['log'])
                             <div class="card-body p-4">
                                 <div class="row g-4 divide-lg-start">
-                                    <!-- Kolom 1: Telur -->
                                     <div class="col-lg-4">
                                         <div class="d-flex justify-content-between align-items-baseline mb-2">
                                             <span class="badge bg-warning-subtle text-dark border border-warning-subtle">Hasil Telur</span>
@@ -230,10 +229,12 @@
                                                 <span class="badge bg-primary ms-1">{{ $item['log']->hdp_percentage }}% HDP</span>
                                             </div>
                                         </div>
+
                                         <div class="p-2.5 bg-light rounded-3 mb-3 small">
                                             Total Butir: <strong class="text-dark">{{ number_format($item['log']->eggs_total_count) }}</strong>
                                             <span class="text-muted d-block mt-0.5">({{ floor($item['log']->eggs_total_count / 30) }} rak + {{ $item['log']->eggs_total_count % 30 }} btr)</span>
                                         </div>
+
                                         <div class="small">
                                             <span class="fw-bold text-muted text-uppercase d-block mb-1">Rincian Grade:</span>
                                             @forelse($item['log']->grades as $g)
@@ -247,25 +248,28 @@
                                         </div>
                                     </div>
 
-                                    <!-- Kolom 2: Pakan -->
                                     <div class="col-lg-4 border-start border-light-subtle">
                                         <div class="d-flex justify-content-between align-items-baseline mb-2">
                                             <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Konsumsi Pakan</span>
                                             <span class="fs-4 fw-black text-dark">{{ $item['log']->feed_consumed_kg }} kg</span>
                                         </div>
+
                                         <div class="d-flex flex-column gap-2 small">
                                             <div class="d-flex justify-content-between py-1 border-bottom">
                                                 <span class="text-muted">Jenis Ransum:</span>
                                                 <strong class="text-dark">{{ $item['log']->feedStock->feed_name ?? 'Pakan Campur' }}</strong>
                                             </div>
+
                                             <div class="d-flex justify-content-between py-1 border-bottom">
                                                 <span class="text-muted">Takaran Rata-rata:</span>
                                                 <strong class="text-dark">{{ $item['feedGramPerHen'] }} gr / ekor</strong>
                                             </div>
+
                                             <div class="d-flex justify-content-between py-1 border-bottom">
                                                 <span class="text-muted">FCR:</span>
                                                 <strong class="{{ $item['log']->fcr > 2.3 ? 'text-warning' : 'text-success' }} fs-6">{{ $item['log']->fcr ?? '-' }}</strong>
                                             </div>
+
                                             <div class="d-flex justify-content-between py-1">
                                                 <span class="text-muted">Biaya Pakan:</span>
                                                 <strong class="text-dark">Rp {{ number_format($item['feedCostDaily'], 0, ',', '.') }}</strong>
@@ -273,7 +277,6 @@
                                         </div>
                                     </div>
 
-                                    <!-- Kolom 3: Margin Finansial -->
                                     <div class="col-lg-4 border-start border-light-subtle">
                                         <div class="d-flex justify-content-between align-items-baseline mb-2">
                                             <span class="text-muted fw-bold small text-uppercase">Margin Finansial</span>
@@ -281,21 +284,25 @@
                                                 {{ $item['marginDaily'] >= 0 ? 'SURPLUS' : 'DEFISIT' }}
                                             </span>
                                         </div>
+
                                         <div class="d-flex flex-column gap-2 small">
                                             <div class="d-flex justify-content-between py-1 border-bottom">
                                                 <span class="text-muted">Estimasi Nilai Telur:</span>
                                                 <strong class="text-dark">Rp {{ number_format($item['eggRevenueEst'], 0, ',', '.') }}</strong>
                                             </div>
+
                                             <div class="d-flex justify-content-between py-1 border-bottom">
                                                 <span class="text-muted">Beban Pakan:</span>
                                                 <strong class="text-danger">(Rp {{ number_format($item['feedCostDaily'], 0, ',', '.') }})</strong>
                                             </div>
+
                                             <div class="d-flex justify-content-between py-1 border-bottom">
                                                 <span class="text-muted">Laba Harian:</span>
                                                 <strong class="fs-6 {{ $item['marginDaily'] >= 0 ? 'text-success' : 'text-danger' }}">
                                                     Rp {{ number_format($item['marginDaily'], 0, ',', '.') }}
                                                 </strong>
                                             </div>
+
                                             <div class="p-2 bg-success-subtle border border-success-subtle rounded-3 d-flex justify-content-between align-items-center mt-1">
                                                 <span class="fw-bold text-success-emphasis">Margin/Ekor:</span>
                                                 <span class="fs-6 fw-black {{ $item['marginPerHen'] >= 100 ? 'text-success' : ($item['marginPerHen'] > 0 ? 'text-warning' : 'text-danger') }}">
@@ -319,7 +326,6 @@
         </div>
     </div>
 
-    <!-- Ketahanan Stok Pakan -->
     <div class="card shadow-sm border-0 mb-4">
         <div class="card-header bg-white p-4 border-bottom d-flex justify-content-between align-items-center">
             <div>
@@ -330,6 +336,7 @@
                 Kelola Pengadaan &rarr;
             </a>
         </div>
+
         <div class="card-body p-4">
             <div class="row g-3">
                 @foreach($feedStocks as $feed)
@@ -349,14 +356,13 @@
             </div>
         </div>
     </div>
-
 </div>
 @endsection
 
 @push('scripts')
 <script>
-    // 1. Grafik Tren 7 Hari (Panen vs Pakan)
     const ctxTrend = document.getElementById('trendChart').getContext('2d');
+
     new Chart(ctxTrend, {
         type: 'line',
         data: {
@@ -370,7 +376,7 @@
                     borderWidth: 3,
                     fill: true,
                     tension: 0.35,
-                    pointRadius: 4,
+                    pointRadius: 4
                 },
                 {
                     label: 'Konsumsi Pakan (Kg)',
@@ -380,7 +386,7 @@
                     borderWidth: 2,
                     fill: false,
                     tension: 0.35,
-                    pointRadius: 3,
+                    pointRadius: 3
                 }
             ]
         },
@@ -388,18 +394,28 @@
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: { position: 'top' }
+                legend: {
+                    position: 'top'
+                }
             },
             scales: {
-                y: { grid: { color: '#e2e8f0' } },
-                x: { grid: { display: false } }
+                y: {
+                    grid: {
+                        color: '#e2e8f0'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
             }
         }
     });
 
-    // 2. Donut Chart Komposisi Grade
     @if(count($gradeBreakdown) > 0)
     const ctxGrade = document.getElementById('gradeChart').getContext('2d');
+
     new Chart(ctxGrade, {
         type: 'doughnut',
         data: {
@@ -407,7 +423,7 @@
             datasets: [{
                 data: {!! json_encode(collect($gradeBreakdown)->pluck('weight_kg')) !!},
                 backgroundColor: ['#f59e0b', '#2563eb', '#10b981', '#ec4899', '#8b5cf6'],
-                borderWidth: 2,
+                borderWidth: 2
             }]
         },
         options: {
@@ -415,7 +431,9 @@
             maintainAspectRatio: false,
             cutout: '70%',
             plugins: {
-                legend: { position: 'bottom' }
+                legend: {
+                    position: 'bottom'
+                }
             }
         }
     });

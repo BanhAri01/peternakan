@@ -1,13 +1,11 @@
 <?php
+
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class DailyLog extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
         'coop_id',
         'log_date',
@@ -23,10 +21,14 @@ class DailyLog extends Model
         'notes',
     ];
 
-    public function grades()
-    {
-        return $this->hasMany(DailyLogGrade::class);
-    }
+    protected $casts = [
+        'log_date' => 'date',
+        'feed_consumed_kg' => 'decimal:2',
+        'feed_cost_total' => 'decimal:2',
+        'eggs_total_kg' => 'decimal:2',
+        'hdp_percentage' => 'decimal:2',
+        'fcr' => 'decimal:2',
+    ];
 
     public function coop()
     {
@@ -36,5 +38,10 @@ class DailyLog extends Model
     public function feedStock()
     {
         return $this->belongsTo(FeedStock::class);
+    }
+
+    public function grades()
+    {
+        return $this->hasMany(DailyLogGrade::class);
     }
 }

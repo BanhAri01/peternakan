@@ -53,7 +53,9 @@ Route::middleware('auth')->group(function () {
     // ---------------------------------------------------------------------
     Route::middleware('role:owner')->group(function () {
 
-        // Dashboard Eksekutif
+        Route::get('/panen/{dailyLog}/edit', [DailyLogController::class, 'edit'])->name('daily-logs.edit');
+Route::put('/panen/{dailyLog}', [DailyLogController::class, 'update'])->name('daily-logs.update');
+
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('owner.dashboard');
 
         // Modul Penjualan & Piutang Telur
@@ -71,17 +73,11 @@ Route::middleware('auth')->group(function () {
         Route::post('/pengadaan/kulakan-telur', [ProcurementController::class, 'storeEggPurchase'])->name('procurement.egg-purchase.store');
         Route::post('/pengadaan/restock-pakan', [ProcurementController::class, 'storeFeedPurchase'])->name('procurement.feed-purchase.store');
 
-        // Laporan Arus Kas, Laba Rugi & Umur Piutang
-        Route::get('/laporan-keuangan', [FinancialReportController::class, 'index'])->name('financial.index');
-
-        // Ekspor & Cetak Dokumen PDF
         Route::get('/penjualan/{sale}/cetak-nota', [ExportPdfController::class, 'printReceipt'])->name('sales.print-receipt');
         Route::get('/laporan/ekspor-pdf', [ExportPdfController::class, 'exportMonthlyReport'])->name('reports.monthly-pdf');
 
-        // CRUD Data Kandang (Coops)
         Route::resource('coops', CoopController::class);
 
-        // CRUD Inventaris Stok Bahan Pakan (Feed Stocks)
         Route::resource('feed-stocks', FeedStockController::class);
         Route::resource('vaccinations', VaccinationController::class);
 

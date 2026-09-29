@@ -10,7 +10,7 @@ return new class extends Migration {
         Schema::create('operational_costs', function (Blueprint $table) {
             $table->id();
             $table->date('expense_date');
-            $table->string('category'); // Listrik, Gaji, Vaksin, Perawatan
+            $table->string('category'); 
             $table->decimal('amount', 12, 2);
             $table->text('description')->nullable();
             $table->timestamps();
