@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Coop;
 use App\Models\Vaccination;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class VaccinationController extends Controller
 {
@@ -29,7 +30,8 @@ class VaccinationController extends Controller
     {
         $validated = $request->validate([
             'vaccination_date' => 'required|date',
-            'coop_id'          => 'required|exists:coops,id',
+            'coop_ids'         => 'required|array|min:1',
+            'coop_ids.*'       => 'exists:coops,id',
             'age_weeks'        => 'required|integer|min:0',
             'vaccine_name'     => 'required|string|max:255',
             'target_disease'   => 'nullable|string|max:255',
@@ -40,9 +42,31 @@ class VaccinationController extends Controller
             'notes'            => 'nullable|string',
         ]);
 
-        Vaccination::create($validated);
+        $coopIds = $validated['coop_ids'];
+        $countCoops = count($coopIds);
 
-        return redirect()->route('vaccinations.index')->with('success', 'Catatan vaksinasi berhasil disimpan!');
+        // Bagi rata total biaya ke setiap kandang
+        $costPerCoop = $countCoops > 0 ? round($validated['cost'] / $countCoops, 2) : 0;
+
+        DB::transaction(function () use ($validated, $coopIds, $costPerCoop) {
+            foreach ($coopIds as $coopId) {
+                Vaccination::create([
+                    'coop_id'          => $coopId,
+                    'vaccination_date' => $validated['vaccination_date'],
+                    'age_weeks'        => $validated['age_weeks'],
+                    'vaccine_name'     => $validated['vaccine_name'],
+                    'target_disease'   => $validated['target_disease'] ?? null,
+                    'method'           => $validated['method'],
+                    'dosage'           => $validated['dosage'],
+                    'officer'          => $validated['officer'],
+                    'cost'             => $costPerCoop,
+                    'notes'            => $validated['notes'] ?? null,
+                ]);
+            }
+        });
+
+        return redirect()->route('vaccinations.index')
+            ->with('success', $countCoops . ' catatan vaksinasi berhasil disimpan!');
     }
 
     public function edit(Vaccination $vaccination)
