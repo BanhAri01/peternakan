@@ -28,15 +28,23 @@ class UserController extends Controller
             'role'     => ['required', 'in:owner,worker'],
             'email'    => ['nullable', 'required_if:role,owner', 'email', 'max:255', 'unique:users,email'],
             'password' => ['nullable', 'required_if:role,owner', 'min:6'],
+            'pin'      => ['nullable', 'required_if:role,worker', 'digits_between:4,6'],
         ], [
             'email.required_if'    => 'Email wajib diisi untuk akun Owner.',
             'password.required_if' => 'Kata sandi wajib diisi untuk akun Owner.',
+            'pin.required_if'      => 'PIN wajib diisi untuk akun Pekerja.',
+            'pin.digits_between'   => 'PIN berupa 4–6 angka.',
         ]);
 
         if (!empty($validated['password'])) {
             $validated['password'] = Hash::make($validated['password']);
         } else {
             $validated['password'] = null;
+        }
+
+        // PIN hanya untuk pekerja (di-hash otomatis oleh cast di model User)
+        if ($validated['role'] !== 'worker') {
+            $validated['pin'] = null;
         }
 
         User::create($validated);
@@ -56,6 +64,9 @@ class UserController extends Controller
             'role'     => ['required', 'in:owner,worker'],
             'email'    => ['nullable', 'required_if:role,owner', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
             'password' => ['nullable', 'min:6'],
+            'pin'      => ['nullable', 'digits_between:4,6'],
+        ], [
+            'pin.digits_between' => 'PIN berupa 4–6 angka.',
         ]);
 
         // Perbarui password hanya jika diisi
@@ -63,6 +74,13 @@ class UserController extends Controller
             $validated['password'] = Hash::make($validated['password']);
         } else {
             unset($validated['password']);
+        }
+
+        // Perbarui PIN hanya jika diisi; akun owner tidak memakai PIN
+        if ($validated['role'] !== 'worker') {
+            $validated['pin'] = null;
+        } elseif (empty($validated['pin'])) {
+            unset($validated['pin']);
         }
 
         $user->update($validated);

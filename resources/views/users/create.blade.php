@@ -72,6 +72,18 @@
                     </div>
                 </div>
 
+                <!-- Bagian Khusus Pekerja (PIN Login) -->
+                <div x-show="role === 'worker'" x-transition class="p-3 bg-light rounded-3 border mb-4">
+                    <label class="form-label text-secondary small text-uppercase fw-bold">
+                        PIN Login Pekerja <span class="text-danger">*</span>
+                    </label>
+                    <input type="text" name="pin" value="{{ old('pin') }}" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off" placeholder="4–6 angka, contoh: 2580" class="form-control fw-bold @error('pin') is-invalid @enderror">
+                    <span class="text-muted small mt-1 d-block">Berikan PIN ini langsung ke pekerja. PIN disimpan terenkripsi dan tidak bisa dilihat lagi.</span>
+                    @error('pin')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+
                 <div class="d-flex justify-content-between align-items-center pt-3 border-top">
                     <a href="{{ route('users.index') }}" class="btn btn-outline-secondary fw-bold px-4">
                         Batal

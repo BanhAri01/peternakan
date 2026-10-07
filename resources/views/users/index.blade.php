@@ -69,6 +69,11 @@
                                         <span class="badge bg-secondary-subtle text-secondary border px-3 py-1.5 fs-6">
                                             <i class="bi bi-person-badge me-1"></i> WORKER
                                         </span>
+                                        @unless($user->hasPin())
+                                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle ms-1">
+                                                <i class="bi bi-exclamation-triangle-fill me-1"></i> Belum ada PIN
+                                            </span>
+                                        @endunless
                                     @endif
                                 </td>
                                 <td>

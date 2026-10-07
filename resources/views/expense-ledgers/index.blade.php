@@ -404,11 +404,11 @@ document.addEventListener('DOMContentLoaded', function () {
         new Chart(trendElement.getContext('2d'), {
             type: 'line',
             data: {
-                labels: {!! json_encode($chartLabels) !!},
+                labels: @json($chartLabels),
                 datasets: [
                     {
                         label: 'Penjualan Telur (Rp)',
-                        data: {!! json_encode($chartSalesData) !!},
+                        data: @json($chartSalesData),
                         borderColor: '#2563eb',
                         backgroundColor: 'rgba(37, 99, 235, 0.1)',
                         borderWidth: 3,
@@ -417,7 +417,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     },
                     {
                         label: 'Beban Pengeluaran + Vaksinasi (Rp)',
-                        data: {!! json_encode($chartExpenseData) !!},
+                        data: @json($chartExpenseData),
                         borderColor: '#dc2626',
                         backgroundColor: 'rgba(220, 38, 38, 0.05)',
                         borderWidth: 2,
@@ -426,7 +426,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     },
                     {
                         label: 'Laba Bersih Harian (Rp)',
-                        data: {!! json_encode($chartProfitData) !!},
+                        data: @json($chartProfitData),
                         borderColor: '#16a34a',
                         backgroundColor: 'rgba(22, 163, 74, 0.15)',
                         borderWidth: 2.5,
@@ -474,8 +474,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const donutElement = document.getElementById('categoryDonutChart');
 
-    const catLabels = {!! json_encode($categoryLabels) !!};
-    const catData = {!! json_encode($categoryData) !!};
+    const catLabels = @json($categoryLabels);
+    const catData = @json($categoryData);
 
     if (donutElement && catData.length > 0) {
         new Chart(donutElement.getContext('2d'), {

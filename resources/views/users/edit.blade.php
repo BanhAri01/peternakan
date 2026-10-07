@@ -65,6 +65,23 @@
                     </div>
                 </div>
 
+                <!-- Bagian Khusus Pekerja (PIN Login) -->
+                <div x-show="role === 'worker'" x-transition class="p-3 bg-light rounded-3 border mb-4">
+                    <label class="form-label text-secondary small text-uppercase fw-bold">
+                        {{ $user->hasPin() ? 'PIN Baru' : 'Atur PIN Login' }}
+                    </label>
+                    @unless($user->hasPin())
+                        <div class="alert alert-warning py-2 small mb-2">
+                            <i class="bi bi-exclamation-triangle-fill me-1"></i> Pekerja ini belum punya PIN dan belum bisa login.
+                        </div>
+                    @endunless
+                    <input type="text" name="pin" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off" placeholder="{{ $user->hasPin() ? 'Kosongkan jika PIN tidak diubah' : '4–6 angka, contoh: 2580' }}" class="form-control fw-bold @error('pin') is-invalid @enderror">
+                    <span class="text-muted small mt-1 d-block">PIN disimpan terenkripsi dan tidak bisa dilihat lagi.</span>
+                    @error('pin')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+
                 <div class="d-flex justify-content-between align-items-center pt-3 border-top">
                     <a href="{{ route('users.index') }}" class="btn btn-outline-secondary fw-bold px-4">
                         Batal

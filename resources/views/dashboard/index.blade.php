@@ -366,11 +366,11 @@
     new Chart(ctxTrend, {
         type: 'line',
         data: {
-            labels: {!! json_encode($chartDates) !!},
+            labels: @json($chartDates),
             datasets: [
                 {
                     label: 'Panen Telur (Kg)',
-                    data: {!! json_encode($chartEggKg) !!},
+                    data: @json($chartEggKg),
                     borderColor: '#f59e0b',
                     backgroundColor: 'rgba(245, 158, 11, 0.15)',
                     borderWidth: 3,
@@ -380,7 +380,7 @@
                 },
                 {
                     label: 'Konsumsi Pakan (Kg)',
-                    data: {!! json_encode($chartFeedKg) !!},
+                    data: @json($chartFeedKg),
                     borderColor: '#2563eb',
                     borderDash: [5, 5],
                     borderWidth: 2,
@@ -419,9 +419,9 @@
     new Chart(ctxGrade, {
         type: 'doughnut',
         data: {
-            labels: {!! json_encode(collect($gradeBreakdown)->pluck('name')) !!},
+            labels: @json(collect($gradeBreakdown)->pluck('name')),
             datasets: [{
-                data: {!! json_encode(collect($gradeBreakdown)->pluck('weight_kg')) !!},
+                data: @json(collect($gradeBreakdown)->pluck('weight_kg')),
                 backgroundColor: ['#f59e0b', '#2563eb', '#10b981', '#ec4899', '#8b5cf6'],
                 borderWidth: 2
             }]

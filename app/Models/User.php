@@ -14,11 +14,13 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'pin',
         'role',
     ];
 
     protected $hidden = [
         'password',
+        'pin',
         'remember_token',
     ];
 
@@ -26,7 +28,13 @@ class User extends Authenticatable
     {
         return [
             'password' => 'hashed',
+            'pin'      => 'hashed',
         ];
+    }
+
+    public function hasPin(): bool
+    {
+        return !empty($this->pin);
     }
 
     public function isOwner(): bool

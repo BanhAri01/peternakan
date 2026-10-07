@@ -798,41 +798,60 @@
                 <form action="{{ route('login.worker') }}" method="POST">
                     @csrf
 
-                    <div class="field">
-                        <label for="worker-name">Nama Karyawan / Petugas</label>
-                        <div class="control">
-                            <i class="bi bi-person lead"></i>
-                            @if(count($workers) > 0)
+                    @if(count($workers) > 0)
+                        <div class="field">
+                            <label for="worker-name">Nama Karyawan / Petugas</label>
+                            <div class="control">
+                                <i class="bi bi-person lead"></i>
                                 <select id="worker-name"
-                                        name="name"
-                                        class="{{ $errors->has('name') ? 'is-invalid' : '' }}"
+                                        name="worker_id"
+                                        class="{{ $errors->has('worker_id') ? 'is-invalid' : '' }}"
                                         required>
-                                    <option value="" disabled selected>-- Pilih Nama --</option>
+                                    <option value="" disabled {{ old('worker_id') ? '' : 'selected' }}>-- Pilih Nama --</option>
                                     @foreach($workers as $worker)
-                                        <option value="{{ $worker->name }}">{{ $worker->name }}</option>
+                                        <option value="{{ $worker->id }}" {{ (string) old('worker_id') === (string) $worker->id ? 'selected' : '' }}>{{ $worker->name }}</option>
                                     @endforeach
                                 </select>
-                            @else
-                                <input type="text"
-                                       id="worker-name"
-                                       name="name"
-                                       placeholder="Ketik nama Anda..."
-                                       class="{{ $errors->has('name') ? 'is-invalid' : '' }}"
-                                       required>
-                            @endif
+                            </div>
+                            @error('worker_id')
+                                <span class="err">{{ $message }}</span>
+                            @enderror
                         </div>
-                        @error('name')
-                            <span class="err">{{ $message }}</span>
-                        @enderror
+
+                        <div class="field">
+                            <label for="worker-pin">PIN</label>
+                            <div class="control">
+                                <i class="bi bi-key lead"></i>
+                                <input type="password"
+                                       id="worker-pin"
+                                       name="pin"
+                                       inputmode="numeric"
+                                       pattern="[0-9]*"
+                                       minlength="4"
+                                       maxlength="6"
+                                       autocomplete="off"
+                                       placeholder="4–6 angka"
+                                       class="{{ $errors->has('pin') ? 'is-invalid' : '' }}"
+                                       required>
+                            </div>
+                            @error('pin')
+                                <span class="err">{{ $message }}</span>
+                            @enderror
+                            <div class="hint">
+                                <i class="bi bi-info-circle"></i>
+                                <span>Pilih nama Anda, lalu masukkan PIN dari Owner.</span>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn-submit">
+                            Masuk <i class="bi bi-arrow-right"></i>
+                        </button>
+                    @else
                         <div class="hint">
                             <i class="bi bi-info-circle"></i>
-                            <span>Pilih nama Anda untuk langsung mencatat panen &amp; pakan tanpa password.</span>
+                            <span>Belum ada akun pekerja. Minta Owner menambahkan Anda di menu Pengguna.</span>
                         </div>
-                    </div>
-
-                    <button type="submit" class="btn-submit">
-                        Masuk <i class="bi bi-arrow-right"></i>
-                    </button>
+                    @endif
                 </form>
             </div>
 
