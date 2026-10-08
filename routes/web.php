@@ -25,6 +25,7 @@ use App\Http\Controllers\EggGradeController;
 use App\Http\Controllers\EggSaleController;
 use App\Http\Controllers\EggSortingController;
 use App\Http\Controllers\ExpenseLedgerController;
+use App\Http\Controllers\ExportController;
 use App\Http\Controllers\ExportPdfController;
 use App\Http\Controllers\FeedStockController;
 use App\Http\Controllers\ProcurementController;
@@ -157,6 +158,8 @@ Route::middleware('auth')->group(function () {
         // Laporan
         Route::get('/laporan', [ReportController::class, 'index'])->name('reports.index');
         Route::get('/laporan/ekspor-pdf', [ExportPdfController::class, 'exportMonthlyReport'])->name('reports.monthly-pdf');
+        Route::get('/ekspor', [ExportController::class, 'index'])->name('exports.index');
+        Route::get('/ekspor/unduh', [ExportController::class, 'download'])->middleware('throttle:10,1')->name('exports.download');
 
         // Pengaturan peternakan
         Route::get('/pengaturan', [SettingController::class, 'edit'])->name('settings.edit');
