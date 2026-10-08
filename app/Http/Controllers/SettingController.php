@@ -25,6 +25,8 @@ class SettingController extends Controller
             'sack_kg'          => 'required|numeric|min:1|max:200',
             'hdp_warning'      => 'required|numeric|min:1|max:100',
             'low_feed_days'    => 'required|integer|min:1|max:60',
+            'receipt_paper'    => 'required|in:' . implode(',', array_keys(ExportPdfController::RECEIPT_PAPERS)),
+            'receipt_footer'   => 'nullable|string|max:200',
         ]);
 
         Setting::put(array_map(fn ($v) => $v ?? '', $data));

@@ -35,7 +35,7 @@
                         <tr>
                             <td class="title-cell"><a href="{{ route('customers.show', $c) }}" class="fw-800 text-decoration-none text-ink">{{ $c->name }}</a></td>
                             <td data-label="No. HP">{{ $c->phone ?: '-' }}</td>
-                            <td data-label="Total belanja" class="num">@rupiah($c->total_bought ?? 0)<div class="text-muted small">{{ $c->sales_count }} transaksi</div></td>
+                            <td data-label="Total belanja" class="num">@rupiah($c->total_bought ?? 0)<div class="text-muted small">{{ $c->invoices_count }} nota</div></td>
                             <td data-label="Belum dibayar" class="num">
                                 @if($c->total_debt > 0)
                                     <b class="text-danger">@rupiah($c->total_debt)</b>

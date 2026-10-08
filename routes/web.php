@@ -71,9 +71,9 @@ Route::middleware('auth')->group(function () {
         // Penjualan & piutang
         Route::get('/penjualan', [EggSaleController::class, 'index'])->name('sales.index');
         Route::post('/penjualan/simpan', [EggSaleController::class, 'store'])->name('sales.store');
-        Route::post('/penjualan/{sale}/bayar-piutang', [EggSaleController::class, 'payDebt'])->name('sales.pay-debt');
-        Route::delete('/penjualan/{sale}', [EggSaleController::class, 'destroy'])->name('sales.destroy');
-        Route::get('/penjualan/{sale}/cetak-nota', [ExportPdfController::class, 'printReceipt'])->name('sales.print-receipt');
+        Route::post('/penjualan/nota/{invoice}/bayar', [EggSaleController::class, 'payDebt'])->name('sales.pay-debt');
+        Route::delete('/penjualan/nota/{invoice}', [EggSaleController::class, 'destroy'])->name('sales.destroy');
+        Route::get('/penjualan/nota/{invoice}/cetak', [ExportPdfController::class, 'printReceipt'])->name('sales.print-receipt');
 
         Route::resource('pelanggan', CustomerController::class)
             ->only(['index', 'show', 'edit', 'update'])

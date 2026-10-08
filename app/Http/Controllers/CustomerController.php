@@ -15,7 +15,7 @@ class CustomerController extends Controller
             ->when($search, fn ($q) => $q->where('name', 'like', "%{$search}%"))
             ->withSum('sales as total_bought', 'total_amount')
             ->withSum('sales as total_debt', 'debt_amount')
-            ->withCount('sales')
+            ->withCount('invoices')
             ->withMax('sales as last_sale', 'sale_date')
             ->orderByDesc('total_debt')
             ->orderBy('name')
@@ -30,7 +30,7 @@ class CustomerController extends Controller
 
     public function show(Customer $customer)
     {
-        $sales = $customer->sales()->with('grade')->latest('sale_date')->latest('id')->paginate(20);
+        $invoices = $customer->invoices()->withTotals()->with('lines.grade')->latest('sale_date')->latest('id')->paginate(20);
 
         $stats = [
             'total_bought' => (float) $customer->sales()->sum('total_amount'),
@@ -39,9 +39,11 @@ class CustomerController extends Controller
             'total_kg'     => (float) $customer->sales()->sum('weight_kg'),
         ];
 
-        $unpaid = $customer->sales()->where('debt_amount', '>', 0)->orderBy('sale_date')->get();
+        $unpaid = $customer->invoices()->withTotals()
+            ->whereHas('lines', fn ($q) => $q->where('debt_amount', '>', 0))
+            ->orderBy('sale_date')->get();
 
-        return view('customers.show', compact('customer', 'sales', 'stats', 'unpaid'));
+        return view('customers.show', compact('customer', 'invoices', 'stats', 'unpaid'));
     }
 
     public function edit(Customer $customer)

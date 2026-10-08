@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\EggSale;
+use App\Models\Invoice;
 use App\Models\ExpenseLedger;
 use App\Models\Setting;
 use App\Services\FarmFinance;
@@ -13,15 +13,26 @@ use Illuminate\Support\Str;
 
 class ExportPdfController extends Controller
 {
-    // Nota penjualan untuk pembeli (A5)
-    public function printReceipt(EggSale $sale)
+    // Ukuran kertas nota (dalam point; 1 inci = 72 pt)
+    public const RECEIPT_PAPERS = [
+        'continuous' => ['label' => 'Kertas kontinyu 9,5 x 11 inci (printer dot-matrix)', 'size' => [0, 0, 684, 792]],
+        'a4'         => ['label' => 'A4 (HVS biasa)', 'size' => 'a4'],
+        'a5'         => ['label' => 'A5 mendatar (setengah A4)', 'size' => 'a5-landscape'],
+    ];
+
+    // Nota penjualan untuk pembeli
+    public function printReceipt(Request $request, Invoice $invoice)
     {
-        $sale->load(['customer', 'grade']);
-        $farm = Setting::allValues();
+        $invoice->load(['customer', 'lines.grade', 'creator']);
+        $farm  = Setting::allValues();
+        $paper = $request->get('kertas', $farm['receipt_paper'] ?? 'continuous');
+        $paper = array_key_exists($paper, self::RECEIPT_PAPERS) ? $paper : 'continuous';
 
-        $pdf = Pdf::loadView('pdf.receipt', compact('sale', 'farm'))->setPaper('a5', 'portrait');
+        $size = self::RECEIPT_PAPERS[$paper]['size'];
+        $pdf  = Pdf::loadView('pdf.receipt', compact('invoice', 'farm', 'paper'));
+        $size === 'a5-landscape' ? $pdf->setPaper('a5', 'landscape') : $pdf->setPaper($size, 'portrait');
 
-        return $pdf->stream('Nota-' . str_pad($sale->id, 5, '0', STR_PAD_LEFT) . '-' . Str::slug($sale->customer->name ?? 'pembeli') . '.pdf');
+        return $pdf->stream($invoice->number . '-' . Str::slug($invoice->customer->name ?? 'pembeli') . '.pdf');
     }
 
     // Laporan bulanan: keuangan + performa kandang

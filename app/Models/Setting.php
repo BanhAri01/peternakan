@@ -22,6 +22,8 @@ class Setting extends Model
         'sack_kg'          => 50,    // berat 1 karung pakan
         'hdp_warning'      => 70,    // HDP di bawah angka ini dianggap perlu perhatian
         'low_feed_days'    => 5,     // peringatan jika pakan tinggal sekian hari
+        'receipt_paper'    => 'continuous', // ukuran kertas nota
+        'receipt_footer'   => 'Barang yang sudah dibeli tidak dapat dikembalikan. Terima kasih.',
     ];
 
     private static ?array $memo = null;

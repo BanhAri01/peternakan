@@ -70,6 +70,20 @@
         </div>
     </x-panel>
 
+    <x-panel title="Nota penjualan" icon="bi-printer-fill">
+        <div class="field">
+            <span class="field-label">Ukuran kertas nota</span>
+            <div class="choices" style="grid-template-columns: 1fr">
+                @foreach(\App\Http\Controllers\ExportPdfController::RECEIPT_PAPERS as $val => $paper)
+                    <label class="choice"><input type="radio" name="receipt_paper" value="{{ $val }}" @checked(old('receipt_paper', $settings['receipt_paper']) === $val)><span>{{ $paper['label'] }}</span></label>
+                @endforeach
+            </div>
+        </div>
+        <x-field label="Tulisan di bagian bawah nota" name="receipt_footer" optional class="mb-0">
+            <input type="text" id="receipt_footer" name="receipt_footer" maxlength="200" value="{{ old('receipt_footer', $settings['receipt_footer']) }}" class="form-control">
+        </x-field>
+    </x-panel>
+
     <button type="submit" class="btn btn-primary btn-xl w-100"><i class="bi bi-check2-circle"></i> Simpan Pengaturan</button>
 </form>
 @endsection

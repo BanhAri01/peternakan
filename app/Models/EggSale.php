@@ -10,6 +10,7 @@ class EggSale extends Model
     use HasFactory;
 
     protected $fillable = [
+        'invoice_id',
         'customer_id',
         'egg_grade_id',
         'sale_date',
@@ -104,6 +105,11 @@ class EggSale extends Model
                 $sale->payment_status = 'unpaid';
             }
         });
+    }
+
+    public function invoice()
+    {
+        return $this->belongsTo(Invoice::class);
     }
 
     public function customer()

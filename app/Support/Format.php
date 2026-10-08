@@ -54,6 +54,33 @@ class Format
         return $trays . ' rak' . ($rest > 0 ? ' + ' . $rest . ' butir' : '');
     }
 
+    // 1250000 -> "satu juta dua ratus lima puluh ribu rupiah" (untuk nota)
+    public static function terbilang($value): string
+    {
+        $n = (int) round(abs((float) $value));
+        $text = $n === 0 ? 'nol' : trim(self::spell($n));
+
+        return ucfirst(preg_replace('/\s+/', ' ', $text)) . ' rupiah';
+    }
+
+    private static function spell(int $n): string
+    {
+        $words = ['', 'satu', 'dua', 'tiga', 'empat', 'lima', 'enam', 'tujuh', 'delapan', 'sembilan', 'sepuluh', 'sebelas'];
+
+        return match (true) {
+            $n < 12            => ' ' . $words[$n],
+            $n < 20            => self::spell($n - 10) . ' belas',
+            $n < 100           => self::spell(intdiv($n, 10)) . ' puluh' . self::spell($n % 10),
+            $n < 200           => ' seratus' . self::spell($n - 100),
+            $n < 1000          => self::spell(intdiv($n, 100)) . ' ratus' . self::spell($n % 100),
+            $n < 2000          => ' seribu' . self::spell($n - 1000),
+            $n < 1000000       => self::spell(intdiv($n, 1000)) . ' ribu' . self::spell($n % 1000),
+            $n < 1000000000    => self::spell(intdiv($n, 1000000)) . ' juta' . self::spell($n % 1000000),
+            $n < 1000000000000 => self::spell(intdiv($n, 1000000000)) . ' miliar' . self::spell($n % 1000000000),
+            default            => self::spell(intdiv($n, 1000000000000)) . ' triliun' . self::spell($n % 1000000000000),
+        };
+    }
+
     // Nomor HP lokal -> format wa.me (08xx -> 628xx)
     public static function waNumber(?string $phone): ?string
     {

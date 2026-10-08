@@ -11,6 +11,7 @@ use App\Models\EggSale;
 use App\Models\EggSorting;
 use App\Models\ExpenseLedger;
 use App\Models\FeedPurchase;
+use App\Models\Invoice;
 use App\Models\FeedStock;
 use App\Models\Setting;
 use App\Models\Supplier;
@@ -41,7 +42,7 @@ class DemoFarmSeeder extends Seeder
             'farm_phone'   => '081234567890',
         ]);
 
-        User::create(['name' => 'Bapak Ketut', 'role' => 'owner', 'email' => 'demo@hefam.id', 'password' => 'password']);
+        $owner = User::create(['name' => 'Bapak Ketut', 'role' => 'owner', 'email' => 'demo@hefam.id', 'password' => 'password']);
         $workers = collect(['Wayan', 'Made', 'Komang'])->map(fn ($n) => User::create(['name' => $n, 'role' => 'worker', 'pin' => '1234']));
 
         $grades = collect([
@@ -186,30 +187,42 @@ class DemoFarmSeeder extends Seeder
                 }
             }
 
-            // Penjualan: hampir semua telur hasil sortir terjual ke 2 pelanggan
+            // Penjualan: hampir semua telur hasil sortir terjual, tiap pembeli 1 nota berisi beberapa jenis
             if (!$date->isToday()) {
                 $prices = [27000, 25500, 23000, 15000];
+                $buyers = $customers->random(2)->values();
+                $orders = [];
                 foreach ($grades as $gi => $grade) {
                     $kg = floor(($daySorted[$gi]['kg'] ?? 0) * mt_rand(92, 99) / 100);
                     if ($kg <= 0) {
                         continue;
                     }
+                    $orders[0][] = ['grade' => $grade, 'qty' => floor($kg * 0.6), 'price' => $prices[$gi] + mt_rand(-3, 3) * 100];
+                    $orders[1][] = ['grade' => $grade, 'qty' => $kg - floor($kg * 0.6), 'price' => $prices[$gi] + mt_rand(-3, 3) * 100];
+                }
 
-                    foreach ($customers->random(2)->values() as $ci => $customer) {
-                        $qty    = $ci === 0 ? floor($kg * 0.6) : $kg - floor($kg * 0.6);
-                        $unpaid = mt_rand(0, 100) < 12 && $day > 45;
-                        $price  = $prices[$gi] + mt_rand(-3, 3) * 100;
-
-                        EggSale::create([
+                foreach ($orders as $bi => $lines) {
+                    $customer = $buyers[$bi];
+                    $unpaid   = mt_rand(0, 100) < 15 && $day > 45;
+                    $due      = $unpaid ? $date->copy()->addDays(7)->toDateString() : null;
+                    $invoice  = Invoice::create([
+                        'number'      => Invoice::nextNumber($date),
+                        'customer_id' => $customer->id,
+                        'sale_date'   => $date->toDateString(),
+                        'due_date'    => $due,
+                        'created_by'  => $owner->id,
+                    ]);
+                    foreach ($lines as $line) {
+                        $invoice->lines()->create([
                             'customer_id'    => $customer->id,
-                            'egg_grade_id'   => $grade->id,
+                            'egg_grade_id'   => $line['grade']->id,
                             'sale_date'      => $date->toDateString(),
                             'unit_type'      => 'kg',
-                            'quantity_unit'  => $qty,
-                            'price_per_unit' => $price,
+                            'quantity_unit'  => $line['qty'],
+                            'price_per_unit' => $line['price'],
                             'weight_kg'      => 0,
-                            'paid_amount'    => $unpaid ? 0 : $qty * $price,
-                            'due_date'       => $unpaid ? $date->copy()->addDays(7)->toDateString() : null,
+                            'paid_amount'    => $unpaid ? 0 : $line['qty'] * $line['price'],
+                            'due_date'       => $due,
                         ]);
                     }
                 }

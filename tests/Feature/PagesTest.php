@@ -21,8 +21,8 @@ class PagesTest extends TestCase
 
         $this->actingAs($this->owner)->post(route('daily-logs.store'), $this->harvestPayload());
         $this->actingAs($this->owner)->post(route('sales.store'), [
-            'customer_name' => 'Toko Berkah', 'egg_grade_id' => $this->grade->id, 'sale_date' => now()->toDateString(),
-            'unit_type' => 'kg', 'quantity_unit' => 10, 'price_per_unit' => 25000, 'payment_mode' => 'tempo',
+            'customer_name' => 'Toko Berkah', 'sale_date' => now()->toDateString(), 'payment_mode' => 'tempo',
+            'lines' => [['egg_grade_id' => $this->grade->id, 'unit_type' => 'kg', 'quantity_unit' => 10, 'price_per_unit' => 25000]],
         ]);
     }
 
@@ -93,6 +93,7 @@ class PagesTest extends TestCase
         $this->actingAs($this->owner)->put(route('settings.update'), [
             'farm_name' => 'Sinar Abadi Farm', 'farm_owner' => 'Pak Ketut', 'farm_address' => 'Bangli', 'farm_phone' => '0812',
             'egg_price_per_kg' => 27000, 'sack_kg' => 40, 'hdp_warning' => 75, 'low_feed_days' => 4,
+            'receipt_paper' => 'continuous', 'receipt_footer' => 'Terima kasih',
         ])->assertRedirect(route('settings.edit'));
 
         $this->assertSame('Sinar Abadi Farm', Setting::get('farm_name'));

@@ -32,27 +32,27 @@
 </div>
 
 @if($unpaid->isNotEmpty())
-    <x-panel title="Tagihan yang belum lunas" icon="bi-exclamation-circle-fill" tone="danger" flush>
+    <x-panel title="Nota yang belum lunas" icon="bi-exclamation-circle-fill" tone="danger" flush>
         <div class="table-wrap">
             <table class="tbl stack">
-                <thead><tr><th>Tanggal</th><th>Telur</th><th class="num">Total</th><th class="num">Sisa</th><th>Jatuh tempo</th><th class="actions">Aksi</th></tr></thead>
+                <thead><tr><th>Nota</th><th class="num">Total</th><th class="num">Sisa</th><th>Jatuh tempo</th><th class="actions">Aksi</th></tr></thead>
                 <tbody>
-                    @foreach($unpaid as $sale)
+                    @foreach($unpaid as $inv)
                         <tr>
-                            <td class="title-cell"><b>{{ Format::date($sale->sale_date) }}</b></td>
-                            <td data-label="Telur">{{ $sale->grade->name ?? '-' }} · {{ Format::number($sale->quantity_unit, 2) }} {{ $sale->unit_label }}</td>
-                            <td data-label="Total" class="num">@rupiah($sale->total_amount)</td>
-                            <td data-label="Sisa" class="num"><b class="text-danger">@rupiah($sale->debt_amount)</b></td>
+                            <td class="title-cell"><div><b>{{ $inv->number }}</b><div class="text-muted small">{{ Format::date($inv->sale_date) }}</div></div></td>
+                            <td data-label="Total" class="num">@rupiah($inv->total)</td>
+                            <td data-label="Sisa" class="num"><b class="text-danger">@rupiah($inv->debt)</b></td>
                             <td data-label="Jatuh tempo">
-                                @if($sale->due_date)
-                                    <x-tag :tone="$sale->due_date->isPast() ? 'danger' : 'neutral'">{{ Format::date($sale->due_date) }}{{ $sale->due_date->isPast() ? ' (lewat)' : '' }}</x-tag>
+                                @if($inv->due_date)
+                                    <x-tag :tone="$inv->due_date->isPast() ? 'danger' : 'neutral'">{{ Format::date($inv->due_date) }}{{ $inv->due_date->isPast() ? ' (lewat)' : '' }}</x-tag>
                                 @else
                                     -
                                 @endif
                             </td>
                             <td class="actions">
+                                <a href="{{ route('sales.print-receipt', $inv) }}" target="_blank" class="btn btn-light btn-sm"><i class="bi bi-printer"></i> Nota</a>
                                 <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#payModal"
-                                        data-action="{{ route('sales.pay-debt', $sale) }}" data-name="{{ $customer->name }}" data-debt="{{ (float) $sale->debt_amount }}">
+                                        data-action="{{ route('sales.pay-debt', $inv) }}" data-name="{{ $customer->name . ' · ' . $inv->number }}" data-debt="{{ $inv->debt }}">
                                     <i class="bi bi-cash"></i> Bayar
                                 </button>
                             </td>
@@ -64,30 +64,33 @@
     </x-panel>
 @endif
 
-<x-panel title="Riwayat pembelian" icon="bi-clock-history" flush>
-    @if($sales->isEmpty())
+<x-panel title="Riwayat nota" icon="bi-clock-history" flush>
+    @if($invoices->isEmpty())
         <x-empty icon="bi-basket" title="Belum ada pembelian" />
     @else
         <div class="table-wrap">
             <table class="tbl stack">
-                <thead><tr><th>Tanggal</th><th>Telur</th><th class="num">Jumlah</th><th class="num">Total</th><th>Status</th><th class="actions">Nota</th></tr></thead>
+                <thead><tr><th>Nota</th><th>Isi</th><th class="num">Total</th><th>Status</th><th class="actions">Cetak</th></tr></thead>
                 <tbody>
-                    @foreach($sales as $sale)
+                    @foreach($invoices as $inv)
                         <tr>
-                            <td class="title-cell"><b>{{ Format::date($sale->sale_date, 'D, d M Y') }}</b></td>
-                            <td data-label="Telur">{{ $sale->grade->name ?? '-' }}</td>
-                            <td data-label="Jumlah" class="num">{{ Format::number($sale->quantity_unit, 2) }} {{ $sale->unit_label }}</td>
-                            <td data-label="Total" class="num"><b>@rupiah($sale->total_amount)</b></td>
-                            <td data-label="Status"><x-tag :tone="$sale->status_tone">{{ $sale->status_label }}</x-tag></td>
-                            <td class="actions"><a href="{{ route('sales.print-receipt', $sale) }}" target="_blank" class="btn btn-light btn-sm"><i class="bi bi-printer"></i> Nota</a></td>
+                            <td class="title-cell"><div><b>{{ $inv->number }}</b><div class="text-muted small">{{ Format::date($inv->sale_date, 'D, d M Y') }}</div></div></td>
+                            <td data-label="Isi">
+                                @foreach($inv->lines as $line)
+                                    <div class="small">{{ $line->grade->name ?? '-' }} · {{ Format::number($line->quantity_unit, 2) }} {{ $line->unit_label }}</div>
+                                @endforeach
+                            </td>
+                            <td data-label="Total" class="num"><b>@rupiah($inv->total)</b></td>
+                            <td data-label="Status"><x-tag :tone="$inv->status_tone">{{ $inv->status_label }}</x-tag></td>
+                            <td class="actions"><a href="{{ route('sales.print-receipt', $inv) }}" target="_blank" class="btn btn-light btn-sm"><i class="bi bi-printer"></i> Nota</a></td>
                         </tr>
                     @endforeach
                 </tbody>
             </table>
         </div>
     @endif
-    @if($sales->hasPages())
-        <x-slot:footer>{{ $sales->links() }}</x-slot:footer>
+    @if($invoices->hasPages())
+        <x-slot:footer>{{ $invoices->links() }}</x-slot:footer>
     @endif
 </x-panel>
 
