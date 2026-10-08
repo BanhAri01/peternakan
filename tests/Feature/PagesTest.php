@@ -41,7 +41,7 @@ class PagesTest extends TestCase
             route('grades.index'), route('expenses.index'), route('expenses.create'),
             route('vaccinations.index'), route('vaccinations.create'),
             route('users.index'), route('users.create'), route('users.edit', $this->worker),
-            route('reports.index'), route('settings.edit'),
+            route('reports.index'), route('settings.edit'), route('sortings.create'),
         ];
 
         foreach ($pages as $url) {

@@ -6,7 +6,7 @@
 @php use App\Support\Format; @endphp
 
 @section('content')
-<x-page-header title="Jenis Telur (Grade)" subtitle="Atur pilihan jenis telur yang muncul di formulir panen dan penjualan, misalnya Besar, Sedang, Kecil, Retak." icon="bi-egg-fill" />
+<x-page-header title="Jenis Telur (Grade)" subtitle="Jenis telur hasil sortir, misalnya Besar, Sedang, Kecil, Retak. Panen selalu dicatat sebagai Telur Campur lalu dipilah di menu Sortir Telur." icon="bi-egg-fill" />
 
 <x-alerts />
 
@@ -42,7 +42,11 @@
                             <b>{{ $grade->name }} @if($grade->code)<span class="text-muted fw-normal">({{ $grade->code }})</span>@endif</b>
                             <span>
                                 Stok tercatat: {{ Format::number($grade->stock_kg, 1) }} kg ·
-                                {{ $grade->is_active ? 'Tampil di formulir' : 'Disembunyikan' }}
+                                @if($grade->is_mixed)
+                                    Hasil panen sebelum disortir (otomatis)
+                                @else
+                                    {{ $grade->is_active ? 'Tampil di formulir' : 'Disembunyikan' }}
+                                @endif
                             </span>
                         </div>
                         <form x-show="edit" x-cloak action="{{ route('grades.update', $grade) }}" method="POST" class="d-flex flex-wrap gap-2">
@@ -56,12 +60,14 @@
                     </div>
                     <div class="d-flex gap-2 flex-shrink-0" x-show="!edit">
                         <button type="button" class="btn btn-light btn-sm" @click="edit = true"><i class="bi bi-pencil"></i> Ganti nama</button>
-                        <form action="{{ route('grades.toggle', $grade) }}" method="POST">
-                            @csrf
-                            <button type="submit" class="btn btn-sm {{ $grade->is_active ? 'btn-ghost-danger' : 'btn-success' }}">
-                                {{ $grade->is_active ? 'Sembunyikan' : 'Tampilkan' }}
-                            </button>
-                        </form>
+                        @unless($grade->is_mixed)
+                            <form action="{{ route('grades.toggle', $grade) }}" method="POST">
+                                @csrf
+                                <button type="submit" class="btn btn-sm {{ $grade->is_active ? 'btn-ghost-danger' : 'btn-success' }}">
+                                    {{ $grade->is_active ? 'Sembunyikan' : 'Tampilkan' }}
+                                </button>
+                            </form>
+                        @endunless
                     </div>
                 </li>
             @endforeach

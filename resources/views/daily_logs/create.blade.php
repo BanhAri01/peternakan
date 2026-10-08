@@ -115,15 +115,9 @@
         @error('log_date')<div class="field-error mt-2"><i class="bi bi-exclamation-circle-fill"></i> {{ $message }}</div>@enderror
     </x-panel>
 
-    {{-- LANGKAH 2: TELUR --}}
-    <x-panel title="Telur yang dikumpulkan" step="2" tone="egg" subtitle="1 rak = 30 butir. Kosongkan jika tidak ada.">
-        @if($isOwner)
-            <x-slot:actions>
-                <a href="{{ route('grades.index') }}" class="btn btn-light btn-sm"><i class="bi bi-gear"></i> Atur jenis telur</a>
-            </x-slot:actions>
-        @endif
-
-        @forelse($eggGrades as $i => $grade)
+    {{-- LANGKAH 2: TELUR CAMPUR --}}
+    <x-panel title="Telur yang dikumpulkan" step="2" tone="egg" subtitle="Hitung semua telur dari kandang ini (belum disortir). 1 rak = 30 butir.">
+        @foreach($eggGrades as $i => $grade)
             <div class="grade-box" :class="{ 'has-value': gradeEggs({{ $i }}) > 0 || num(grades[{{ $i }}].kg) > 0 }">
                 <div class="grade-name">
                     <span><i class="bi bi-egg-fill text-egg me-1"></i> {{ $grade->name }}</span>
@@ -134,25 +128,25 @@
                     <div class="col-4">
                         <label class="mini-label" for="g{{ $i }}t">Jumlah rak</label>
                         <input id="g{{ $i }}t" type="number" inputmode="numeric" min="0" step="1" placeholder="0"
-                               name="grades[{{ $i }}][trays_count]" x-model="grades[{{ $i }}].trays" class="form-control num-lg">
+                               name="grades[{{ $i }}][trays_count]" x-model="grades[{{ $i }}].trays" class="form-control num-xl">
                     </div>
                     <div class="col-4">
                         <label class="mini-label" for="g{{ $i }}e">+ Butir lepas</label>
                         <input id="g{{ $i }}e" type="number" inputmode="numeric" min="0" step="1" placeholder="0"
-                               name="grades[{{ $i }}][extra_eggs]" x-model="grades[{{ $i }}].extra" class="form-control num-lg">
+                               name="grades[{{ $i }}][extra_eggs]" x-model="grades[{{ $i }}].extra" class="form-control num-xl">
                     </div>
                     <div class="col-4">
                         <label class="mini-label" for="g{{ $i }}k">Berat (kg)</label>
                         <input id="g{{ $i }}k" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0"
-                               name="grades[{{ $i }}][weight_kg]" x-model="grades[{{ $i }}].kg" class="form-control num-lg">
+                               name="grades[{{ $i }}][weight_kg]" x-model="grades[{{ $i }}].kg" class="form-control num-xl">
                     </div>
                 </div>
             </div>
-        @empty
-            <x-empty icon="bi-egg" title="Belum ada jenis telur aktif">
-                {{ $isOwner ? 'Tambahkan jenis telur (grade) lebih dulu.' : 'Minta pemilik menambahkan jenis telur.' }}
-            </x-empty>
-        @endforelse
+        @endforeach
+        <div class="help-tip mt-3">
+            <i class="bi bi-info-circle-fill"></i>
+            <span>Telur dipilah menjadi besar, kecil, retak, dll nanti di menu <b>Sortir Telur</b>.</span>
+        </div>
     </x-panel>
 
     {{-- LANGKAH 3: PAKAN --}}

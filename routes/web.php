@@ -8,6 +8,7 @@ use App\Http\Controllers\DailyLogController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EggGradeController;
 use App\Http\Controllers\EggSaleController;
+use App\Http\Controllers\EggSortingController;
 use App\Http\Controllers\ExpenseLedgerController;
 use App\Http\Controllers\ExportPdfController;
 use App\Http\Controllers\FeedStockController;
@@ -47,6 +48,10 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:worker,owner')->group(function () {
         Route::get('/panen/input', [DailyLogController::class, 'create'])->name('daily-logs.create');
         Route::post('/panen/simpan', [DailyLogController::class, 'store'])->name('daily-logs.store');
+
+        // Sortir telur campur menjadi per jenis
+        Route::get('/sortir', [EggSortingController::class, 'create'])->name('sortings.create');
+        Route::post('/sortir', [EggSortingController::class, 'store'])->name('sortings.store');
     });
 
     // ---------------------------------------------------------------------
@@ -61,6 +66,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/panen/{dailyLog}/edit', [DailyLogController::class, 'edit'])->name('daily-logs.edit');
         Route::put('/panen/{dailyLog}', [DailyLogController::class, 'update'])->name('daily-logs.update');
         Route::delete('/panen/{dailyLog}', [DailyLogController::class, 'destroy'])->name('daily-logs.destroy');
+        Route::delete('/sortir/{sorting}', [EggSortingController::class, 'destroy'])->name('sortings.destroy');
 
         // Penjualan & piutang
         Route::get('/penjualan', [EggSaleController::class, 'index'])->name('sales.index');

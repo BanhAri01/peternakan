@@ -9,6 +9,7 @@
         ],
         'Kegiatan Harian' => [
             ['route' => 'daily-logs.index', 'match' => 'daily-logs.index|daily-logs.edit', 'icon' => 'bi-journal-text', 'label' => 'Riwayat Panen'],
+            ['route' => 'sortings.create', 'match' => 'sortings.*', 'icon' => 'bi-funnel-fill', 'label' => 'Sortir Telur'],
             ['route' => 'sales.index', 'match' => 'sales.*', 'icon' => 'bi-basket2-fill', 'label' => 'Penjualan Telur'],
             ['route' => 'customers.index', 'match' => 'customers.*', 'icon' => 'bi-person-lines-fill', 'label' => 'Pelanggan & Piutang'],
         ],
@@ -153,6 +154,14 @@
                 @endauth
             </div>
         </header>
+
+        @if($user && !$isOwner)
+            {{-- Menu pekerja: dua tombol besar --}}
+            <nav class="worker-tabs" aria-label="Menu pekerja">
+                <a href="{{ route('daily-logs.create') }}" class="{{ request()->routeIs('daily-logs.*') ? 'active' : '' }}"><i class="bi bi-clipboard2-check-fill"></i> Catat Panen</a>
+                <a href="{{ route('sortings.create') }}" class="{{ request()->routeIs('sortings.*') ? 'active' : '' }}"><i class="bi bi-funnel-fill"></i> Sortir Telur</a>
+            </nav>
+        @endif
 
         <main class="content @yield('content-class')">
             @yield('content')

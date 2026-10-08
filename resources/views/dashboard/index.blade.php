@@ -125,9 +125,31 @@
             <div class="chart-box"><canvas id="trendChart" aria-label="Grafik hasil telur 14 hari"></canvas></div>
         </x-panel>
 
-        <x-panel title="Jenis telur hari ini" icon="bi-egg-fill">
+        <x-panel title="Stok telur di gudang" icon="bi-egg-fill" subtitle="Telur campur menunggu disortir; jenis lain siap dijual." flush>
+            <x-slot:actions>
+                <a href="{{ route('sortings.create') }}" class="btn btn-light btn-sm"><i class="bi bi-funnel"></i> Sortir telur</a>
+            </x-slot:actions>
+            @if($eggStocks->isEmpty())
+                <x-empty icon="bi-egg" title="Belum ada jenis telur" />
+            @else
+                <ul class="alert-list">
+                    @foreach($eggStocks as $s)
+                        <li>
+                            <span class="dot {{ $s['grade']->is_mixed ? 'warning' : 'success' }}"><i class="bi {{ $s['grade']->is_mixed ? 'bi-basket-fill' : 'bi-egg-fill' }}"></i></span>
+                            <div class="txt">
+                                <b>{{ $s['grade']->name }}</b>
+                                <span>{{ $s['grade']->is_mixed ? Format::number($mixedWaiting) . ' butir belum disortir' : 'siap dijual' }}</span>
+                            </div>
+                            <b class="tabular {{ $s['kg'] < 0 ? 'text-danger' : '' }}" style="font-size:1.15rem">{{ Format::number($s['kg'], 1) }} kg</b>
+                        </li>
+                    @endforeach
+                </ul>
+            @endif
+        </x-panel>
+
+        <x-panel title="Hasil sortir hari ini" icon="bi-funnel-fill">
             @if($gradeMix->isEmpty())
-                <x-empty icon="bi-egg" title="Belum ada data">Belum ada panen tercatat pada tanggal ini.</x-empty>
+                <x-empty icon="bi-funnel" title="Belum ada sortir pada tanggal ini" class="py-3" />
             @else
                 @php $mixTotal = max(0.01, $gradeMix->sum('kg')); @endphp
                 @foreach($gradeMix as $g)

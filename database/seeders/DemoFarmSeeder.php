@@ -8,6 +8,7 @@ use App\Models\DailyLog;
 use App\Models\EggGrade;
 use App\Models\EggPurchase;
 use App\Models\EggSale;
+use App\Models\EggSorting;
 use App\Models\ExpenseLedger;
 use App\Models\FeedPurchase;
 use App\Models\FeedStock;
@@ -49,6 +50,7 @@ class DemoFarmSeeder extends Seeder
             ['name' => 'Telur Kecil', 'code' => 'K'],
             ['name' => 'Retak / Bentes', 'code' => 'R'],
         ])->map(fn ($g) => EggGrade::create($g + ['is_active' => true]));
+        $mixedGrade = EggGrade::mixed();
 
         $feeds = collect([
             ['feed_name' => 'Pakan Layer Komplit', 'stock_kg' => 0, 'cost_per_kg' => 7400],
@@ -101,6 +103,7 @@ class DemoFarmSeeder extends Seeder
 
         for ($day = 0; $day < 60; $day++) {
             $date = $start->copy()->addDays($day);
+            $daySorted = []; // hasil sortir hari ini per jenis
 
             foreach ($coops as $coop) {
                 // Hari ini sengaja dibiarkan 1 kandang belum dicatat
@@ -130,15 +133,11 @@ class DemoFarmSeeder extends Seeder
                 foreach ($grades as $i => $grade) {
                     $count = $i === count($grades) - 1 ? $left : (int) round($eggs * $mix[$i]);
                     $left -= $count;
-                    $gradeRows[] = [
-                        'egg_grade_id' => $grade->id,
-                        'trays_count'  => intdiv($count, 30),
-                        'extra_eggs'   => $count % 30,
-                        'total_eggs'   => $count,
-                        'weight_kg'    => round($count * $kgPerEgg[$i], 2),
-                    ];
+                    $gradeRows[] = ['count' => $count, 'kg' => round($count * $kgPerEgg[$i], 2)];
+                    $daySorted[$i]['count'] = ($daySorted[$i]['count'] ?? 0) + $count;
+                    $daySorted[$i]['kg']    = ($daySorted[$i]['kg'] ?? 0) + round($count * $kgPerEgg[$i], 2);
                 }
-                $eggKg = array_sum(array_column($gradeRows, 'weight_kg'));
+                $eggKg = array_sum(array_column($gradeRows, 'kg'));
 
                 $log = DailyLog::create([
                     'coop_id'          => $coop->id,
@@ -155,20 +154,43 @@ class DemoFarmSeeder extends Seeder
                     'notes'            => $coop->name === 'Kandang B' && $day === 57 ? 'Ayam terlihat lesu, nafsu makan turun.' : null,
                     'recorded_by'      => $workers[$day % 3]->id,
                 ]);
-                $log->grades()->createMany($gradeRows);
+                // Pekerja mencatat telur campur saja
+                $log->grades()->create([
+                    'egg_grade_id' => $mixedGrade->id,
+                    'trays_count'  => intdiv($eggs, 30),
+                    'extra_eggs'   => $eggs % 30,
+                    'total_eggs'   => $eggs,
+                    'weight_kg'    => $eggKg,
+                ]);
 
                 $coop->decrement('current_population', $mortality + $cull);
                 $feed->decrement('stock_kg', $feedKg);
             }
 
-            // Penjualan: hampir semua telur hari itu terjual ke 2 pelanggan
+            // Sortir di gudang tiap sore (hari ini sengaja belum disortir)
+            if (!$date->isToday()) {
+                $sorting = EggSorting::create([
+                    'sort_date'   => $date->toDateString(),
+                    'input_count' => array_sum(array_column($daySorted, 'count')),
+                    'input_kg'    => round(array_sum(array_column($daySorted, 'kg')), 2),
+                    'recorded_by' => $workers[($day + 1) % 3]->id,
+                ]);
+                foreach ($grades as $gi => $grade) {
+                    $sorting->items()->create([
+                        'egg_grade_id' => $grade->id,
+                        'trays_count'  => intdiv($daySorted[$gi]['count'], 30),
+                        'extra_eggs'   => $daySorted[$gi]['count'] % 30,
+                        'total_eggs'   => $daySorted[$gi]['count'],
+                        'weight_kg'    => round($daySorted[$gi]['kg'], 2),
+                    ]);
+                }
+            }
+
+            // Penjualan: hampir semua telur hasil sortir terjual ke 2 pelanggan
             if (!$date->isToday()) {
                 $prices = [27000, 25500, 23000, 15000];
                 foreach ($grades as $gi => $grade) {
-                    $kg = (float) \App\Models\DailyLogGrade::where('egg_grade_id', $grade->id)
-                        ->whereHas('dailyLog', fn ($q) => $q->where('log_date', $date->toDateString()))
-                        ->sum('weight_kg');
-                    $kg = floor($kg * mt_rand(92, 99) / 100);
+                    $kg = floor(($daySorted[$gi]['kg'] ?? 0) * mt_rand(92, 99) / 100);
                     if ($kg <= 0) {
                         continue;
                     }

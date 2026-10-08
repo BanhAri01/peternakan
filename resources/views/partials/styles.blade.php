@@ -327,6 +327,15 @@
     .menu-btn i { font-size: 1.35rem; }
     @media (max-width: 991.98px) { .menu-btn { display: inline-flex; } }
 
+    /* Menu pekerja: dua tombol besar di bawah bilah atas */
+    .worker-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; padding: .75rem 1rem 0; max-width: 880px; width: 100%; margin: 0 auto; }
+    .worker-tabs a {
+        display: flex; align-items: center; justify-content: center; gap: .5rem;
+        min-height: 56px; border-radius: var(--radius-sm); border: 2px solid var(--line-strong);
+        background: var(--surface); color: var(--ink); font-weight: 800; text-decoration: none; font-size: 1.05rem;
+    }
+    .worker-tabs a.active { background: var(--brand); border-color: var(--brand); color: #fff; }
+
     /* Navigasi bawah untuk HP (owner) */
     .bottom-nav {
         display: none;

@@ -52,7 +52,8 @@ class DailyLogController extends Controller
 
         $coops      = Coop::where('status', 'active')->orderBy('name')->get();
         $feedStocks = FeedStock::orderBy('feed_name')->get();
-        $eggGrades  = EggGrade::where('is_active', true)->orderBy('id')->get();
+        // Pekerja hanya mencatat telur campur; pemilahan per jenis dilakukan di menu Sortir Telur
+        $eggGrades  = collect([EggGrade::mixed()]);
         $sackKg     = Setting::num('sack_kg');
 
         // Kandang pertama yang belum dicatat dipilih otomatis
@@ -148,9 +149,12 @@ class DailyLogController extends Controller
 
         $coops      = Coop::where('status', 'active')->orWhere('id', $dailyLog->coop_id)->orderBy('name')->get();
         $feedStocks = FeedStock::orderBy('feed_name')->get();
-        $eggGrades  = EggGrade::where('is_active', true)
-            ->orWhereIn('id', $dailyLog->grades->pluck('egg_grade_id'))
-            ->orderBy('id')->get();
+        // Laporan baru berisi telur campur saja; laporan lama yang sudah berisi rincian jenis tetap bisa diubah per jenis
+        $mixed     = EggGrade::mixed();
+        $usedIds   = $dailyLog->grades->pluck('egg_grade_id');
+        $eggGrades = $usedIds->isEmpty() || $usedIds->every(fn ($id) => $id == $mixed->id)
+            ? collect([$mixed])
+            : EggGrade::sorted()->where('is_active', true)->orWhereIn('id', $usedIds)->orderBy('id')->get();
 
         $sackKg      = Setting::num('sack_kg') ?: 50;
         $feedSacks   = (int) floor($dailyLog->feed_consumed_kg / $sackKg);

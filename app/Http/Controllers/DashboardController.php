@@ -5,9 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\Coop;
 use App\Models\DailyLog;
 use App\Models\DailyLogGrade;
+use App\Models\EggGrade;
 use App\Models\EggSale;
+use App\Models\EggSortingItem;
 use App\Models\FeedStock;
 use App\Models\Setting;
+use App\Services\EggStock;
 use App\Services\FarmFinance;
 use App\Support\Format;
 use Carbon\Carbon;
@@ -26,6 +29,7 @@ class DashboardController extends Controller
         $day       = $date->toDateString();
         $yesterday = $date->copy()->subDay()->toDateString();
 
+        $mixedWaiting = EggStock::mixedEggsWaiting();
         $hdpWarn     = Setting::num('hdp_warning');
         $lowFeedDays = Setting::num('low_feed_days');
         $eggPrice    = Setting::num('egg_price_per_kg');
@@ -155,6 +159,11 @@ class DashboardController extends Controller
             }
         }
 
+        if ($mixedWaiting > 0) {
+            $alerts[] = ['tone' => 'info', 'icon' => 'bi-funnel', 'title' => Format::number($mixedWaiting) . ' butir telur campur belum disortir',
+                'text' => 'Sekitar ' . Format::trays($mixedWaiting) . '. Sortir agar stok tiap jenis telur akurat.', 'url' => route('sortings.create'), 'cta' => 'Sortir sekarang'];
+        }
+
         $overdue = EggSale::with('customer')->where('debt_amount', '>', 0)->whereNotNull('due_date')->where('due_date', '<', $day)->get();
         if ($overdue->isNotEmpty()) {
             $alerts[] = ['tone' => 'warning', 'icon' => 'bi-alarm', 'title' => $overdue->count() . ' tagihan sudah lewat jatuh tempo',
@@ -178,14 +187,32 @@ class DashboardController extends Controller
         }
 
         // ---------------- Komposisi jenis telur ----------------
-        $gradeMix = DailyLogGrade::query()
+        // Hasil sortir pada tanggal ini (+ rincian jenis dari laporan panen lama)
+        $sortedToday = EggSortingItem::query()
+            ->join('egg_sortings', 'egg_sortings.id', '=', 'egg_sorting_items.egg_sorting_id')
+            ->join('egg_grades', 'egg_grades.id', '=', 'egg_sorting_items.egg_grade_id')
+            ->where('egg_sortings.sort_date', $day)
+            ->selectRaw('egg_grades.name, SUM(egg_sorting_items.total_eggs) as eggs, SUM(egg_sorting_items.weight_kg) as kg')
+            ->groupBy('egg_grades.name')
+            ->get();
+        $legacy = DailyLogGrade::query()
             ->join('daily_logs', 'daily_logs.id', '=', 'daily_log_grades.daily_log_id')
             ->join('egg_grades', 'egg_grades.id', '=', 'daily_log_grades.egg_grade_id')
             ->where('daily_logs.log_date', $day)
+            ->where('egg_grades.is_mixed', false)
             ->selectRaw('egg_grades.name, SUM(daily_log_grades.total_eggs) as eggs, SUM(daily_log_grades.weight_kg) as kg')
             ->groupBy('egg_grades.name')
-            ->orderByDesc('kg')
             ->get();
+        $gradeMix = $sortedToday->concat($legacy)
+            ->groupBy('name')
+            ->map(fn ($rows, $name) => (object) ['name' => $name, 'eggs' => $rows->sum('eggs'), 'kg' => (float) $rows->sum('kg')])
+            ->sortByDesc('kg')
+            ->values();
+
+        // Stok telur di gudang per jenis
+        $stockKg    = EggStock::kg();
+        $eggStocks  = EggGrade::where('is_active', true)->orderByDesc('is_mixed')->orderBy('id')->get()
+            ->map(fn ($g) => ['grade' => $g, 'kg' => $stockKg[$g->id] ?? 0]);
 
         // ---------------- Keuangan bulan berjalan ----------------
         $month = FarmFinance::summary($date->copy()->startOfMonth()->toDateString(), $day);
@@ -193,7 +220,7 @@ class DashboardController extends Controller
         return view('dashboard.index', compact(
             'date', 'population', 'eggCount', 'eggKg', 'feedKg', 'feedCost', 'mortality', 'cull', 'hdp', 'fcr',
             'yesterdayEggs', 'hppPerKg', 'avgPrice', 'priceSource', 'salesToday', 'totalDebt', 'coopCards',
-            'feeds', 'alerts', 'chart', 'gradeMix', 'month', 'hdpWarn', 'logs', 'activeCoops'
+            'feeds', 'alerts', 'chart', 'gradeMix', 'eggStocks', 'mixedWaiting', 'month', 'hdpWarn', 'logs', 'activeCoops'
         ));
     }
 }
