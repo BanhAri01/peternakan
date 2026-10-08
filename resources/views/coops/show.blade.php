@@ -14,12 +14,12 @@
 
 <div class="row g-3 mb-3">
     <div class="col-sm-6 col-xl-3"><x-stat label="Jumlah ayam sekarang" :value="Format::number($coop->current_population)" unit="ekor" icon="bi-feather" tone="info" :hint="'Masuk ' . Format::number($coop->initial_population) . ' · berkurang ' . Format::number($totalLoss)" /></div>
-    <div class="col-sm-6 col-xl-3"><x-stat label="Rata-rata produksi" :value="Format::number($stats['avg_hdp'], 1) . '%'" icon="bi-graph-up-arrow" :tone="$stats['days'] && $stats['avg_hdp'] < $stats['avg_std'] - (\App\Models\Setting::num('hdp_tolerance') ?: 5) ? 'danger' : 'success'" :hint="'Standar ' . Format::number($stats['avg_std'], 1) . '% · tertinggi ' . Format::number($stats['best_hdp'], 1) . '%'" /></div>
+    <div class="col-sm-6 col-xl-3"><x-stat label="Rata-rata produksi" :value="Format::number($stats['avg_hdp'], 1) . '%'" icon="bi-graph-up-arrow" :tone="$stats['days'] && $stats['avg_hdp'] < ($useStandard ? $stats['avg_std'] - (\App\Models\Setting::num('hdp_tolerance') ?: 5) : $hdpWarn) ? 'danger' : 'success'" :hint="($useStandard ? 'Standar ' . Format::number($stats['avg_std'], 1) . '% · ' : '') . 'tertinggi ' . Format::number($stats['best_hdp'], 1) . '%'" /></div>
     <div class="col-sm-6 col-xl-3"><x-stat label="Telur terkumpul" :value="Format::number($stats['eggs'])" unit="butir" icon="bi-egg-fill" tone="egg" :hint="Format::number($stats['egg_kg'], 1) . ' kg dalam ' . $stats['days'] . ' laporan'" /></div>
     <div class="col-sm-6 col-xl-3"><x-stat label="Efisiensi pakan (FCR)" :value="$stats['fcr'] ? Format::number($stats['fcr'], 2) : '-'" icon="bi-box-seam-fill" tone="brand" :hint="Format::number($stats['feed_kg']) . ' kg pakan · makin kecil makin hemat'" /></div>
 </div>
 
-<x-panel title="Grafik produksi" icon="bi-graph-up" :subtitle="'Garis hijau = produksi kandang (HDP). Garis putus-putus = standar ' . $coop->standardLabel() . ' sesuai umur ayam (sekarang ' . Format::number($coop->standardHdp(), 1) . '%).'">
+<x-panel title="Grafik produksi" icon="bi-graph-up" :subtitle="$useStandard ? 'Garis hijau = produksi kandang (HDP). Garis putus-putus = standar ' . $coop->standardLabel() . ' sesuai umur ayam (sekarang ' . Format::number($coop->standardHdp(), 1) . '%).' : 'Garis hijau = produksi kandang (HDP). Perbandingan dengan standar strain tersedia mulai paket Pro.'">
     <x-slot:actions>
         @foreach([14, 30, 60, 90] as $d)
             <a href="{{ route('coops.show', [$coop, 'days' => $d]) }}" class="btn btn-sm {{ $days === $d ? 'btn-primary' : 'btn-light' }}">{{ $d }} hari</a>
@@ -93,7 +93,7 @@
                 labels: d.labels,
                 datasets: [
                     { label: 'Produksi HDP (%)', data: d.hdp, borderColor: '#3f5a26', backgroundColor: 'rgba(63,90,38,.12)', fill: true, borderWidth: 3, tension: .3, pointRadius: 3, spanGaps: true },
-                    { label: 'Standar strain', data: d.standard, borderColor: '#2f6f9f', borderDash: [6, 6], borderWidth: 2, pointRadius: 0, fill: false }
+                    @if($useStandard){ label: 'Standar strain', data: d.standard, borderColor: '#2f6f9f', borderDash: [6, 6], borderWidth: 2, pointRadius: 0, fill: false }@endif
                 ]
             },
             options: {

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\SubscriptionPayment;
 use App\Services\Payments\FakeGateway;
 use App\Services\Payments\SubscriptionBilling;
+use App\Services\Plans;
 use App\Support\Format;
 use App\Tenancy\FarmContext;
 use Illuminate\Http\Request;
@@ -22,7 +23,8 @@ class SubscriptionController extends Controller
         return view('subscription.show', [
             'farm'     => $farm,
             'adminWa'  => config('hefam.admin_whatsapp'),
-            'plans'    => SubscriptionBilling::plans(),
+            'tiers'     => Plans::tiers(),
+            'durations' => Plans::durations(),
             'canPay'   => $this->billing->available() && $farm->status !== 'suspended' && !$farm->hasUnlimitedAccess(),
             'payments' => SubscriptionPayment::latest('id')->take(10)->get(),
             'pending'  => SubscriptionPayment::where('status', 'pending')
@@ -35,9 +37,12 @@ class SubscriptionController extends Controller
 
     public function pay(Request $request, FarmContext $context)
     {
-        $data = $request->validate(['months' => ['required', 'integer', Rule::in(array_keys(SubscriptionBilling::plans()))]]);
+        $data = $request->validate([
+            'plan'   => ['required', Rule::in(array_keys(Plans::tiers()))],
+            'months' => ['required', 'integer', Rule::in(array_keys(Plans::durations()))],
+        ]);
 
-        $payment = $this->billing->start($context->get(), $request->user(), (int) $data['months']);
+        $payment = $this->billing->start($context->get(), $request->user(), $data['plan'], (int) $data['months']);
 
         return redirect()->away($payment->redirect_url);
     }
@@ -53,7 +58,7 @@ class SubscriptionController extends Controller
         $redirect = redirect()->route('subscription.show');
 
         return match ($payment->status) {
-            'paid'    => $redirect->with('success', 'Terima kasih! Pembayaran ' . Format::rupiah($payment->amount) . ' diterima. Langganan aktif sampai ' . Format::date($payment->period_until) . '.'),
+            'paid'    => $redirect->with('success', 'Terima kasih! Pembayaran ' . Format::rupiah($payment->amount) . ' diterima. Paket ' . Plans::label($payment->plan) . ' aktif sampai ' . Format::date($payment->period_until) . '.'),
             'pending' => $redirect->with('warning', 'Pembayaran belum kami terima. Jika sudah membayar, tunggu beberapa menit lalu muat ulang halaman ini.'),
             default   => $redirect->with('error', 'Pembayaran ' . strtolower($payment->status_label) . '. Silakan coba lagi.'),
         };

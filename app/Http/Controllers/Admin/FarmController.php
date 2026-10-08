@@ -96,10 +96,15 @@ class FarmController extends Controller
             'phone'         => 'nullable|string|max:30',
             'city'          => 'nullable|string|max:100',
             'status'        => 'required|in:trial,active,suspended',
+            'plan'          => ['nullable', \Illuminate\Validation\Rule::in(array_keys(\App\Services\Plans::tiers()))],
             'trial_ends_at' => 'nullable|date',
             'active_until'  => 'nullable|date',
             'admin_notes'   => 'nullable|string|max:2000',
         ]);
+
+        if (empty($data['plan'])) {
+            unset($data['plan']);
+        }
 
         $farm->update($data);
 

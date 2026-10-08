@@ -53,6 +53,25 @@ class FarmReminders
         return $results;
     }
 
+    public function quota(Farm $farm): array
+    {
+        $used = NotificationLog::withoutGlobalScope(FarmScope::class)
+            ->where('farm_id', $farm->id)
+            ->where('status', 'terkirim')
+            ->whereBetween('sent_on', [Carbon::today()->startOfMonth()->toDateString(), Carbon::today()->endOfMonth()->toDateString()])
+            ->count();
+
+        return ['limit' => $farm->limit('wa_monthly'), 'used' => $used];
+    }
+
+    public function recordTest(Farm $farm, string $target, string $message): void
+    {
+        NotificationLog::withoutGlobalScope(FarmScope::class)->updateOrCreate(
+            ['farm_id' => $farm->id, 'kind' => 'uji', 'sent_on' => Carbon::today()->toDateString()],
+            ['target' => $target, 'status' => 'terkirim', 'message' => $message, 'error' => null]
+        );
+    }
+
     public function target(Farm $farm): ?string
     {
         $phone = Setting::get('wa_reminder_phone') ?: $farm->phone;
@@ -66,6 +85,14 @@ class FarmReminders
 
         if (Setting::get('wa_reminder_enabled') !== '1') {
             return 'nonaktif';
+        }
+
+        $quota = $this->quota($farm);
+        if ($quota['limit'] === 0) {
+            return 'paket tanpa WhatsApp';
+        }
+        if ($quota['limit'] !== null && $quota['used'] >= $quota['limit']) {
+            return 'kuota WhatsApp bulan ini habis';
         }
 
         $target = $this->target($farm);

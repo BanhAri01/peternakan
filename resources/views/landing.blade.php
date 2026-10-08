@@ -1,6 +1,5 @@
 @php
     use App\Support\Format;
-    $monthly = $plans[1] ?? null;
     $waText  = rawurlencode('Halo admin HEFAM, saya peternak ayam petelur dan ingin tahu lebih lanjut tentang HEFAM.');
     $title   = 'HEFAM — Aplikasi Pencatatan Peternakan Ayam Petelur';
     $desc    = 'Catat panen, sortir telur, penjualan, piutang bakul, pakan, gaji pekerja, dan laba peternakan ayam petelur dari HP. Bisa tanpa sinyal. Coba gratis ' . $trialDays . ' hari.';
@@ -118,6 +117,12 @@
         .plan .per { color: var(--muted); font-size: .92rem; }
         .plan .save { color: var(--brand); font-weight: 800; font-size: .92rem; min-height: 1.4em; }
         .plan .btn { margin-top: auto; }
+        @media (min-width: 1000px) { .plans.plans-3 { grid-template-columns: repeat(3, 1fr); } }
+        .feat { list-style: none; padding: 0; margin: 16px 0 0; font-size: .95rem; }
+        .feat li { display: flex; gap: .5rem; align-items: flex-start; padding: .25rem 0; }
+        .feat li i { color: var(--brand); margin-top: .2rem; }
+        .feat li.off { color: var(--muted); }
+        .feat li.off i { color: var(--muted); }
         .includes { margin-top: 26px; display: grid; gap: 8px 22px; }
         @media (min-width: 700px) { .includes { grid-template-columns: repeat(3, 1fr); } }
         .includes div { display: flex; gap: .5rem; align-items: flex-start; }
@@ -293,25 +298,40 @@
     <section id="harga" class="alt">
         <div class="wrap">
             <div class="section-head center" style="text-align:center">
-                <h2>Harga sederhana, semua fitur termasuk</h2>
-                <p>Coba gratis {{ $trialDays }} hari dulu. Bayar lewat QRIS, GoPay, ShopeePay, atau transfer bank.</p>
+                <h2>Pilih paket sesuai besar peternakan</h2>
+                <p>Coba gratis {{ $trialDays }} hari dengan semua fitur. Bayar lewat QRIS, GoPay, ShopeePay, atau transfer bank. Bayar 12 bulan cukup 10 bulan.</p>
             </div>
-            <div class="plans">
-                @foreach($plans as $months => $price)
-                    @php $saving = $monthly ? max(0, $monthly * $months - $price) : 0; @endphp
-                    <div class="plan {{ $months === 12 ? 'best' : '' }}">
-                        @if($months === 12)<span class="badge">Paling hemat</span>@endif
-                        <div class="m">{{ $months }} bulan</div>
-                        <div class="p">{{ Format::rupiah($price) }}</div>
-                        <div class="per">≈ {{ Format::rupiah(round($price / $months)) }} / bulan</div>
-                        <div class="save">{{ $saving > 0 ? 'Hemat ' . Format::rupiah($saving) : '' }}</div>
-                        <a href="{{ route('register') }}" class="btn {{ $months === 12 ? 'btn-primary' : 'btn-light' }}" style="margin-top:16px">Mulai coba gratis</a>
+            @php $limitText = fn ($v, $unit) => $v === null ? 'Tanpa batas ' . $unit : 'Maks ' . $v . ' ' . $unit; @endphp
+            <div class="plans plans-3">
+                @foreach($tiers as $key => $tier)
+                    <div class="plan {{ $key === 'pro' ? 'best' : '' }}">
+                        @if($key === 'pro')<span class="badge">Paling laris</span>@endif
+                        <div class="m">{{ $tier['label'] }}</div>
+                        <div class="per" style="min-height:2.6em">{{ $tier['tagline'] }}</div>
+                        <div class="p">{{ Format::rupiah($tier['price']) }}</div>
+                        <div class="per">per bulan · 12 bulan {{ Format::rupiah(\App\Services\Plans::price($key, 12)) }}</div>
+                        <ul class="feat">
+                            <li><i class="bi bi-house-heart-fill"></i> {{ $limitText($tier['limits']['coops'], 'kandang') }}</li>
+                            <li><i class="bi bi-people-fill"></i> {{ $limitText($tier['limits']['workers'], 'pekerja') }}</li>
+                            <li><i class="bi bi-phone-fill"></i> {{ $limitText($tier['limits']['devices'], 'HP kandang') }}</li>
+                            @if($tier['limits']['wa_monthly'] > 0)
+                                <li><i class="bi bi-whatsapp"></i> Pengingat WA {{ $tier['limits']['wa_monthly'] }} pesan/bulan</li>
+                            @else
+                                <li class="off"><i class="bi bi-x-circle"></i> Tanpa pengingat WA</li>
+                            @endif
+                            <li><i class="bi bi-check-circle-fill"></i> Panen, sortir, penjualan & piutang</li>
+                            <li><i class="bi bi-check-circle-fill"></i> Bisa tanpa sinyal, laporan & PDF</li>
+                            <li><i class="bi bi-check-circle-fill"></i> Backup harian, Sampah, riwayat</li>
+                            @foreach(config('hefam.features') as $feature => $label)
+                                @if(in_array($feature, $tier['features'], true))
+                                    <li><i class="bi bi-check-circle-fill"></i> {{ $label }}</li>
+                                @else
+                                    <li class="off"><i class="bi bi-x-circle"></i> {{ $label }}</li>
+                                @endif
+                            @endforeach
+                        </ul>
+                        <a href="{{ route('register') }}" class="btn {{ $key === 'pro' ? 'btn-primary' : 'btn-light' }}" style="margin-top:16px">Mulai coba gratis</a>
                     </div>
-                @endforeach
-            </div>
-            <div class="includes">
-                @foreach(['Pekerja & HP kandang tanpa batas', 'Semua fitur, tanpa biaya tambahan', 'Backup otomatis setiap malam', 'Ekspor ke Excel kapan saja', 'Bantuan setup lewat WhatsApp', 'Data milik Anda sepenuhnya'] as $inc)
-                    <div><i class="bi bi-check-circle-fill"></i> {{ $inc }}</div>
                 @endforeach
             </div>
         </div>
@@ -327,8 +347,9 @@
                 ['Pekerja saya sudah tua dan tidak punya email. Bisa?', 'Bisa. Pekerja cukup menekan namanya lalu mengetik PIN 4–6 angka di HP kandang. Hurufnya besar dan ukurannya bisa diperbesar lagi.'],
                 ['Kandang saya susah sinyal.', 'Halaman Catat Panen dan Sortir tetap bisa dipakai tanpa internet. Datanya disimpan di HP dan dikirim otomatis saat sinyal kembali, tanpa tercatat dua kali.'],
                 ['Perlu pasang aplikasi dari Play Store?', 'Tidak perlu. Buka lewat browser di HP, lalu tekan "Tambahkan ke layar utama". Ikon HEFAM akan muncul seperti aplikasi biasa.'],
-                ['Bagaimana cara bayar langganan?', 'Dari menu Langganan di dalam aplikasi: QRIS, GoPay, ShopeePay, atau transfer bank (virtual account). Langganan aktif otomatis setelah pembayaran diterima.'],
-                ['Kalau berhenti berlangganan, data saya bagaimana?', 'Data tetap tersimpan. Anda juga bisa mengekspor semua data ke Excel kapan saja selama masih berlangganan.'],
+                ['Bagaimana cara bayar langganan?', 'Dari menu Langganan di dalam aplikasi: pilih paket Standar, Pro, atau Entrepreneur, lalu bayar lewat QRIS, GoPay, ShopeePay, atau transfer bank (virtual account). Langganan aktif otomatis setelah pembayaran diterima.'],
+                ['Bisa ganti paket di tengah jalan?', 'Bisa. Sisa hari paket lama tidak hangus, tetapi dikonversi sesuai nilainya ke paket baru.'],
+                ['Kalau berhenti berlangganan, data saya bagaimana?', 'Data tetap tersimpan aman dan bisa dipakai lagi saat berlangganan kembali. Paket Pro dan Entrepreneur juga bisa mengekspor semua data ke Excel.'],
                 ['Saya bingung cara mulainya.', 'Hubungi kami lewat WhatsApp. Kami bisa bantu mengisi data awal kandang, pakan, dan pekerja.'],
             ] as [$q, $a])
                 <details>

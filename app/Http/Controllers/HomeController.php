@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Farm;
-use App\Services\Payments\SubscriptionBilling;
+use App\Services\Plans;
 
 class HomeController extends Controller
 {
@@ -20,7 +20,7 @@ class HomeController extends Controller
         }
 
         return view('landing', [
-            'plans'     => SubscriptionBilling::plans(),
+            'tiers'     => Plans::tiers(),
             'trialDays' => Farm::TRIAL_DAYS,
             'adminWa'   => config('hefam.admin_whatsapp'),
         ]);

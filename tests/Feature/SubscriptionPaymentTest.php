@@ -49,9 +49,9 @@ class SubscriptionPaymentTest extends TestCase
         ];
     }
 
-    private function startPayment(int $months = 3): SubscriptionPayment
+    private function startPayment(int $months = 3, string $plan = 'pro'): SubscriptionPayment
     {
-        $this->actingAs($this->owner)->post(route('subscription.pay'), ['months' => $months])->assertRedirect();
+        $this->actingAs($this->owner)->post(route('subscription.pay'), ['plan' => $plan, 'months' => $months])->assertRedirect();
         $this->actAsFarm($this->farm);
 
         return SubscriptionPayment::latest('id')->firstOrFail();
@@ -61,18 +61,19 @@ class SubscriptionPaymentTest extends TestCase
     {
         $this->actingAs($this->owner)->get(route('subscription.show'))
             ->assertOk()
-            ->assertSee('Bayar langganan')
-            ->assertSee('Rp 1.500.000')
-            ->assertSee('Paling hemat');
+            ->assertSee('Paket langganan')
+            ->assertSee('Rp 199.000')->assertSee('Entrepreneur')
+            ->assertSee('Paling laris');
     }
 
     public function test_simulasi_lokal_bayar_berhasil_memperpanjang_langganan(): void
     {
-        $response = $this->actingAs($this->owner)->post(route('subscription.pay'), ['months' => 3]);
+        $response = $this->actingAs($this->owner)->post(route('subscription.pay'), ['plan' => 'pro', 'months' => 3]);
         $this->actAsFarm($this->farm);
         $payment = SubscriptionPayment::firstOrFail();
         $this->assertSame(3, (int) $payment->months);
-        $this->assertSame(420000, (int) $payment->amount);
+        $this->assertSame(567000, (int) $payment->amount);
+        $this->assertSame('pro', $payment->plan);
         $this->assertStringStartsWith('HEFAM-' . $this->farm->id . '-', $payment->reference);
 
         $this->actingAs($this->owner)->get($response->headers->get('Location'))->assertOk()->assertSee('Bayar berhasil');
@@ -95,9 +96,9 @@ class SubscriptionPaymentTest extends TestCase
         $this->useMidtrans();
         Http::fake(['app.sandbox.midtrans.com/snap/v1/transactions' => Http::response(['token' => 'tok', 'redirect_url' => 'https://app.sandbox.midtrans.com/snap/v4/redirection/tok'], 201)]);
 
-        $this->actingAs($this->owner)->post(route('subscription.pay'), ['months' => 1])
+        $this->actingAs($this->owner)->post(route('subscription.pay'), ['plan' => 'standar', 'months' => 1])
             ->assertRedirect('https://app.sandbox.midtrans.com/snap/v4/redirection/tok');
-        Http::assertSent(fn ($r) => $r['transaction_details']['gross_amount'] === 150000 && $r->hasHeader('Authorization'));
+        Http::assertSent(fn ($r) => $r['transaction_details']['gross_amount'] === 99000 && $r->hasHeader('Authorization'));
 
         $this->actAsFarm($this->farm);
         $payment = SubscriptionPayment::firstOrFail();
@@ -139,7 +140,7 @@ class SubscriptionPaymentTest extends TestCase
     {
         $this->useMidtrans();
         Http::fake(['app.sandbox.midtrans.com/*' => Http::response(['token' => 't', 'redirect_url' => 'https://x.test'], 201)]);
-        $payment = $this->startPayment(6);
+        $payment = $this->startPayment(6, 'entrepreneur');
 
         Http::fake(['api.sandbox.midtrans.com/v2/*' => Http::response($this->midtransPayload($payment))]);
 
@@ -163,16 +164,16 @@ class SubscriptionPaymentTest extends TestCase
         $this->farm->update(['trial_ends_at' => '2026-10-01']);
 
         $this->actingAs($this->owner)->get(route('owner.dashboard'))->assertRedirect(route('subscription.show'));
-        $this->actingAs($this->owner)->post(route('subscription.pay'), ['months' => 1])->assertRedirect();
+        $this->actingAs($this->owner)->post(route('subscription.pay'), ['plan' => 'standar', 'months' => 1])->assertRedirect();
     }
 
     public function test_peternakan_dibekukan_atau_tanpa_batas_tidak_bisa_membayar(): void
     {
         $this->farm->update(['status' => 'suspended']);
-        $this->actingAs($this->owner)->post(route('subscription.pay'), ['months' => 1])->assertSessionHasErrors('months');
+        $this->actingAs($this->owner)->post(route('subscription.pay'), ['plan' => 'standar', 'months' => 1])->assertSessionHasErrors('months');
 
         $this->farm->update(['status' => 'active', 'active_until' => null]);
-        $this->actingAs($this->owner)->post(route('subscription.pay'), ['months' => 1])->assertSessionHasErrors('months');
+        $this->actingAs($this->owner)->post(route('subscription.pay'), ['plan' => 'standar', 'months' => 1])->assertSessionHasErrors('months');
 
         $this->assertSame(0, SubscriptionPayment::withoutGlobalScopes()->count());
     }
@@ -191,6 +192,6 @@ class SubscriptionPaymentTest extends TestCase
 
     public function test_pekerja_tidak_bisa_membayar(): void
     {
-        $this->actingAs($this->worker)->post(route('subscription.pay'), ['months' => 1])->assertRedirect(route('daily-logs.create'));
+        $this->actingAs($this->worker)->post(route('subscription.pay'), ['plan' => 'standar', 'months' => 1])->assertRedirect(route('daily-logs.create'));
     }
 }

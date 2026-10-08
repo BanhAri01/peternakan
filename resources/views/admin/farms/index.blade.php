@@ -44,7 +44,7 @@
                                     @if($farm->phone)<a href="https://wa.me/{{ Format::waNumber($farm->phone) }}" target="_blank" rel="noopener" class="text-decoration-none"><i class="bi bi-whatsapp"></i> {{ $farm->phone }}</a>@endif
                                 </div>
                             </td>
-                            <td data-label="Status"><x-tag :tone="$farm->status_tone">{{ $farm->status_label }}</x-tag></td>
+                            <td data-label="Status"><x-tag :tone="$farm->status_tone">{{ $farm->status_label }}</x-tag><div class="text-muted small">{{ $farm->planLabel() }}</div></td>
                             <td data-label="Berlaku sampai">
                                 @if($farm->accessEndsAt())
                                     {{ Format::date($farm->accessEndsAt()) }}

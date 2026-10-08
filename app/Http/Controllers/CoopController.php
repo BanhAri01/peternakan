@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Coop;
 use App\Models\DailyLog;
+use App\Tenancy\FarmContext;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -38,13 +39,14 @@ class CoopController extends Controller
             ->orderBy('log_date')
             ->get();
 
+        $useStandard = (bool) app(FarmContext::class)->get()?->allows('strain');
         $chart = ['labels' => [], 'hdp' => [], 'standard' => [], 'eggs' => [], 'loss' => []];
         $byDate = $logs->keyBy(fn ($l) => $l->log_date->toDateString());
         for ($d = $start->copy(); $d->lte(Carbon::today()); $d->addDay()) {
             $log = $byDate->get($d->toDateString());
             $chart['labels'][] = $d->translatedFormat('d M');
             $chart['hdp'][]    = $log ? (float) $log->hdp_percentage : null;
-            $chart['standard'][] = $coop->standardHdp($d);
+            $chart['standard'][] = $useStandard ? $coop->standardHdp($d) : null;
             $chart['eggs'][]   = $log ? (int) $log->eggs_total_count : null;
             $chart['loss'][]   = $log ? $log->mortality + $log->cull : null;
         }
@@ -55,7 +57,7 @@ class CoopController extends Controller
             'eggs'      => (int) $logs->sum('eggs_total_count'),
             'egg_kg'    => $eggKg,
             'avg_hdp'   => round((float) $logs->avg('hdp_percentage'), 1),
-            'avg_std'   => round((float) $logs->avg(fn ($l) => $coop->standardHdp($l->log_date)), 1),
+            'avg_std'   => $useStandard ? round((float) $logs->avg(fn ($l) => $coop->standardHdp($l->log_date)), 1) : null,
             'best_hdp'  => (float) $logs->max('hdp_percentage'),
             'feed_kg'   => (float) $logs->sum('feed_consumed_kg'),
             'fcr'       => $eggKg > 0 ? round($logs->sum('feed_consumed_kg') / $eggKg, 2) : null,
@@ -67,7 +69,7 @@ class CoopController extends Controller
         $vaccinations = $coop->vaccinations()->latest('vaccination_date')->take(10)->get();
         $recentLogs   = $logs->sortByDesc('log_date')->take(10);
 
-        return view('coops.show', compact('coop', 'days', 'chart', 'stats', 'totalLoss', 'vaccinations', 'recentLogs'));
+        return view('coops.show', compact('coop', 'days', 'chart', 'stats', 'totalLoss', 'vaccinations', 'recentLogs', 'useStandard'));
     }
 
     public function create()
@@ -79,6 +81,10 @@ class CoopController extends Controller
     {
         $data = $request->validate($this->rules());
         $data['current_population'] = $data['initial_population'];
+
+        if ($data['status'] === 'active' && ($blocked = $this->coopLimitResponse())) {
+            return $blocked;
+        }
 
         $coop = Coop::create($data);
 
@@ -96,6 +102,10 @@ class CoopController extends Controller
             'current_population' => 'required|integer|min:0',
         ]);
 
+        if ($data['status'] === 'active' && $coop->status !== 'active' && ($blocked = $this->coopLimitResponse())) {
+            return $blocked;
+        }
+
         $coop->update($data);
 
         return redirect()->route('coops.index')->with('success', 'Data kandang "' . $coop->name . '" berhasil disimpan.');
@@ -111,6 +121,17 @@ class CoopController extends Controller
         $coop->delete();
 
         return redirect()->route('coops.index')->with('success', 'Kandang berhasil dihapus.');
+    }
+
+    private function coopLimitResponse()
+    {
+        $farm = app(FarmContext::class)->get();
+
+        if ($farm && $farm->atLimit('coops', Coop::where('status', 'active')->count())) {
+            return back()->withInput()->with('error', $farm->limitMessage('coops', 'kandang aktif'));
+        }
+
+        return null;
     }
 
     private function rules(): array

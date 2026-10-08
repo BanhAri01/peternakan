@@ -38,6 +38,10 @@ class UserController extends Controller
             'pin.digits_between'   => 'PIN berupa 4–6 angka.',
         ]);
 
+        if ($validated['role'] === 'worker' && ($blocked = $this->workerLimitResponse($request))) {
+            return $blocked;
+        }
+
         if (!empty($validated['password'])) {
             $validated['password'] = Hash::make($validated['password']);
         } else {
@@ -77,6 +81,10 @@ class UserController extends Controller
         ]);
 
         // Perbarui password hanya jika diisi
+        if ($validated['role'] === 'worker' && !$user->isWorker() && ($blocked = $this->workerLimitResponse($request))) {
+            return $blocked;
+        }
+
         if (!empty($validated['password'])) {
             $validated['password'] = Hash::make($validated['password']);
         } else {
@@ -107,5 +115,16 @@ class UserController extends Controller
         $user->delete();
 
         return redirect()->route('users.index')->with('success', 'Pengguna berhasil dihapus!');
+    }
+
+    private function workerLimitResponse(Request $request)
+    {
+        $farm = $request->user()->farm;
+
+        if ($farm && $farm->atLimit('workers', User::ofCurrentFarm()->where('role', 'worker')->count())) {
+            return back()->withInput()->with('error', $farm->limitMessage('workers', 'pekerja'));
+        }
+
+        return null;
     }
 }

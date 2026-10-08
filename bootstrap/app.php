@@ -29,6 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => \App\Http\Middleware\EnsureRole::class,
             'farm' => \App\Tenancy\EnsureActiveFarm::class,
+            'feature' => \App\Http\Middleware\EnsureFeature::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

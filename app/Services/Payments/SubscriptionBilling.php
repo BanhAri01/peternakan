@@ -6,6 +6,7 @@ use App\Audit\ActivityRecorder;
 use App\Models\Farm;
 use App\Models\SubscriptionPayment;
 use App\Models\User;
+use App\Services\Plans;
 use App\Support\Format;
 use App\Tenancy\FarmScope;
 use Illuminate\Support\Facades\DB;
@@ -17,11 +18,6 @@ use RuntimeException;
 class SubscriptionBilling
 {
     public function __construct(private PaymentGateway $gateway) {}
-
-    public static function plans(): array
-    {
-        return config('hefam.plans');
-    }
 
     public function available(): bool
     {
@@ -37,11 +33,9 @@ class SubscriptionBilling
         return $this->gateway;
     }
 
-    public function start(Farm $farm, User $user, int $months): SubscriptionPayment
+    public function start(Farm $farm, User $user, string $plan, int $months): SubscriptionPayment
     {
-        $plans = self::plans();
-
-        if (!isset($plans[$months])) {
+        if (!Plans::exists($plan) || !isset(Plans::durations()[$months])) {
             throw ValidationException::withMessages(['months' => 'Pilih paket langganan yang tersedia.']);
         }
         if (!$this->available()) {
@@ -58,8 +52,9 @@ class SubscriptionBilling
             'user_id'   => $user->id,
             'reference' => 'HEFAM-' . $farm->id . '-' . now()->format('ymdHis') . '-' . Str::upper(Str::random(4)),
             'gateway'   => $this->gateway->name(),
+            'plan'      => $plan,
             'months'    => $months,
-            'amount'    => $plans[$months],
+            'amount'    => Plans::price($plan, $months),
             'status'    => 'pending',
         ]);
 
@@ -135,11 +130,12 @@ class SubscriptionBilling
                 return $payment;
             }
 
-            [$from, $until] = $farm->extendSubscription((int) $payment->months);
+            [$from, $until] = $farm->extendSubscription((int) $payment->months, $payment->plan);
             $payment->fill(['period_from' => $from->toDateString(), 'period_until' => $until->toDateString()])->save();
 
             ActivityRecorder::custom($payment, 'paid', sprintf(
-                'Langganan %d bulan dibayar %s%s, aktif sampai %s',
+                'Langganan %s %d bulan dibayar %s%s, aktif sampai %s',
+                Plans::label($payment->plan),
                 $payment->months,
                 Format::rupiah($payment->amount),
                 $payment->method ? ' lewat ' . $payment->method : '',

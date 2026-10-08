@@ -169,6 +169,14 @@
     </x-panel>
 
     <x-panel title="Pengingat WhatsApp" icon="bi-whatsapp" subtitle="Pesan otomatis ke HP pemilik: pagi pukul 06.00 (pakan menipis, tagihan jatuh tempo, jadwal vaksin) dan sore pukul 17.00 (kandang belum dicatat, telur belum disortir).">
+        @if($waQuota['limit'] === 0)
+            <div class="notice notice-info mb-3">
+                <i class="bi bi-lock-fill"></i>
+                <div>Pengingat WhatsApp tersedia mulai paket <b>Pro</b> (100 pesan/bulan). <a href="{{ route('subscription.show') }}" class="fw-bold">Lihat paket</a></div>
+            </div>
+        @else
+            <div class="kv mb-3"><span class="k">Kuota WhatsApp bulan ini</span><span class="v">{{ $waQuota['used'] }} dari {{ $waQuota['limit'] ?? 'tanpa batas' }} pesan</span></div>
+        @endif
         <div class="form-check form-switch mb-3">
             <input class="form-check-input" type="checkbox" role="switch" id="wa_reminder_enabled" name="wa_reminder_enabled" value="1" @checked(old('wa_reminder_enabled', $settings['wa_reminder_enabled']) === '1')>
             <label class="form-check-label fw-bold" for="wa_reminder_enabled">Kirim pengingat ke WhatsApp</label>

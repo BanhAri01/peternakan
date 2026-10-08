@@ -14,8 +14,9 @@ class SettingController extends Controller
     public function edit()
     {
         $settings = Setting::allValues();
+        $waQuota  = app(FarmReminders::class)->quota(request()->user()->farm);
 
-        return view('settings.edit', compact('settings'));
+        return view('settings.edit', compact('settings', 'waQuota'));
     }
 
     public function update(Request $request)
@@ -104,12 +105,21 @@ class SettingController extends Controller
             return back()->with('error', 'Isi nomor WhatsApp tujuan atau nomor HP peternakan terlebih dahulu.');
         }
 
+        $quota = $reminders->quota($farm);
+        if ($quota['limit'] === 0) {
+            return back()->with('error', 'Pengingat WhatsApp tersedia mulai paket Pro.');
+        }
+        if ($quota['limit'] !== null && $quota['used'] >= $quota['limit']) {
+            return back()->with('error', 'Kuota WhatsApp bulan ini sudah habis (' . $quota['limit'] . ' pesan).');
+        }
+
         $today   = Carbon::today();
         $message = $reminders->build('pagi', $today) ?? $reminders->build('sore', $today)
             ?? '*' . Setting::get('farm_name') . "*\nContoh pengingat HEFAM. Hari ini tidak ada yang perlu diingatkan.";
 
         try {
             $whatsApp->send($target, $message);
+            $reminders->recordTest($farm, $target, $message);
         } catch (\Throwable $e) {
             return back()->with('error', 'Pesan gagal dikirim: ' . $e->getMessage());
         }

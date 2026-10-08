@@ -17,7 +17,7 @@ class SubscriptionPayment extends Model
     ];
 
     protected $fillable = [
-        'user_id', 'reference', 'gateway', 'months', 'amount', 'status', 'method',
+        'user_id', 'reference', 'gateway', 'plan', 'months', 'amount', 'status', 'method',
         'gateway_ref', 'redirect_url', 'paid_at', 'period_from', 'period_until', 'last_payload',
     ];
 

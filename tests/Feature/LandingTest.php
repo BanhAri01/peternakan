@@ -23,7 +23,7 @@ class LandingTest extends TestCase
         $this->get('/')
             ->assertOk()
             ->assertSee('Catatan peternakan rapi')
-            ->assertSee('Rp 1.500.000')
+            ->assertSee('Rp 349.000')->assertSee('Entrepreneur')
             ->assertSee('Coba gratis 14 hari')
             ->assertSee('<meta name="description"', false)
             ->assertSee('wa.me/6281234567890', false)

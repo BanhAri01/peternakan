@@ -28,6 +28,14 @@ class DeviceController extends Controller
     {
         $data = $request->validate(['name' => 'nullable|string|max:60']);
 
+        $farm     = $request->user()->farm;
+        $existing = $this->service->fromRequest($request);
+        $isNew    = !$existing || $existing->farm_id !== $farm->id || !$existing->is_active;
+
+        if ($isNew && $farm->atLimit('devices', Device::where('is_active', true)->count())) {
+            return back()->with('error', $farm->limitMessage('devices', 'HP kandang aktif'));
+        }
+
         $device = $this->service->register($request, $request->user(), $data['name'] ?: 'HP Kandang');
 
         return redirect()->route('devices.index')->with('success', '"' . $device->name . '" sekarang terdaftar sebagai HP kandang. Pekerja bisa masuk di HP ini dengan nama + PIN.');

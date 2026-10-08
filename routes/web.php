@@ -155,8 +155,10 @@ Route::middleware('auth')->group(function () {
         // Laporan
         Route::get('/laporan', [ReportController::class, 'index'])->name('reports.index');
         Route::get('/laporan/ekspor-pdf', [ExportPdfController::class, 'exportMonthlyReport'])->name('reports.monthly-pdf');
-        Route::get('/ekspor', [ExportController::class, 'index'])->name('exports.index');
-        Route::get('/ekspor/unduh', [ExportController::class, 'download'])->middleware('throttle:10,1')->name('exports.download');
+        Route::middleware('feature:export')->group(function () {
+            Route::get('/ekspor', [ExportController::class, 'index'])->name('exports.index');
+            Route::get('/ekspor/unduh', [ExportController::class, 'download'])->middleware('throttle:10,1')->name('exports.download');
+        });
 
         // Pengaturan peternakan
         Route::get('/pengaturan', [SettingController::class, 'edit'])->name('settings.edit');
@@ -167,18 +169,22 @@ Route::middleware('auth')->group(function () {
         Route::resource('coops', CoopController::class);
         Route::resource('feed-stocks', FeedStockController::class)->except('show');
         Route::resource('vaccinations', VaccinationController::class)->except('show');
-        Route::resource('obat', MedicineController::class)->except('show')->parameters(['obat' => 'medicine'])->names('medicines');
-        Route::get('/obat/{medicine}/catat', [MedicineController::class, 'movement'])->name('medicines.movement');
-        Route::post('/obat/{medicine}/catat', [MedicineController::class, 'storeMovement'])->name('medicines.movement.store');
-        Route::delete('/obat/mutasi/{movement}', [MedicineController::class, 'destroyMovement'])->name('medicines.movement.destroy');
+        Route::middleware('feature:medicines')->group(function () {
+            Route::resource('obat', MedicineController::class)->except('show')->parameters(['obat' => 'medicine'])->names('medicines');
+            Route::get('/obat/{medicine}/catat', [MedicineController::class, 'movement'])->name('medicines.movement');
+            Route::post('/obat/{medicine}/catat', [MedicineController::class, 'storeMovement'])->name('medicines.movement.store');
+            Route::delete('/obat/mutasi/{movement}', [MedicineController::class, 'destroyMovement'])->name('medicines.movement.destroy');
+        });
         Route::resource('expenses', ExpenseLedgerController::class)->except('show');
-        Route::resource('pendapatan-lain', OtherIncomeController::class)->except('show')->parameters(['pendapatan-lain' => 'otherIncome'])->names('other-incomes');
+        Route::resource('pendapatan-lain', OtherIncomeController::class)->except('show')->parameters(['pendapatan-lain' => 'otherIncome'])->names('other-incomes')->middleware('feature:other_income');
         Route::resource('users', UserController::class)->except('show');
 
-        Route::get('/absensi', [AttendanceController::class, 'index'])->name('attendance.index');
-        Route::post('/absensi', [AttendanceController::class, 'store'])->name('attendance.store');
-        Route::get('/gaji', [PayrollController::class, 'index'])->name('payroll.index');
-        Route::post('/gaji/bayar', [PayrollController::class, 'pay'])->name('payroll.pay');
+        Route::middleware('feature:payroll')->group(function () {
+            Route::get('/absensi', [AttendanceController::class, 'index'])->name('attendance.index');
+            Route::post('/absensi', [AttendanceController::class, 'store'])->name('attendance.store');
+            Route::get('/gaji', [PayrollController::class, 'index'])->name('payroll.index');
+            Route::post('/gaji/bayar', [PayrollController::class, 'pay'])->name('payroll.pay');
+        });
 
         // HP kandang: perangkat tempat pekerja masuk dengan nama + PIN
         Route::get('/hp-kandang', [DeviceController::class, 'index'])->name('devices.index');

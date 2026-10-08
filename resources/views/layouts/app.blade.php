@@ -21,21 +21,21 @@
         'Kandang & Gudang' => [
             ['route' => 'coops.index', 'match' => 'coops.*', 'icon' => 'bi-house-heart-fill', 'label' => 'Kandang'],
             ['route' => 'vaccinations.index', 'match' => 'vaccinations.*', 'icon' => 'bi-shield-plus', 'label' => 'Vaksinasi'],
-            ['route' => 'medicines.index', 'match' => 'medicines.*', 'icon' => 'bi-capsule', 'label' => 'Stok Obat & Vitamin'],
+            ['route' => 'medicines.index', 'match' => 'medicines.*', 'icon' => 'bi-capsule', 'label' => 'Stok Obat & Vitamin', 'feature' => 'medicines'],
             ['route' => 'feed-stocks.index', 'match' => 'feed-stocks.*', 'icon' => 'bi-box-seam-fill', 'label' => 'Stok Pakan'],
             ['route' => 'procurement.index', 'match' => 'procurement.*|suppliers.*', 'icon' => 'bi-truck', 'label' => 'Belanja Pakan & Telur'],
             ['route' => 'grades.index', 'match' => 'grades.*', 'icon' => 'bi-egg-fill', 'label' => 'Jenis Telur (Grade)'],
         ],
         'Keuangan' => [
             ['route' => 'expenses.index', 'match' => 'expenses.*', 'icon' => 'bi-wallet2', 'label' => 'Buku Kas'],
-            ['route' => 'other-incomes.index', 'match' => 'other-incomes.*', 'icon' => 'bi-cash-coin', 'label' => 'Pendapatan Lain'],
+            ['route' => 'other-incomes.index', 'match' => 'other-incomes.*', 'icon' => 'bi-cash-coin', 'label' => 'Pendapatan Lain', 'feature' => 'other_income'],
             ['route' => 'reports.index', 'match' => 'reports.*', 'icon' => 'bi-file-earmark-bar-graph-fill', 'label' => 'Laporan Bulanan'],
-            ['route' => 'exports.index', 'match' => 'exports.*', 'icon' => 'bi-file-earmark-spreadsheet-fill', 'label' => 'Ekspor Excel'],
+            ['route' => 'exports.index', 'match' => 'exports.*', 'icon' => 'bi-file-earmark-spreadsheet-fill', 'label' => 'Ekspor Excel', 'feature' => 'export'],
         ],
         'Pengaturan' => [
             ['route' => 'users.index', 'match' => 'users.*', 'icon' => 'bi-people-fill', 'label' => 'Pengguna'],
-            ['route' => 'attendance.index', 'match' => 'attendance.*', 'icon' => 'bi-calendar-check-fill', 'label' => 'Absensi'],
-            ['route' => 'payroll.index', 'match' => 'payroll.*', 'icon' => 'bi-cash-stack', 'label' => 'Gaji Pekerja'],
+            ['route' => 'attendance.index', 'match' => 'attendance.*', 'icon' => 'bi-calendar-check-fill', 'label' => 'Absensi', 'feature' => 'payroll'],
+            ['route' => 'payroll.index', 'match' => 'payroll.*', 'icon' => 'bi-cash-stack', 'label' => 'Gaji Pekerja', 'feature' => 'payroll'],
             ['route' => 'devices.index', 'match' => 'devices.*', 'icon' => 'bi-phone-fill', 'label' => 'HP Kandang'],
             ['route' => 'settings.edit', 'match' => 'settings.*', 'icon' => 'bi-gear-fill', 'label' => 'Profil Peternakan'],
             ['route' => 'subscription.show', 'match' => 'subscription.*', 'icon' => 'bi-patch-check-fill', 'label' => 'Langganan'],
@@ -131,6 +131,7 @@
                     @foreach($items as $item)
                         <a href="{{ route($item['route']) }}" class="side-link {{ $isActive($item['match']) ? 'active' : '' }}">
                             <i class="bi {{ $item['icon'] }}"></i> {{ $item['label'] }}
+                            @if(isset($item['feature']) && $farm && !$farm->allows($item['feature']))<i class="bi bi-lock-fill ms-auto opacity-50" title="Tersedia di paket lebih tinggi"></i>@endif
                         </a>
                     @endforeach
                 </nav>

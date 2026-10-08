@@ -73,6 +73,14 @@
                         @endforeach
                     </div>
                 </div>
+                <div class="field">
+                    <span class="field-label">Paket</span>
+                    <div class="choices">
+                        @foreach(\App\Services\Plans::tiers() as $val => $tier)
+                            <label class="choice"><input type="radio" name="plan" value="{{ $val }}" @checked(old('plan', $farm->planKey()) === $val)><span>{{ $tier['label'] }}<small>@rupiah($tier['price'])/bln</small></span></label>
+                        @endforeach
+                    </div>
+                </div>
                 <div class="row g-3">
                     <div class="col-md-6">
                         <x-field label="Masa coba sampai" name="trial_ends_at" optional>

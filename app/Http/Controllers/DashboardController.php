@@ -36,6 +36,7 @@ class DashboardController extends Controller
         $mixedWaiting = EggStock::mixedEggsWaiting();
         $hdpWarn     = Setting::num('hdp_warning');
         $tolerance   = Setting::num('hdp_tolerance') ?: 5;
+        $useStandard = (bool) app(\App\Tenancy\FarmContext::class)->get()?->allows('strain');
         $lowFeedDays = Setting::num('low_feed_days');
         $eggPrice    = Setting::num('egg_price_per_kg');
 
@@ -78,18 +79,20 @@ class DashboardController extends Controller
         $totalDebt  = (float) EggSale::where('debt_amount', '>', 0)->sum('debt_amount');
 
         // ---------------- Kartu per kandang ----------------
-        $coopCards = $activeCoops->map(function ($coop) use ($logs, $yesterdayLogs, $day, $tolerance, $avgPrice) {
+        $coopCards = $activeCoops->map(function ($coop) use ($logs, $yesterdayLogs, $day, $tolerance, $avgPrice, $useStandard, $hdpWarn) {
             $log  = $logs->get($coop->id);
             $prev = $yesterdayLogs->get($coop->id);
             $pop  = $coop->current_population + ($log ? $log->mortality + $log->cull : 0);
 
-            $standard = $coop->standardHdp($day);
+            $standard = $useStandard ? $coop->standardHdp($day) : null;
 
             $status = ['tone' => 'neutral', 'text' => 'Belum dicatat'];
             if ($log) {
-                $status = ['tone' => 'success', 'text' => $log->hdp_percentage >= $standard ? 'Di atas standar' : 'Normal'];
-                if ($standard > 0 && $log->hdp_percentage < $standard - $tolerance) {
+                $status = ['tone' => 'success', 'text' => $standard !== null && $log->hdp_percentage >= $standard ? 'Di atas standar' : 'Normal'];
+                if ($standard !== null && $standard > 0 && $log->hdp_percentage < $standard - $tolerance) {
                     $status = ['tone' => 'danger', 'text' => 'Di bawah standar'];
+                } elseif ($standard === null && $log->hdp_percentage < $hdpWarn) {
+                    $status = ['tone' => 'danger', 'text' => 'Produksi rendah'];
                 } elseif ($prev && ($prev->hdp_percentage - $log->hdp_percentage) >= 5) {
                     $status = ['tone' => 'warning', 'text' => 'Produksi turun'];
                 }
@@ -144,7 +147,7 @@ class DashboardController extends Controller
             }
             if ($card['status']['tone'] === 'danger') {
                 $alerts[] = ['tone' => 'danger', 'icon' => 'bi-graph-down-arrow', 'title' => $card['coop']->name . ': produksi di bawah standar (' . Format::number($card['log']->hdp_percentage, 1) . '%)',
-                    'text' => 'Standar ' . $card['coop']->standardLabel() . ' umur ' . $card['age'] . ' minggu: ' . Format::number($card['standard'], 1) . '%. Periksa pakan, air minum, cahaya, dan kesehatan ayam.', 'url' => route('coops.show', $card['coop']), 'cta' => 'Lihat kandang'];
+                    'text' => ($card['standard'] !== null ? 'Standar ' . $card['coop']->standardLabel() . ' umur ' . $card['age'] . ' minggu: ' . Format::number($card['standard'], 1) . '%. ' : 'Di bawah batas ' . Format::number($hdpWarn) . '%. ') . 'Periksa pakan, air minum, cahaya, dan kesehatan ayam.', 'url' => route('coops.show', $card['coop']), 'cta' => 'Lihat kandang'];
             } elseif ($card['status']['tone'] === 'warning') {
                 $alerts[] = ['tone' => 'warning', 'icon' => 'bi-arrow-down-right', 'title' => $card['coop']->name . ': produksi turun dibanding kemarin',
                     'text' => 'Dari ' . Format::number($card['prev']->hdp_percentage, 1) . '% menjadi ' . Format::number($card['log']->hdp_percentage, 1) . '%.', 'url' => route('coops.show', $card['coop']), 'cta' => 'Lihat kandang'];

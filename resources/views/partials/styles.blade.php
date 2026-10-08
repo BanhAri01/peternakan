@@ -1015,6 +1015,13 @@
     .impersonate-bar { position: sticky; top: 0; z-index: 1050; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: .5rem 1rem;
                        padding: .55rem 1rem; background: #8a4b00; color: #fff; font-weight: 600; }
 
+    .plan-card { display: flex; flex-direction: column; }
+    .plan-card.is-current { border-color: var(--egg, #e8a32e); }
+    .plan-list { list-style: none; padding: 0; margin: .9rem 0 1rem; font-size: .95rem; }
+    .plan-list li { display: flex; gap: .5rem; align-items: flex-start; padding: .22rem 0; }
+    .plan-list li i { color: var(--brand); margin-top: .15rem; }
+    .plan-list li.text-muted i { color: var(--muted); }
+
     @media print {
         .sidebar, .topbar, .bottom-nav, .app-footer, .page-actions, .no-print { display: none !important; }
         .main { margin: 0; }

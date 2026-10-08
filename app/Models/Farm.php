@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\Plans;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 
@@ -16,7 +17,7 @@ class Farm extends Model
         'suspended' => 'Dibekukan',
     ];
 
-    protected $fillable = ['name', 'owner_name', 'phone', 'city', 'status', 'trial_ends_at', 'active_until', 'admin_notes'];
+    protected $fillable = ['name', 'owner_name', 'phone', 'city', 'status', 'plan', 'trial_ends_at', 'active_until', 'admin_notes'];
 
     protected $casts = [
         'trial_ends_at' => \App\Casts\DateOnly::class,
@@ -38,19 +39,74 @@ class Farm extends Model
         return $this->hasMany(Device::class);
     }
 
-    public function extendSubscription(int $months): array
+    public function extendSubscription(int $months, ?string $plan = null): array
     {
+        $plan = Plans::normalize($plan ?? $this->plan);
+        $today = Carbon::today();
+        $activeLeft = $this->status === 'active' && $this->active_until && $this->active_until->isFuture();
+
         $from = match (true) {
-            $this->status === 'active' && $this->active_until && $this->active_until->isFuture() => $this->active_until->copy(),
-            $this->status === 'trial' && $this->trial_ends_at && $this->trial_ends_at->isFuture()  => $this->trial_ends_at->copy(),
-            default                                                                                => Carbon::today(),
+            $activeLeft && $plan !== $this->planKey() => $today->copy()->addDays($this->convertedDays($plan)),
+            $activeLeft                               => $this->active_until->copy(),
+            $this->status === 'trial' && $this->trial_ends_at && $this->trial_ends_at->isFuture() => $this->trial_ends_at->copy(),
+            default                                   => $today->copy(),
         };
 
         $until = $from->copy()->addMonthsNoOverflow($months);
 
-        $this->update(['status' => 'active', 'active_until' => $until->toDateString()]);
+        $this->update(['status' => 'active', 'plan' => $plan, 'active_until' => $until->toDateString()]);
 
         return [$from, $until];
+    }
+
+    public function convertedDays(string $newPlan): int
+    {
+        if (!$this->active_until || !$this->active_until->isFuture()) {
+            return 0;
+        }
+
+        $remaining = Carbon::today()->diffInDays($this->active_until);
+        $oldPrice  = Plans::tier($this->planKey())['price'];
+        $newPrice  = max(1, Plans::tier($newPlan)['price']);
+
+        return (int) floor($remaining * $oldPrice / $newPrice);
+    }
+
+    public function planKey(): string
+    {
+        return Plans::normalize($this->plan);
+    }
+
+    public function planLabel(): string
+    {
+        return Plans::label($this->plan);
+    }
+
+    public function allows(string $feature): bool
+    {
+        return in_array($feature, Plans::tier($this->plan)['features'], true);
+    }
+
+    public function limit(string $key): ?int
+    {
+        return Plans::tier($this->plan)['limits'][$key] ?? null;
+    }
+
+    public function atLimit(string $key, int $current): bool
+    {
+        $limit = $this->limit($key);
+
+        return $limit !== null && $current >= $limit;
+    }
+
+    public function limitMessage(string $key, string $what): string
+    {
+        return sprintf(
+            'Paket %s maksimal %d %s. Naikkan paket di menu Langganan untuk menambah lagi.',
+            $this->planLabel(),
+            $this->limit($key),
+            $what
+        );
     }
 
     public function hasUnlimitedAccess(): bool

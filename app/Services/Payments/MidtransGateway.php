@@ -3,6 +3,7 @@
 namespace App\Services\Payments;
 
 use App\Models\SubscriptionPayment;
+use App\Services\Plans;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\RequestException;
@@ -31,8 +32,8 @@ class MidtransGateway implements PaymentGateway
                     'phone'      => $customer['phone'],
                 ],
                 'item_details'        => [[
-                    'id'       => 'HEFAM-' . $payment->months . 'BLN',
-                    'name'     => Str::limit('Langganan HEFAM ' . $payment->months . ' bulan', 50, ''),
+                    'id'       => 'HEFAM-' . strtoupper($payment->plan) . '-' . $payment->months . 'BLN',
+                    'name'     => Str::limit('HEFAM ' . Plans::label($payment->plan) . ' ' . $payment->months . ' bulan', 50, ''),
                     'price'    => (int) $payment->amount,
                     'quantity' => 1,
                 ]],
