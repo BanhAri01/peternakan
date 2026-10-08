@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\AcceptsOfflineEntries;
 use App\Tenancy\FarmRule;
 use App\Models\Coop;
 use App\Models\DailyLog;
@@ -18,6 +19,8 @@ use Illuminate\Validation\ValidationException;
 
 class DailyLogController extends Controller
 {
+    use AcceptsOfflineEntries;
+
     // Riwayat semua laporan panen (khusus owner)
     public function index(Request $request)
     {
@@ -75,7 +78,14 @@ class DailyLogController extends Controller
 
     public function store(Request $request)
     {
+        $redirect = route('daily-logs.create', ['date' => $request->input('log_date')]);
+
+        if ($duplicate = $this->alreadyReceived($request, DailyLog::class, $redirect)) {
+            return $duplicate;
+        }
+
         $rules = DailyLogCalculator::rules();
+        $rules['client_uuid'] = 'nullable|uuid';
 
         $rules['coop_id'] = ['required', FarmRule::exists('coops')->where('status', 'active')];
         $rules['log_date'] = [
@@ -97,11 +107,24 @@ class DailyLogController extends Controller
         $calc = DailyLogCalculator::calculate($data, $feed, 0);
 
         if ($calc['eggs_total_count'] === 0 && $calc['feed_consumed_kg'] == 0 && empty($data['mortality']) && empty($data['cull'])) {
-            return back()->withInput()->with('error', 'Formulir masih kosong. Isi minimal jumlah telur atau pakan.');
+            $empty = 'Formulir masih kosong. Isi minimal jumlah telur atau pakan.';
+
+            if ($request->expectsJson()) {
+                throw ValidationException::withMessages(['grades' => $empty]);
+            }
+
+            return back()->withInput()->with('error', $empty);
         }
 
-        [$coop, $calc] = DB::transaction(function () use ($data, $feed, $request) {
+        $clientUuid = $this->clientUuid($request);
+
+        $saved = DB::transaction(function () use ($data, $feed, $request, $clientUuid) {
             $coop = Coop::lockForUpdate()->findOrFail($data['coop_id']);
+
+            if ($clientUuid && DailyLog::withTrashed()->where('client_uuid', $clientUuid)->exists()) {
+                return null;
+            }
+
             $calc = DailyLogCalculator::calculate($data, $feed, $coop->current_population);
 
             if (($data['mortality'] ?? 0) + ($data['cull'] ?? 0) > $coop->current_population) {
@@ -115,6 +138,7 @@ class DailyLogController extends Controller
             DailyLog::onlyTrashed()->where('coop_id', $coop->id)->where('log_date', $data['log_date'])->get()->each->forceDelete();
 
             $log = DailyLog::create([
+                'client_uuid'      => $clientUuid,
                 'coop_id'          => $coop->id,
                 'log_date'         => $data['log_date'],
                 'mortality'        => $data['mortality'] ?? 0,
@@ -144,6 +168,12 @@ class DailyLogController extends Controller
             return [$coop, $calc];
         });
 
+        if ($saved === null) {
+            return $this->entrySaved($request, 'Catatan ini sudah diterima sebelumnya.', $redirect);
+        }
+
+        [$coop, $calc] = $saved;
+
         $message = sprintf(
             'Tersimpan! %s: %s telur (%s), %s kg pakan.',
             $coop->name,
@@ -152,7 +182,7 @@ class DailyLogController extends Controller
             Format::number($calc['feed_consumed_kg'], 1)
         );
 
-        return redirect()->route('daily-logs.create', ['date' => $data['log_date']])->with('success', $message);
+        return $this->entrySaved($request, $message, $redirect);
     }
 
     public function edit(DailyLog $dailyLog)

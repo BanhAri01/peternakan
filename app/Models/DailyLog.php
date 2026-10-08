@@ -11,7 +11,10 @@ class DailyLog extends Model
 {
     use BelongsToFarm, SoftDeletes, RecordsActivity;
 
+    protected array $auditIgnore = ['client_uuid'];
+
     protected $fillable = [
+        'client_uuid',
         'coop_id',
         'log_date',
         'mortality',

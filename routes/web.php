@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\BackupController;
 use App\Http\Controllers\Admin\FarmController as AdminFarmController;
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\PasswordResetController;
+use App\Http\Controllers\PwaController;
 use App\Http\Controllers\TrashController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DeviceController;
@@ -26,6 +27,12 @@ use App\Http\Controllers\SettingController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VaccinationController;
+
+Route::get('/manifest.webmanifest', [PwaController::class, 'manifest'])->name('pwa.manifest');
+Route::get('/sw.js', [PwaController::class, 'serviceWorker'])->name('pwa.sw');
+Route::get('/pwa/offline.js', [PwaController::class, 'script'])->name('pwa.script');
+Route::get('/pwa/ikon/{name}', [PwaController::class, 'icon'])->name('pwa.icon');
+Route::get('/pwa/tanpa-sinyal', [PwaController::class, 'offline'])->name('pwa.offline');
 
 // =========================================================================
 // 1. TAMU (BELUM LOGIN)
@@ -51,6 +58,10 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
 
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+    Route::get('/sesi/token', fn () => response()
+        ->json(['token' => csrf_token(), 'user' => auth()->id()])
+        ->header('Cache-Control', 'no-store'))->name('session.token');
 
     // Halaman depan sesuai peran
     Route::get('/', function () {

@@ -3,6 +3,8 @@
 <html lang="id" data-size="md">
 <head>
     <meta charset="UTF-8">
+    <link rel="manifest" href="{{ route('pwa.manifest') }}">
+    <link rel="apple-touch-icon" href="{{ route('pwa.icon', 'apple-touch-icon.png') }}">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#1f2b20">
     <title>@yield('title', 'Masuk') · {{ $brandName ?? 'HEFAM' }}</title>

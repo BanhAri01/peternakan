@@ -12,7 +12,9 @@ class EggSorting extends Model
 {
     use BelongsToFarm, SoftDeletes, RecordsActivity;
 
-    protected $fillable = ['sort_date', 'input_count', 'input_kg', 'notes', 'recorded_by'];
+    protected array $auditIgnore = ['client_uuid'];
+
+    protected $fillable = ['client_uuid', 'sort_date', 'input_count', 'input_kg', 'notes', 'recorded_by'];
 
     protected $casts = [
         'sort_date' => \App\Casts\DateOnly::class,

@@ -82,7 +82,7 @@
         </x-empty>
     </x-panel>
 @else
-<form action="{{ route('daily-logs.store') }}" method="POST"
+<form action="{{ route('daily-logs.store') }}" method="POST" data-offline="panen"
       x-data="panenForm({
           grades: @js($gradeInit),
           sacks: @js(old('feed_sacks', '')),
@@ -102,7 +102,7 @@
             @foreach($coops as $coop)
                 @php $done = in_array($coop->id, $loggedCoopIds); @endphp
                 <label class="pick" @if($done) style="opacity:.55" @endif>
-                    <input type="radio" name="coop_id" value="{{ $coop->id }}" x-model="coopId" @change="onCoopChange()" @disabled($done) required>
+                    <input type="radio" name="coop_id" value="{{ $coop->id }}" data-name="{{ $coop->name }}" x-model="coopId" @change="onCoopChange()" @disabled($done) required>
                     <span>
                         <b>{{ $coop->name }}</b>
                         <small>{{ \App\Support\Format::number($coop->current_population) }} ekor &middot; umur {{ $coop->ageInWeeks($date) }} minggu</small>

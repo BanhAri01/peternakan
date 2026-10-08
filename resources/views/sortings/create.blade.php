@@ -38,7 +38,7 @@
         </x-empty>
     </x-panel>
 @else
-<form action="{{ route('sortings.store') }}" method="POST" x-data="sortForm({ items: @js($itemInit) })">
+<form action="{{ route('sortings.store') }}" method="POST" data-offline="sortir" x-data="sortForm({ items: @js($itemInit) })">
     @csrf
 
     <x-panel title="Tanggal sortir" step="1">

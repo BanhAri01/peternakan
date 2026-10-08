@@ -977,6 +977,34 @@
     .sticky-actions { padding: .5rem 0 1rem; }
 
 
+    .offline-bar {
+        position: fixed; left: .75rem; right: .75rem; bottom: .75rem; z-index: 1040;
+        max-width: 640px; margin: 0 auto;
+        background: #1f2b20; color: #fff; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,.25);
+        padding: .75rem .9rem;
+    }
+    .has-bottom-nav .offline-bar { bottom: calc(5rem + env(safe-area-inset-bottom)); }
+    @media (min-width: 992px) { .has-bottom-nav .offline-bar { bottom: .75rem; } }
+    .offline-bar-head { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; font-weight: 700; }
+    .offline-bar-head > span { flex: 1 1 200px; }
+    .offline-bar-list { display: none; list-style: none; margin: .6rem 0 0; padding: 0; max-height: 45vh; overflow: auto; }
+    .offline-bar.open .offline-bar-list { display: block; }
+    .offline-bar-list li { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .55rem .65rem; margin-top: .35rem; background: rgba(255,255,255,.08); border-radius: 10px; }
+    .offline-bar-list small { display: block; opacity: .85; }
+    .offline-bar-list .text-danger { color: #ffb4a8 !important; }
+    .offline-saved {
+        position: fixed; inset: auto 1rem 50% 1rem; transform: translateY(50%); z-index: 1060; max-width: 460px; margin: 0 auto;
+        display: flex; gap: 1rem; align-items: center; padding: 1.25rem 1.4rem; border-radius: 18px;
+        background: var(--brand); color: #fff; font-size: 1.1rem; box-shadow: 0 20px 50px rgba(0,0,0,.35);
+    }
+    .offline-saved i { font-size: 2.2rem; }
+    .offline-saved b { display: block; font-size: 1.3rem; }
+    .offline-toast {
+        position: fixed; top: 1rem; left: 50%; transform: translateX(-50%); z-index: 1060;
+        background: var(--brand); color: #fff; padding: .8rem 1.2rem; border-radius: 12px; font-weight: 700; box-shadow: 0 10px 30px rgba(0,0,0,.25);
+    }
+    body.has-offline-bar .content { padding-bottom: 6rem; }
+
     @media print {
         .sidebar, .topbar, .bottom-nav, .app-footer, .page-actions, .no-print { display: none !important; }
         .main { margin: 0; }

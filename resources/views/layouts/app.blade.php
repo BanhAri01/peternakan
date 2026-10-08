@@ -65,6 +65,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="theme-color" content="#1f2b20">
+    <link rel="manifest" href="{{ route('pwa.manifest') }}">
+    <link rel="apple-touch-icon" href="{{ route('pwa.icon', 'apple-touch-icon.png') }}">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    @auth
+        <meta name="hefam-user" content="{{ auth()->id() }}">
+        <meta name="hefam-user-name" content="{{ auth()->user()->name }}">
+        <meta name="hefam-token-url" content="{{ route('session.token') }}">
+    @endauth
     <title>@hasSection('title')@yield('title') · @endif{{ $farmName }}</title>
 
     <script>
@@ -223,6 +232,9 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js" defer></script>
 @include('partials.scripts')
+@auth
+    <script src="{{ route('pwa.script', ['v' => \App\Http\Controllers\PwaController::version()]) }}" defer></script>
+@endauth
 @stack('scripts')
 </body>
 </html>

@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\AcceptsOfflineEntries;
+use App\Models\Farm;
+use App\Tenancy\FarmContext;
 use App\Tenancy\FarmRule;
 use App\Models\EggGrade;
 use App\Models\EggSorting;
@@ -10,10 +13,13 @@ use App\Support\Format;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 // Sortir telur: telur campur hasil panen dipilah menjadi beberapa jenis
 class EggSortingController extends Controller
 {
+    use AcceptsOfflineEntries;
+
     public function create(Request $request)
     {
         $grades  = EggGrade::sorted()->where('is_active', true)->orderBy('id')->get();
@@ -33,7 +39,14 @@ class EggSortingController extends Controller
 
     public function store(Request $request)
     {
+        $redirect = route('sortings.create');
+
+        if ($duplicate = $this->alreadyReceived($request, EggSorting::class, $redirect)) {
+            return $duplicate;
+        }
+
         $rules = [
+            'client_uuid'             => 'nullable|uuid',
             'sort_date'               => 'required|date|before_or_equal:today',
             'items'                   => 'required|array',
             'items.*.egg_grade_id'    => ['required', FarmRule::exists('egg_grades')],
@@ -69,15 +82,30 @@ class EggSortingController extends Controller
             ->values();
 
         if ($items->isEmpty()) {
-            return back()->withInput()->with('error', 'Isi minimal satu jenis telur hasil sortir.');
+            $empty = 'Isi minimal satu jenis telur hasil sortir.';
+
+            if ($request->expectsJson()) {
+                throw ValidationException::withMessages(['items' => $empty]);
+            }
+
+            return back()->withInput()->with('error', $empty);
         }
 
         $count = (int) $items->sum('total_eggs');
         $kg    = round((float) $items->sum('weight_kg'), 2);
         $stock = EggStock::kg()[$mixedId] ?? 0;
 
-        DB::transaction(function () use ($data, $items, $count, $kg, $request) {
+        $clientUuid = $this->clientUuid($request);
+
+        $saved = DB::transaction(function () use ($data, $items, $count, $kg, $request, $clientUuid) {
+            Farm::whereKey(app(FarmContext::class)->id())->lockForUpdate()->value('id');
+
+            if ($clientUuid && EggSorting::withTrashed()->where('client_uuid', $clientUuid)->exists()) {
+                return false;
+            }
+
             $sorting = EggSorting::create([
+                'client_uuid' => $clientUuid,
                 'sort_date'   => $data['sort_date'],
                 'input_count' => $count,
                 'input_kg'    => $kg,
@@ -85,16 +113,20 @@ class EggSortingController extends Controller
                 'recorded_by' => $request->user()->id,
             ]);
             $sorting->items()->createMany($items->all());
+
+            return true;
         });
 
-        $redirect = redirect()->route('sortings.create')
-            ->with('success', 'Sortir tersimpan: ' . Format::number($count) . ' butir (' . Format::number($kg, 1) . ' kg) dipindah dari telur campur ke stok per jenis.');
-
-        if ($kg > $stock + 0.01) {
-            $redirect->with('warning', 'Berat hasil sortir lebih besar dari stok telur campur tercatat (' . Format::number($stock, 1) . ' kg). Pastikan semua panen sudah dicatat.');
+        if (!$saved) {
+            return $this->entrySaved($request, 'Catatan ini sudah diterima sebelumnya.', $redirect);
         }
 
-        return $redirect;
+        $message = 'Sortir tersimpan: ' . Format::number($count) . ' butir (' . Format::number($kg, 1) . ' kg) dipindah dari telur campur ke stok per jenis.';
+        $warning = $kg > $stock + 0.01
+            ? 'Berat hasil sortir lebih besar dari stok telur campur tercatat (' . Format::number($stock, 1) . ' kg). Pastikan semua panen sudah dicatat.'
+            : null;
+
+        return $this->entrySaved($request, $message, $redirect, $warning);
     }
 
     public function destroy(EggSorting $sorting)
