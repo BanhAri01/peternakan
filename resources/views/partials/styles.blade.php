@@ -1005,6 +1005,13 @@
     }
     body.has-offline-bar .content { padding-bottom: 6rem; }
 
+    .plan-card { position: relative; border: 2px solid var(--line); border-radius: 16px; padding: 1.1rem; background: var(--surface); height: 100%; }
+    .plan-card.is-best { border-color: var(--brand); box-shadow: 0 8px 24px rgba(63,90,38,.12); }
+    .plan-badge { position: absolute; top: -.75rem; right: 1rem; background: var(--brand); color: #fff; font-size: .78rem; font-weight: 800; padding: .2rem .65rem; border-radius: 999px; }
+    .plan-months { font-weight: 800; font-size: 1.1rem; }
+    .plan-price { font-weight: 800; font-size: 1.6rem; color: var(--brand); }
+    .plan-note { color: var(--muted); font-size: .92rem; }
+
     @media print {
         .sidebar, .topbar, .bottom-nav, .app-footer, .page-actions, .no-print { display: none !important; }
         .main { margin: 0; }

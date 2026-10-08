@@ -102,6 +102,21 @@
             </div>
         </x-panel>
 
+        <x-panel title="Pembayaran online" icon="bi-credit-card-fill" flush>
+            @if($payments->isEmpty())
+                <x-empty icon="bi-receipt" title="Belum ada pembayaran online" class="py-3" />
+            @else
+                <ul class="alert-list">
+                    @foreach($payments as $p)
+                        <li>
+                            <span class="dot {{ $p->status === 'paid' ? 'success' : ($p->status === 'pending' ? 'warning' : 'danger') }}"><i class="bi bi-credit-card"></i></span>
+                            <div class="txt"><b>@rupiah($p->amount) · {{ $p->months }} bulan</b><span>{{ $p->status_label }} · {{ $p->created_at->translatedFormat('d M Y H:i') }}{{ $p->method ? ' · ' . $p->method : '' }}</span></div>
+                        </li>
+                    @endforeach
+                </ul>
+            @endif
+        </x-panel>
+
         <x-panel title="Pengguna" icon="bi-people-fill" flush>
             <ul class="alert-list">
                 @foreach($users as $u)

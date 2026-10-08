@@ -37,6 +37,7 @@ Route::get('/sw.js', [PwaController::class, 'serviceWorker'])->name('pwa.sw');
 Route::get('/pwa/offline.js', [PwaController::class, 'script'])->name('pwa.script');
 Route::get('/pwa/ikon/{name}', [PwaController::class, 'icon'])->name('pwa.icon');
 Route::get('/pwa/tanpa-sinyal', [PwaController::class, 'offline'])->name('pwa.offline');
+Route::post('/webhook/pembayaran', [SubscriptionController::class, 'webhook'])->middleware('throttle:120,1')->name('webhooks.payment');
 
 // =========================================================================
 // 1. TAMU (BELUM LOGIN)
@@ -79,7 +80,13 @@ Route::middleware('auth')->group(function () {
     });
 
     // Info langganan (tetap bisa dibuka pemilik walau masa langganan habis)
-    Route::get('/langganan', [SubscriptionController::class, 'show'])->middleware('role:owner')->name('subscription.show');
+    Route::middleware('role:owner')->group(function () {
+        Route::get('/langganan', [SubscriptionController::class, 'show'])->name('subscription.show');
+        Route::post('/langganan/bayar', [SubscriptionController::class, 'pay'])->middleware('throttle:10,1')->name('subscription.pay');
+        Route::get('/langganan/selesai', [SubscriptionController::class, 'finish'])->name('subscription.finish');
+        Route::get('/langganan/simulasi/{reference}', [SubscriptionController::class, 'simulate'])->middleware('signed')->name('subscription.simulate');
+        Route::post('/langganan/simulasi/{reference}', [SubscriptionController::class, 'simulateConfirm'])->name('subscription.simulate.confirm');
+    });
 
     // ---------------------------------------------------------------------
     // ADMIN HEFAM: kelola semua peternakan

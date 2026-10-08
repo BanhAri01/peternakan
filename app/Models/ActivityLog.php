@@ -36,6 +36,7 @@ class ActivityLog extends Model
         'EggPurchase'   => 'Kulakan telur',
         'ExpenseLedger' => 'Pengeluaran',
         'OtherIncome'   => 'Pendapatan lain',
+        'SubscriptionPayment' => 'Langganan',
         'Medicine'      => 'Obat & vitamin',
         'MedicineMovement' => 'Catatan obat',
         'Vaccination'   => 'Vaksinasi',

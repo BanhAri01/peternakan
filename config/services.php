@@ -35,4 +35,15 @@ return [
         ],
     ],
 
+    'payment' => [
+        'driver'       => env('PAYMENT_DRIVER', 'fake'),
+        'expiry_hours' => (int) env('PAYMENT_EXPIRY_HOURS', 24),
+    ],
+
+    'midtrans' => [
+        'server_key'    => env('MIDTRANS_SERVER_KEY'),
+        'client_key'    => env('MIDTRANS_CLIENT_KEY'),
+        'is_production' => (bool) env('MIDTRANS_IS_PRODUCTION', false),
+    ],
+
 ];

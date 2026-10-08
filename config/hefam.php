@@ -21,4 +21,11 @@ return [
         'morning_at'    => ['06:00', '07:00'],
         'evening_at'    => ['17:00', '18:00'],
     ],
+
+    'plans' => [
+        1  => (int) env('HEFAM_PRICE_1', 150000),
+        3  => (int) env('HEFAM_PRICE_3', 420000),
+        6  => (int) env('HEFAM_PRICE_6', 800000),
+        12 => (int) env('HEFAM_PRICE_12', 1500000),
+    ],
 ];

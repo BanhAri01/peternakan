@@ -17,6 +17,7 @@ use App\Models\Invoice;
 use App\Models\Medicine;
 use App\Models\MedicineMovement;
 use App\Models\OtherIncome;
+use App\Models\SubscriptionPayment;
 use App\Models\User;
 use App\Models\Vaccination;
 use App\Support\Format;
@@ -170,6 +171,7 @@ class ActivityRecorder
         return (string) match (true) {
             $model instanceof DailyLog      => trim(($model->coop?->name ?? 'Kandang') . ', ' . Format::date($model->log_date)),
             $model instanceof Invoice       => $model->number,
+            $model instanceof SubscriptionPayment => $model->reference,
             $model instanceof EggSorting    => Format::date($model->sort_date),
             $model instanceof FeedPurchase,
             $model instanceof EggPurchase   => Format::date($model->purchase_date),

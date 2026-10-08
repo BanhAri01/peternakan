@@ -38,6 +38,29 @@ class Farm extends Model
         return $this->hasMany(Device::class);
     }
 
+    public function extendSubscription(int $months): array
+    {
+        $from = $this->status === 'active' && $this->active_until && $this->active_until->isFuture()
+            ? $this->active_until->copy()
+            : Carbon::today();
+
+        $until = $from->copy()->addMonthsNoOverflow($months);
+
+        $this->update(['status' => 'active', 'active_until' => $until->toDateString()]);
+
+        return [$from, $until];
+    }
+
+    public function hasUnlimitedAccess(): bool
+    {
+        return $this->status === 'active' && $this->active_until === null;
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(SubscriptionPayment::class);
+    }
+
     // Tanggal akhir akses (null = tanpa batas)
     public function accessEndsAt(): ?Carbon
     {

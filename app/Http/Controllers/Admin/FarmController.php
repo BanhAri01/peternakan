@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\DailyLog;
 use App\Models\Device;
 use App\Models\Farm;
+use App\Models\SubscriptionPayment;
 use App\Models\User;
 use App\Services\FarmProvisioner;
 use App\Support\Format;
@@ -82,7 +83,9 @@ class FarmController extends Controller
         $activity = DailyLog::withoutGlobalScope(FarmScope::class)->where('farm_id', $farm->id)
             ->selectRaw('COUNT(*) as logs, MAX(log_date) as last_log, MIN(log_date) as first_log')->first();
 
-        return view('admin.farms.edit', compact('farm', 'users', 'devices', 'activity'));
+        $payments = SubscriptionPayment::withoutGlobalScope(FarmScope::class)->where('farm_id', $farm->id)->latest('id')->take(10)->get();
+
+        return view('admin.farms.edit', compact('farm', 'users', 'devices', 'activity', 'payments'));
     }
 
     public function update(Request $request, Farm $farm)
@@ -108,14 +111,7 @@ class FarmController extends Controller
     {
         $data = $request->validate(['months' => 'required|integer|in:1,3,6,12']);
 
-        $from = $farm->status === 'active' && $farm->active_until && $farm->active_until->isFuture()
-            ? $farm->active_until
-            : Carbon::today();
-
-        $farm->update([
-            'status'       => 'active',
-            'active_until' => $from->copy()->addMonthsNoOverflow((int) $data['months'])->toDateString(),
-        ]);
+        $farm->extendSubscription((int) $data['months']);
 
         return back()->with('success', 'Langganan diperpanjang ' . $data['months'] . ' bulan, aktif sampai ' . Format::date($farm->active_until) . '.');
     }

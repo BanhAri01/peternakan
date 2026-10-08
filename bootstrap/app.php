@@ -24,6 +24,8 @@ return Application::configure(basePath: dirname(__DIR__))
             prepend: \App\Tenancy\SetFarmContext::class,
         );
 
+        $middleware->validateCsrfTokens(except: ['webhook/*']);
+
         $middleware->alias([
             'role' => \App\Http\Middleware\EnsureRole::class,
             'farm' => \App\Tenancy\EnsureActiveFarm::class,

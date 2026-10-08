@@ -3,6 +3,9 @@
 namespace App\Providers;
 
 use App\Models\Setting;
+use App\Services\Payments\FakeGateway;
+use App\Services\Payments\MidtransGateway;
+use App\Services\Payments\PaymentGateway;
 use Carbon\Carbon;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Blade;
@@ -18,6 +21,11 @@ class AppServiceProvider extends ServiceProvider
     {
         // Satu konteks peternakan per request
         $this->app->scoped(\App\Tenancy\FarmContext::class);
+
+        $this->app->bind(PaymentGateway::class, fn () => match (config('services.payment.driver')) {
+            'midtrans' => new MidtransGateway(config('services.midtrans')),
+            default    => new FakeGateway(),
+        });
     }
 
     /**
