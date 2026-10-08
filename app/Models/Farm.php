@@ -40,9 +40,11 @@ class Farm extends Model
 
     public function extendSubscription(int $months): array
     {
-        $from = $this->status === 'active' && $this->active_until && $this->active_until->isFuture()
-            ? $this->active_until->copy()
-            : Carbon::today();
+        $from = match (true) {
+            $this->status === 'active' && $this->active_until && $this->active_until->isFuture() => $this->active_until->copy(),
+            $this->status === 'trial' && $this->trial_ends_at && $this->trial_ends_at->isFuture()  => $this->trial_ends_at->copy(),
+            default                                                                                => Carbon::today(),
+        };
 
         $until = $from->copy()->addMonthsNoOverflow($months);
 

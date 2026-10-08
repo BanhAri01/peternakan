@@ -85,7 +85,7 @@ class SubscriptionPaymentTest extends TestCase
 
         $farm = $this->farm->fresh();
         $this->assertSame('active', $farm->status);
-        $this->assertSame('2027-01-20', $farm->active_until->toDateString());
+        $this->assertSame('2027-01-25', $farm->active_until->toDateString());
         $this->actAsFarm($this->farm);
         $this->assertSame(1, ActivityLog::where('subject_type', 'SubscriptionPayment')->where('event', 'paid')->count());
     }
@@ -105,7 +105,7 @@ class SubscriptionPaymentTest extends TestCase
         $this->postJson(route('webhooks.payment'), $this->midtransPayload($payment))->assertOk()->assertJsonPath('status', 'paid');
         $this->postJson(route('webhooks.payment'), $this->midtransPayload($payment))->assertOk();
 
-        $this->assertSame('2026-11-20', $this->farm->fresh()->active_until->toDateString());
+        $this->assertSame('2026-11-25', $this->farm->fresh()->active_until->toDateString());
         $this->assertSame('qris', $payment->fresh()->method);
     }
 
@@ -144,7 +144,7 @@ class SubscriptionPaymentTest extends TestCase
         Http::fake(['api.sandbox.midtrans.com/v2/*' => Http::response($this->midtransPayload($payment))]);
 
         $this->actingAs($this->owner)->get(route('subscription.finish', ['ref' => $payment->reference]))->assertSessionHas('success');
-        $this->assertSame('2027-04-20', $this->farm->fresh()->active_until->toDateString());
+        $this->assertSame('2027-04-25', $this->farm->fresh()->active_until->toDateString());
     }
 
     public function test_pembayaran_kedaluwarsa_dicatat(): void
