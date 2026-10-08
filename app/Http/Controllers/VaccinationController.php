@@ -100,6 +100,6 @@ class VaccinationController extends Controller
     {
         $vaccination->delete();
 
-        return redirect()->route('vaccinations.index')->with('success', 'Data vaksinasi berhasil dihapus!');
+        return redirect()->route('vaccinations.index')->with('success', 'Data vaksinasi dipindah ke Sampah.');
     }
 }

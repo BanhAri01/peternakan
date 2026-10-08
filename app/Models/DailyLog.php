@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Audit\RecordsActivity;
 use App\Tenancy\BelongsToFarm;
 use Illuminate\Database\Eloquent\Model;
 
 class DailyLog extends Model
 {
-    use BelongsToFarm;
+    use BelongsToFarm, SoftDeletes, RecordsActivity;
 
     protected $fillable = [
         'coop_id',

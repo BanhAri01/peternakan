@@ -58,7 +58,7 @@ class FeedStockController extends Controller
     public function destroy(FeedStock $feedStock)
     {
         // Pakan yang sudah dipakai/dibeli tidak dihapus agar riwayat biaya tetap benar
-        if ($feedStock->dailyLogs()->exists() || $feedStock->purchases()->exists()) {
+        if ($feedStock->dailyLogs()->withTrashed()->exists() || $feedStock->purchases()->exists()) {
             return back()->with('error', 'Pakan "' . $feedStock->feed_name . '" sudah punya riwayat pemakaian/pembelian sehingga tidak bisa dihapus.');
         }
 

@@ -35,6 +35,10 @@
             ['route' => 'settings.edit', 'match' => 'settings.*', 'icon' => 'bi-gear-fill', 'label' => 'Profil Peternakan'],
             ['route' => 'subscription.show', 'match' => 'subscription.*', 'icon' => 'bi-patch-check-fill', 'label' => 'Langganan'],
         ],
+        'Keamanan Data' => [
+            ['route' => 'activity.index', 'match' => 'activity.*', 'icon' => 'bi-clock-history', 'label' => 'Riwayat Perubahan'],
+            ['route' => 'trash.index', 'match' => 'trash.*', 'icon' => 'bi-trash3-fill', 'label' => 'Sampah'],
+        ],
     ] : [];
 
     if ($isAdmin) {
@@ -42,6 +46,7 @@
             'Admin HEFAM' => [
                 ['route' => 'admin.farms.index', 'match' => 'admin.farms.index|admin.farms.edit', 'icon' => 'bi-buildings-fill', 'label' => 'Semua Peternakan'],
                 ['route' => 'admin.farms.create', 'match' => 'admin.farms.create', 'icon' => 'bi-plus-circle-fill', 'label' => 'Tambah Peternakan'],
+                ['route' => 'admin.backups.index', 'match' => 'admin.backups.*', 'icon' => 'bi-database-fill-check', 'label' => 'Backup Database'],
             ],
         ];
     }

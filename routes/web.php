@@ -1,7 +1,11 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\BackupController;
 use App\Http\Controllers\Admin\FarmController as AdminFarmController;
+use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\PasswordResetController;
+use App\Http\Controllers\TrashController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DeviceController;
 use App\Http\Controllers\RegisterController;
@@ -34,6 +38,11 @@ Route::middleware('guest')->group(function () {
     // Pendaftaran peternakan baru (SaaS)
     Route::get('/daftar', [RegisterController::class, 'create'])->name('register');
     Route::post('/daftar', [RegisterController::class, 'store'])->middleware('throttle:5,1')->name('register.store');
+
+    Route::get('/lupa-sandi', [PasswordResetController::class, 'request'])->name('password.request');
+    Route::post('/lupa-sandi', [PasswordResetController::class, 'email'])->middleware('throttle:5,1')->name('password.email');
+    Route::get('/atur-ulang-sandi/{token}', [PasswordResetController::class, 'edit'])->name('password.reset');
+    Route::post('/atur-ulang-sandi', [PasswordResetController::class, 'update'])->middleware('throttle:5,1')->name('password.update');
 });
 
 // =========================================================================
@@ -67,6 +76,11 @@ Route::middleware('auth')->group(function () {
         Route::get('/peternakan/{farm}', [AdminFarmController::class, 'edit'])->name('farms.edit');
         Route::put('/peternakan/{farm}', [AdminFarmController::class, 'update'])->name('farms.update');
         Route::post('/peternakan/{farm}/perpanjang', [AdminFarmController::class, 'extend'])->name('farms.extend');
+        Route::post('/peternakan/{farm}/sandi-baru', [AdminFarmController::class, 'resetOwnerPassword'])->name('farms.reset-password');
+
+        Route::get('/backup', [BackupController::class, 'index'])->name('backups.index');
+        Route::post('/backup', [BackupController::class, 'store'])->middleware('throttle:3,10')->name('backups.store');
+        Route::get('/backup/{file}', [BackupController::class, 'download'])->where('file', 'hefam-[0-9\-]+\.sql\.gz')->name('backups.download');
     });
 
     // ---------------------------------------------------------------------
@@ -144,5 +158,9 @@ Route::middleware('auth')->group(function () {
         Route::put('/hp-kandang/{device}', [DeviceController::class, 'update'])->name('devices.update');
         Route::delete('/hp-kandang/{device}', [DeviceController::class, 'destroy'])->name('devices.destroy');
         Route::post('/hp-kandang/serahkan', [DeviceController::class, 'handOver'])->name('devices.hand-over');
+
+        Route::get('/riwayat-perubahan', [ActivityLogController::class, 'index'])->name('activity.index');
+        Route::get('/sampah', [TrashController::class, 'index'])->name('trash.index');
+        Route::post('/sampah/{type}/{id}/pulihkan', [TrashController::class, 'restore'])->whereNumber('id')->name('trash.restore');
     });
 });

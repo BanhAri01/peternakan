@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Audit\ActivityRecorder;
 use App\Tenancy\FarmRule;
 use App\Models\Customer;
 use App\Models\EggGrade;
@@ -92,7 +93,7 @@ class EggSaleController extends Controller
             $dueDate = $data['due_date'] ?? Carbon::parse($data['sale_date'])->addDays(7)->toDateString();
         }
 
-        $invoice = DB::transaction(function () use ($data, $customer, $paid, $dueDate, $request) {
+        $invoice = ActivityRecorder::withoutRecording(fn () => DB::transaction(function () use ($data, $customer, $paid, $dueDate, $request) {
             $invoice = Invoice::create([
                 'number'      => Invoice::nextNumber($data['sale_date']),
                 'customer_id' => $customer->id,
@@ -123,7 +124,14 @@ class EggSaleController extends Controller
             }
 
             return $invoice;
-        });
+        }));
+
+        ActivityRecorder::custom($invoice, 'created', 'Nota ' . $invoice->number . ' untuk ' . $customer->name . ' sebesar ' . Format::rupiah($total), [
+            'customer_id'  => [null, $customer->name],
+            'sale_date'    => [null, Format::date($data['sale_date'])],
+            'total_amount' => [null, Format::rupiah($total)],
+            'amount'       => [null, Format::rupiah($paid)],
+        ]);
 
         $message = 'Nota ' . $invoice->number . ' untuk ' . $customer->name . ' sebesar ' . Format::rupiah($total) . ' tersimpan.';
         if ($paid < $total) {
@@ -167,12 +175,16 @@ class EggSaleController extends Controller
 
     public function destroy(Invoice $invoice)
     {
-        DB::transaction(function () use ($invoice) {
+        $total = $invoice->total;
+
+        ActivityRecorder::withoutRecording(fn () => DB::transaction(function () use ($invoice) {
             $invoice->lines()->delete();
             $invoice->delete();
-        });
+        }));
 
-        return back()->with('success', 'Nota ' . $invoice->number . ' dihapus. Stok telur kembali seperti semula.');
+        ActivityRecorder::custom($invoice, 'deleted', 'Nota ' . $invoice->number . ' (' . ($invoice->customer->name ?? '-') . ', ' . Format::rupiah($total) . ') dipindah ke Sampah');
+
+        return back()->with('success', 'Nota ' . $invoice->number . ' dipindah ke Sampah. Stok telur kembali seperti semula.');
     }
 
     private function findOrCreateCustomer(string $name, ?string $phone): Customer

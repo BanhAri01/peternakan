@@ -100,7 +100,7 @@ class ExpenseLedgerController extends Controller
     {
         $expense->delete();
 
-        return back()->with('success', 'Catatan pengeluaran dihapus.');
+        return back()->with('success', 'Catatan pengeluaran dipindah ke Sampah.');
     }
 
     private function validated(Request $request): array

@@ -102,7 +102,7 @@ class CoopController extends Controller
     public function destroy(Coop $coop)
     {
         // Kandang yang sudah punya riwayat tidak boleh dihapus agar laporan tidak hilang
-        if ($coop->dailyLogs()->exists() || $coop->vaccinations()->exists()) {
+        if ($coop->dailyLogs()->withTrashed()->exists() || $coop->vaccinations()->withTrashed()->exists()) {
             return back()->with('error', 'Kandang "' . $coop->name . '" sudah punya riwayat panen/vaksin sehingga tidak bisa dihapus. Ubah statusnya menjadi "Kosong" atau "Afkir" saja.');
         }
 

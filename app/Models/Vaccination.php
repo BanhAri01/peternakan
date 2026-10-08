@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Audit\RecordsActivity;
 use App\Tenancy\BelongsToFarm;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -9,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Vaccination extends Model
 {
-    use HasFactory, BelongsToFarm;
+    use HasFactory, BelongsToFarm, SoftDeletes, RecordsActivity;
 
     protected $fillable = [
         'vaccination_date',

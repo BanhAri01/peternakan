@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Audit\ActivityRecorder;
 use App\Models\User;
 use App\Services\DeviceService;
 use Illuminate\Http\Request;
@@ -57,6 +58,7 @@ class AuthController extends Controller
             RateLimiter::clear($key);
             Auth::login($user, $request->boolean('remember'));
             $request->session()->regenerate();
+            ActivityRecorder::custom($user, 'login', $user->name . ' masuk lewat email');
 
             return redirect()->intended('/');
         }
@@ -110,6 +112,7 @@ class AuthController extends Controller
         Auth::login($worker, true);
         $request->session()->regenerate();
         $this->devices->touch($device);
+        ActivityRecorder::custom($worker, 'login', $worker->name . ' masuk di ' . $device->name);
 
         return redirect()->route('daily-logs.create')->with('success', 'Selamat bekerja, ' . $worker->name . '!');
     }

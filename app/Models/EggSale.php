@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Tenancy\BelongsToFarm;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class EggSale extends Model
 {
-    use HasFactory, BelongsToFarm;
+    use HasFactory, BelongsToFarm, SoftDeletes;
 
     protected $fillable = [
         'invoice_id',

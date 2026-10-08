@@ -2,13 +2,15 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Audit\RecordsActivity;
 use App\Tenancy\BelongsToFarm;
 use Illuminate\Database\Eloquent\Model;
 
 // Kegiatan sortir: telur campur dipilah menjadi beberapa jenis (besar, kecil, retak, dll)
 class EggSorting extends Model
 {
-    use BelongsToFarm;
+    use BelongsToFarm, SoftDeletes, RecordsActivity;
 
     protected $fillable = ['sort_date', 'input_count', 'input_kg', 'notes', 'recorded_by'];
 

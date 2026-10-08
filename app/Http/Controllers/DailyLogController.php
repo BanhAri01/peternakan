@@ -14,6 +14,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class DailyLogController extends Controller
 {
@@ -79,7 +80,7 @@ class DailyLogController extends Controller
         $rules['coop_id'] = ['required', FarmRule::exists('coops')->where('status', 'active')];
         $rules['log_date'] = [
             'required', 'date', 'before_or_equal:today',
-            Rule::unique('daily_logs')->where(fn ($q) => $q->where('coop_id', $request->coop_id)),
+            Rule::unique('daily_logs')->where(fn ($q) => $q->where('coop_id', $request->coop_id))->withoutTrashed(),
         ];
 
         // Pekerja hanya boleh mencatat hari ini atau kemarin
@@ -92,19 +93,27 @@ class DailyLogController extends Controller
             'log_date.before_or_equal' => 'Tanggal panen tidak boleh di masa depan.',
         ]);
 
-        $coop = Coop::findOrFail($data['coop_id']);
         $feed = FeedStock::findOrFail($data['feed_stock_id']);
-        $calc = DailyLogCalculator::calculate($data, $feed, $coop->current_population);
+        $calc = DailyLogCalculator::calculate($data, $feed, 0);
 
         if ($calc['eggs_total_count'] === 0 && $calc['feed_consumed_kg'] == 0 && empty($data['mortality']) && empty($data['cull'])) {
             return back()->withInput()->with('error', 'Formulir masih kosong. Isi minimal jumlah telur atau pakan.');
         }
 
-        if (($data['mortality'] ?? 0) + ($data['cull'] ?? 0) > $coop->current_population) {
-            return back()->withInput()->withErrors(['mortality' => 'Jumlah ayam mati + afkir melebihi jumlah ayam di ' . $coop->name . ' (' . Format::number($coop->current_population) . ' ekor).']);
-        }
+        [$coop, $calc] = DB::transaction(function () use ($data, $feed, $request) {
+            $coop = Coop::lockForUpdate()->findOrFail($data['coop_id']);
+            $calc = DailyLogCalculator::calculate($data, $feed, $coop->current_population);
 
-        DB::transaction(function () use ($data, $calc, $coop, $feed, $request) {
+            if (($data['mortality'] ?? 0) + ($data['cull'] ?? 0) > $coop->current_population) {
+                throw ValidationException::withMessages(['mortality' => 'Jumlah ayam mati + afkir melebihi jumlah ayam di ' . $coop->name . ' (' . Format::number($coop->current_population) . ' ekor).']);
+            }
+
+            if (DailyLog::where('coop_id', $coop->id)->where('log_date', $data['log_date'])->exists()) {
+                throw ValidationException::withMessages(['log_date' => 'Panen ' . $coop->name . ' tanggal ini sudah dicatat.']);
+            }
+
+            DailyLog::onlyTrashed()->where('coop_id', $coop->id)->where('log_date', $data['log_date'])->get()->each->forceDelete();
+
             $log = DailyLog::create([
                 'coop_id'          => $coop->id,
                 'log_date'         => $data['log_date'],
@@ -125,12 +134,14 @@ class DailyLogController extends Controller
 
             $loss = ($data['mortality'] ?? 0) + ($data['cull'] ?? 0);
             if ($loss > 0) {
-                $coop->decrement('current_population', $loss);
+                Coop::whereKey($coop->id)->decrement('current_population', $loss);
             }
 
             if ($calc['feed_consumed_kg'] > 0) {
-                $feed->decrement('stock_kg', $calc['feed_consumed_kg']);
+                FeedStock::whereKey($feed->id)->decrement('stock_kg', $calc['feed_consumed_kg']);
             }
+
+            return [$coop, $calc];
         });
 
         $message = sprintf(
@@ -171,7 +182,8 @@ class DailyLogController extends Controller
             'required', 'date', 'before_or_equal:today',
             Rule::unique('daily_logs')
                 ->where(fn ($q) => $q->where('coop_id', $request->coop_id))
-                ->ignore($dailyLog->id),
+                ->ignore($dailyLog->id)
+                ->withoutTrashed(),
         ];
 
         $data = $request->validate($rules);
@@ -191,6 +203,11 @@ class DailyLogController extends Controller
         }
 
         DB::transaction(function () use ($dailyLog, $data, $calc, $newCoop, $newFeed, $oldLoss, $oldFeedKg) {
+            DailyLog::onlyTrashed()
+                ->where('coop_id', $newCoop->id)
+                ->where('log_date', $data['log_date'])
+                ->get()->each->forceDelete();
+
             // Kembalikan dulu dampak catatan lama
             if ($oldLoss > 0) {
                 Coop::where('id', $dailyLog->coop_id)->increment('current_population', $oldLoss);
@@ -214,16 +231,16 @@ class DailyLogController extends Controller
                 'notes'            => $data['notes'] ?? null,
             ]);
 
-            $dailyLog->grades()->delete();
+            $dailyLog->grades()->forceDelete();
             $dailyLog->grades()->createMany($calc['grades']);
 
             // Terapkan dampak catatan baru
             $newLoss = ($data['mortality'] ?? 0) + ($data['cull'] ?? 0);
             if ($newLoss > 0) {
-                $newCoop->refresh()->decrement('current_population', $newLoss);
+                Coop::whereKey($newCoop->id)->decrement('current_population', $newLoss);
             }
             if ($calc['feed_consumed_kg'] > 0) {
-                $newFeed->refresh()->decrement('stock_kg', $calc['feed_consumed_kg']);
+                FeedStock::whereKey($newFeed->id)->decrement('stock_kg', $calc['feed_consumed_kg']);
             }
         });
 
@@ -242,9 +259,10 @@ class DailyLogController extends Controller
                 FeedStock::where('id', $dailyLog->feed_stock_id)->increment('stock_kg', $dailyLog->feed_consumed_kg);
             }
 
+            $dailyLog->grades()->delete();
             $dailyLog->delete();
         });
 
-        return back()->with('success', 'Laporan panen dihapus. Jumlah ayam dan stok pakan sudah dikembalikan.');
+        return back()->with('success', 'Laporan panen dipindah ke Sampah. Jumlah ayam dan stok pakan sudah dikembalikan.');
     }
 }

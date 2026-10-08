@@ -54,6 +54,16 @@ class Format
         return $trays . ' rak' . ($rest > 0 ? ' + ' . $rest . ' butir' : '');
     }
 
+    public static function fileSize(int $bytes): string
+    {
+        return match (true) {
+            $bytes >= 1073741824 => self::number($bytes / 1073741824, 2) . ' GB',
+            $bytes >= 1048576    => self::number($bytes / 1048576, 1) . ' MB',
+            $bytes >= 1024       => self::number($bytes / 1024) . ' KB',
+            default              => $bytes . ' B',
+        };
+    }
+
     // 1250000 -> "satu juta dua ratus lima puluh ribu rupiah" (untuk nota)
     public static function terbilang($value): string
     {

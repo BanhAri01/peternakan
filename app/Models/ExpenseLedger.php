@@ -2,13 +2,15 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Audit\RecordsActivity;
 use App\Tenancy\BelongsToFarm;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class ExpenseLedger extends Model
 {
-    use HasFactory, BelongsToFarm;
+    use HasFactory, BelongsToFarm, SoftDeletes, RecordsActivity;
 
     protected $fillable = [
         'transaction_date',

@@ -1,9 +1,37 @@
 <?php
 
+use App\Models\ActivityLog;
 use App\Models\User;
+use App\Services\DatabaseBackup;
+use App\Support\Format;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schedule;
 use Illuminate\Support\Str;
+
+Artisan::command('hefam:backup {--connection=}', function (DatabaseBackup $backup) {
+    try {
+        $result = $backup->run($this->option('connection') ?: null);
+    } catch (\Throwable $e) {
+        Log::error('Backup HEFAM gagal: ' . $e->getMessage());
+        $this->error('Backup gagal: ' . $e->getMessage());
+
+        return 1;
+    }
+
+    Log::info('Backup HEFAM selesai: ' . $result['name']);
+    $this->info('Backup selesai: ' . $result['path'] . ' (' . Format::fileSize($result['size']) . ')');
+
+    if ($result['pruned'] > 0) {
+        $this->line($result['pruned'] . ' backup lama dihapus.');
+    }
+
+    return 0;
+})->purpose('Backup database HEFAM ke file .sql.gz');
+
+Schedule::command('hefam:backup')->dailyAt('01:30')->withoutOverlapping();
+Schedule::command('model:prune', ['--model' => [ActivityLog::class]])->dailyAt('02:15');
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());

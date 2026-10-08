@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Audit\RecordsActivity;
 use App\Tenancy\BelongsToFarm;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Supplier extends Model
 {
-    use HasFactory, BelongsToFarm;
+    use HasFactory, BelongsToFarm, RecordsActivity;
 
     protected $fillable = ['name', 'type', 'phone', 'address'];
 

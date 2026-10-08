@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Audit\ActivityRecorder;
 use App\Http\Controllers\Controller;
 use App\Models\DailyLog;
 use App\Models\Device;
@@ -12,6 +13,7 @@ use App\Support\Format;
 use App\Tenancy\FarmScope;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 // Panel admin HEFAM: kelola semua peternakan pelanggan
 class FarmController extends Controller
@@ -116,6 +118,21 @@ class FarmController extends Controller
         ]);
 
         return back()->with('success', 'Langganan diperpanjang ' . $data['months'] . ' bulan, aktif sampai ' . Format::date($farm->active_until) . '.');
+    }
+
+    public function resetOwnerPassword(Request $request, Farm $farm)
+    {
+        $owner = $farm->owner;
+
+        abort_unless($owner, 404);
+
+        $password = Str::password(12, symbols: false);
+
+        ActivityRecorder::withoutRecording(fn () => $owner->forceFill(['password' => $password, 'remember_token' => Str::random(60)])->save());
+
+        ActivityRecorder::custom($owner, 'password', 'Admin HEFAM (' . $request->user()->name . ') membuat kata sandi baru untuk ' . $owner->name, [], $farm->id);
+
+        return back()->with('new_password', ['email' => $owner->email, 'password' => $password]);
     }
 
     private function matchesStatus(Farm $farm, string $status): bool

@@ -99,8 +99,11 @@ class EggSortingController extends Controller
 
     public function destroy(EggSorting $sorting)
     {
-        $sorting->delete();
+        DB::transaction(function () use ($sorting) {
+            $sorting->items()->delete();
+            $sorting->delete();
+        });
 
-        return back()->with('success', 'Catatan sortir dihapus. Telur dikembalikan ke stok telur campur.');
+        return back()->with('success', 'Catatan sortir dipindah ke Sampah. Telur dikembalikan ke stok telur campur.');
     }
 }

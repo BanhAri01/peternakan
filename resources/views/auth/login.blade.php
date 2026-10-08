@@ -80,9 +80,12 @@
                             <button type="button" class="btn btn-light" id="togglePass" aria-label="Lihat kata sandi"><i class="bi bi-eye"></i></button>
                         </div>
                     </x-field>
-                    <div class="form-check mb-3">
-                        <input class="form-check-input" type="checkbox" name="remember" id="remember">
-                        <label class="form-check-label" for="remember">Ingat saya di perangkat ini</label>
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                        <div class="form-check mb-0">
+                            <input class="form-check-input" type="checkbox" name="remember" id="remember">
+                            <label class="form-check-label" for="remember">Ingat saya di perangkat ini</label>
+                        </div>
+                        <a href="{{ route('password.request') }}" class="fw-bold">Lupa kata sandi?</a>
                     </div>
                     <button type="submit" class="btn btn-primary btn-xl w-100">Masuk <i class="bi bi-box-arrow-in-right"></i></button>
                 </form>

@@ -13,6 +13,17 @@
 
 <x-alerts />
 
+@if(session('new_password'))
+    <div class="notice notice-warning" role="alert">
+        <i class="bi bi-key-fill"></i>
+        <div>
+            <span class="notice-title">Kata sandi baru untuk {{ session('new_password')['email'] }}</span>
+            <code class="fs-5 user-select-all">{{ session('new_password')['password'] }}</code>
+            <div class="small mt-1">Hanya ditampilkan sekali. Kirim ke pemilik lewat WhatsApp, lalu minta ia menggantinya di menu Pengguna.</div>
+        </div>
+    </div>
+@endif
+
 <div class="row g-3 mb-3">
     <div class="col-sm-6 col-xl-3"><x-stat label="Status" :value="$farm->status_label" icon="bi-patch-check-fill" :tone="$farm->status_tone" :hint="$farm->accessEndsAt() ? 'sampai ' . Format::date($farm->accessEndsAt()) : 'tanpa batas'" /></div>
     <div class="col-sm-6 col-xl-3"><x-stat label="Pengguna" :value="$users->count()" unit="akun" icon="bi-people-fill" tone="info" :hint="$users->where('role', 'worker')->count() . ' pekerja'" /></div>
@@ -100,6 +111,14 @@
                     </li>
                 @endforeach
             </ul>
+            @if($farm->owner)
+                <x-slot:footer>
+                    <form action="{{ route('admin.farms.reset-password', $farm) }}" method="POST" data-confirm="Kata sandi lama {{ $farm->owner->name }} tidak bisa dipakai lagi." data-confirm-title="Buat kata sandi baru?" data-confirm-button="Ya, buat baru">
+                        @csrf
+                        <button type="submit" class="btn btn-light btn-sm"><i class="bi bi-key-fill"></i> Buat kata sandi baru untuk pemilik</button>
+                    </form>
+                </x-slot:footer>
+            @endif
         </x-panel>
     </div>
 </div>
