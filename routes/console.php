@@ -3,6 +3,7 @@
 use App\Models\ActivityLog;
 use App\Models\User;
 use App\Services\DatabaseBackup;
+use App\Services\FarmReminders;
 use App\Support\Format;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
@@ -30,8 +31,28 @@ Artisan::command('hefam:backup {--connection=}', function (DatabaseBackup $backu
     return 0;
 })->purpose('Backup database HEFAM ke file .sql.gz');
 
+Artisan::command('hefam:pengingat {waktu : pagi atau sore} {--farm= : id peternakan} {--paksa : kirim ulang walau sudah terkirim hari ini}', function (FarmReminders $reminders) {
+    $kind = $this->argument('waktu');
+
+    if (!in_array($kind, FarmReminders::KINDS, true)) {
+        $this->error('Waktu harus "pagi" atau "sore".');
+
+        return 1;
+    }
+
+    $results = $reminders->sendAll($kind, $this->option('farm') ? (int) $this->option('farm') : null, (bool) $this->option('paksa'));
+
+    foreach ($results as $farmId => $status) {
+        $this->line('Peternakan #' . $farmId . ': ' . $status);
+    }
+
+    return 0;
+})->purpose('Kirim pengingat WhatsApp pagi/sore ke pemilik peternakan');
+
 Schedule::command('hefam:backup')->dailyAt('01:30')->withoutOverlapping();
 Schedule::command('model:prune', ['--model' => [ActivityLog::class]])->dailyAt('02:15');
+Schedule::command('hefam:pengingat pagi')->dailyAt(config('hefam.whatsapp.morning_at'))->withoutOverlapping();
+Schedule::command('hefam:pengingat sore')->dailyAt(config('hefam.whatsapp.evening_at'))->withoutOverlapping();
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());

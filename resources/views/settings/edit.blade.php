@@ -168,6 +168,21 @@
         </x-field>
     </x-panel>
 
+    <x-panel title="Pengingat WhatsApp" icon="bi-whatsapp" subtitle="Pesan otomatis ke HP pemilik: pagi pukul 06.00 (pakan menipis, tagihan jatuh tempo, jadwal vaksin) dan sore pukul 17.00 (kandang belum dicatat, telur belum disortir).">
+        <div class="form-check form-switch mb-3">
+            <input class="form-check-input" type="checkbox" role="switch" id="wa_reminder_enabled" name="wa_reminder_enabled" value="1" @checked(old('wa_reminder_enabled', $settings['wa_reminder_enabled']) === '1')>
+            <label class="form-check-label fw-bold" for="wa_reminder_enabled">Kirim pengingat ke WhatsApp</label>
+        </div>
+        <x-field label="Nomor WhatsApp tujuan" name="wa_reminder_phone" optional hint="Kosongkan untuk memakai nomor HP peternakan di atas." class="mb-0">
+            <input type="text" id="wa_reminder_phone" name="wa_reminder_phone" inputmode="tel" maxlength="30" value="{{ old('wa_reminder_phone', $settings['wa_reminder_phone']) }}" class="form-control" placeholder="Contoh: 0812 3456 7890">
+        </x-field>
+    </x-panel>
+
     <button type="submit" class="btn btn-primary btn-xl w-100"><i class="bi bi-check2-circle"></i> Simpan Pengaturan</button>
+</form>
+
+<form action="{{ route('settings.whatsapp-test') }}" method="POST" class="mt-3">
+    @csrf
+    <button type="submit" class="btn btn-light w-100"><i class="bi bi-whatsapp"></i> Kirim contoh pengingat sekarang</button>
 </form>
 @endsection

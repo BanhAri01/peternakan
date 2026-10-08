@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Setting;
+use App\Services\FarmReminders;
+use App\Services\WhatsApp;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 
@@ -29,6 +32,7 @@ class SettingController extends Controller
             'sack_kg'          => 'required|numeric|min:1|max:200',
             'hdp_warning'      => 'required|numeric|min:1|max:100',
             'hdp_tolerance'    => 'nullable|numeric|min:1|max:30',
+            'wa_reminder_phone' => 'nullable|string|max:30',
             'low_feed_days'    => 'required|integer|min:1|max:60',
             'receipt_paper'    => 'required|in:' . implode(',', array_keys(ExportPdfController::RECEIPT_PAPERS)),
             'receipt_style'    => 'required|in:color,ink',
@@ -42,6 +46,7 @@ class SettingController extends Controller
         ]);
 
         $data['receipt_show_qr'] = $request->boolean('receipt_show_qr') ? '1' : '0';
+        $data['wa_reminder_enabled'] = $request->boolean('wa_reminder_enabled') ? '1' : '0';
 
         if ($request->hasFile('logo')) {
             $data['farm_logo'] = $this->logoDataUri($request->file('logo'));
@@ -88,5 +93,29 @@ class SettingController extends Controller
         }
 
         return 'data:' . $file->getMimeType() . ';base64,' . base64_encode($raw);
+    }
+
+    public function testWhatsApp(Request $request, FarmReminders $reminders, WhatsApp $whatsApp)
+    {
+        $farm   = $request->user()->farm;
+        $target = $reminders->target($farm);
+
+        if (!$target) {
+            return back()->with('error', 'Isi nomor WhatsApp tujuan atau nomor HP peternakan terlebih dahulu.');
+        }
+
+        $today   = Carbon::today();
+        $message = $reminders->build('pagi', $today) ?? $reminders->build('sore', $today)
+            ?? '*' . Setting::get('farm_name') . "*\nContoh pengingat HEFAM. Hari ini tidak ada yang perlu diingatkan.";
+
+        try {
+            $whatsApp->send($target, $message);
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Pesan gagal dikirim: ' . $e->getMessage());
+        }
+
+        return back()->with('success', $whatsApp->isLive()
+            ? 'Contoh pengingat dikirim ke ' . $target . '.'
+            : 'Mode uji: pesan tidak benar-benar dikirim karena layanan WhatsApp belum disambungkan oleh admin HEFAM.');
     }
 }

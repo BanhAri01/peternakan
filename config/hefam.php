@@ -13,4 +13,12 @@ return [
         'stale_hours' => 36,
         'connection'  => env('HEFAM_BACKUP_CONNECTION'),
     ],
+
+    'whatsapp' => [
+        'driver'        => env('HEFAM_WA_DRIVER', 'log'),
+        'fonnte_token'  => env('FONNTE_TOKEN'),
+        'fonnte_url'    => env('FONNTE_URL', 'https://api.fonnte.com/send'),
+        'morning_at'    => '06:00',
+        'evening_at'    => '17:00',
+    ],
 ];

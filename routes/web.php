@@ -159,6 +159,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/pengaturan', [SettingController::class, 'edit'])->name('settings.edit');
         Route::put('/pengaturan', [SettingController::class, 'update'])->name('settings.update');
         Route::get('/pengaturan/contoh-nota', [ExportPdfController::class, 'previewReceipt'])->name('settings.receipt-preview');
+        Route::post('/pengaturan/uji-whatsapp', [SettingController::class, 'testWhatsApp'])->middleware('throttle:5,10')->name('settings.whatsapp-test');
 
         Route::resource('coops', CoopController::class);
         Route::resource('feed-stocks', FeedStockController::class)->except('show');
