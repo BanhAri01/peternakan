@@ -35,12 +35,19 @@ return new class extends Migration {
             $table->timestamps();
         });
 
-        // Siapkan jenis "Telur Campur" untuk data yang sudah ada
+        // Siapkan jenis "Telur Campur" untuk data yang sudah ada.
+        // Jika peternak sudah punya jenis bernama "telur campur", pakai yang itu (tidak membuat dobel).
         if (!DB::table('egg_grades')->where('is_mixed', true)->exists()) {
-            DB::table('egg_grades')->insert([
-                'name' => 'Telur Campur', 'code' => 'CMP', 'is_mixed' => true, 'is_active' => true,
-                'created_at' => now(), 'updated_at' => now(),
-            ]);
+            $existing = DB::table('egg_grades')->whereRaw('LOWER(TRIM(name)) = ?', ['telur campur'])->orderBy('id')->value('id');
+
+            if ($existing) {
+                DB::table('egg_grades')->where('id', $existing)->update(['is_mixed' => true, 'is_active' => true]);
+            } else {
+                DB::table('egg_grades')->insert([
+                    'name' => 'Telur Campur', 'code' => 'CMP', 'is_mixed' => true, 'is_active' => true,
+                    'created_at' => now(), 'updated_at' => now(),
+                ]);
+            }
         }
     }
 
@@ -48,7 +55,6 @@ return new class extends Migration {
     {
         Schema::dropIfExists('egg_sorting_items');
         Schema::dropIfExists('egg_sortings');
-        DB::table('egg_grades')->where('is_mixed', true)->delete();
         Schema::table('egg_grades', function (Blueprint $table) {
             $table->dropColumn('is_mixed');
         });

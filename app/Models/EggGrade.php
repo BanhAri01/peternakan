@@ -20,7 +20,20 @@ class EggGrade extends Model
     // Jenis "Telur Campur" (hasil panen sebelum disortir); dibuat otomatis bila belum ada
     public static function mixed(): self
     {
-        return static::firstOrCreate(['is_mixed' => true], ['name' => 'Telur Campur', 'code' => 'CMP', 'is_active' => true]);
+        $mixed = static::where('is_mixed', true)->first();
+        if ($mixed) {
+            return $mixed;
+        }
+
+        // Pakai jenis bernama "Telur Campur" yang sudah ada agar tidak dobel
+        $existing = static::whereRaw('LOWER(TRIM(name)) = ?', ['telur campur'])->first();
+        if ($existing) {
+            $existing->update(['is_mixed' => true, 'is_active' => true]);
+
+            return $existing;
+        }
+
+        return static::create(['name' => 'Telur Campur', 'code' => 'CMP', 'is_mixed' => true, 'is_active' => true]);
     }
 
     // Jenis hasil sortir (selain telur campur)

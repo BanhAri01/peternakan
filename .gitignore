@@ -24,3 +24,4 @@ Homestead.yaml
 Thumbs.db
 .env.rombak
 .env.ujimigrasi
+.env.ujiprod
