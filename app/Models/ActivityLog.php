@@ -35,6 +35,7 @@ class ActivityLog extends Model
         'FeedPurchase'  => 'Pembelian pakan',
         'EggPurchase'   => 'Kulakan telur',
         'ExpenseLedger' => 'Pengeluaran',
+        'OtherIncome'   => 'Pendapatan lain',
         'Vaccination'   => 'Vaksinasi',
         'Customer'      => 'Pelanggan',
         'Supplier'      => 'Pemasok',
@@ -60,7 +61,7 @@ class ActivityLog extends Model
         'age_weeks' => 'Umur (minggu)', 'vaccine_name' => 'Nama vaksin', 'target_disease' => 'Penyakit', 'method' => 'Cara pemberian',
         'dosage' => 'Dosis', 'cost' => 'Biaya', 'phone' => 'No. HP', 'address' => 'Alamat', 'type' => 'Tipe', 'code' => 'Kode',
         'is_active' => 'Aktif', 'is_mixed' => 'Telur campur', 'email' => 'Email', 'role' => 'Peran', 'password' => 'Kata sandi',
-        'pin' => 'PIN', 'amount' => 'Jumlah dibayar', 'remaining' => 'Sisa tagihan',
+        'pin' => 'PIN', 'income_date' => 'Tanggal', 'buyer' => 'Pembeli', 'amount' => 'Jumlah dibayar', 'remaining' => 'Sisa tagihan',
     ];
 
     protected $fillable = [

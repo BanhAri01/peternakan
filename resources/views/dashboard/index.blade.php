@@ -125,6 +125,9 @@
 
         <x-panel title="Keuangan bulan ini" icon="bi-wallet2" :subtitle="'1 ' . $date->translatedFormat('F') . ' s/d ' . Format::date($date)">
             <div class="kv"><span class="k">Hasil penjualan telur</span><span class="v text-success">@rupiah($month['revenue'])</span></div>
+            @if($month['other_income'] > 0)
+                <div class="kv"><span class="k">Pendapatan lain (afkir, kotoran, dll)</span><span class="v text-success">@rupiah($month['other_income'])</span></div>
+            @endif
             <div class="kv"><span class="k">Pakan yang dimakan</span><span class="v">@rupiah($month['feed_used'])</span></div>
             <div class="kv"><span class="k">Biaya lain (gaji, listrik, obat, dll)</span><span class="v">@rupiah($month['expenses'] + $month['vaccines'])</span></div>
             @if($month['egg_bought'] > 0)

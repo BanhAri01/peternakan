@@ -8,6 +8,7 @@ use App\Models\EggPurchase;
 use App\Models\EggSale;
 use App\Models\ExpenseLedger;
 use App\Models\FeedPurchase;
+use App\Models\OtherIncome;
 use App\Models\Vaccination;
 use Carbon\Carbon;
 
@@ -27,6 +28,7 @@ class FarmFinance
         $eggBought    = (float) EggPurchase::whereBetween('purchase_date', [$start, $end])->sum('total_cost');
         $expenses     = (float) ExpenseLedger::whereBetween('transaction_date', [$start, $end])->sum('total_amount');
         $vaccines     = (float) Vaccination::whereBetween('vaccination_date', [$start, $end])->sum('cost');
+        $otherIncome  = (float) OtherIncome::whereBetween('income_date', [$start, $end])->sum('total_amount');
 
         // Laba: pakan dihitung dari yang benar-benar dimakan ayam
         $totalCost = $feedUsed + $eggBought + $expenses + $vaccines;
@@ -35,6 +37,8 @@ class FarmFinance
 
         return [
             'revenue'     => $revenue,
+            'other_income' => $otherIncome,
+            'total_income' => $revenue + $otherIncome,
             'cash_in'     => $cashIn,
             'new_debt'    => $newDebt,
             'feed_used'   => $feedUsed,
@@ -43,9 +47,9 @@ class FarmFinance
             'expenses'    => $expenses,
             'vaccines'    => $vaccines,
             'total_cost'  => $totalCost,
-            'net_profit'  => $revenue - $totalCost,
+            'net_profit'  => $revenue + $otherIncome - $totalCost,
             'cash_out'    => $cashOut,
-            'net_cash'    => $cashIn - $cashOut,
+            'net_cash'    => $cashIn + $otherIncome - $cashOut,
         ];
     }
 

@@ -27,6 +27,7 @@
         ],
         'Keuangan' => [
             ['route' => 'expenses.index', 'match' => 'expenses.*', 'icon' => 'bi-wallet2', 'label' => 'Buku Kas'],
+            ['route' => 'other-incomes.index', 'match' => 'other-incomes.*', 'icon' => 'bi-cash-coin', 'label' => 'Pendapatan Lain'],
             ['route' => 'reports.index', 'match' => 'reports.*', 'icon' => 'bi-file-earmark-bar-graph-fill', 'label' => 'Laporan Bulanan'],
         ],
         'Pengaturan' => [

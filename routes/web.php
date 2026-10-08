@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\BackupController;
 use App\Http\Controllers\Admin\FarmController as AdminFarmController;
 use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\OtherIncomeController;
 use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\PwaController;
 use App\Http\Controllers\TrashController;
@@ -161,6 +162,7 @@ Route::middleware('auth')->group(function () {
         Route::resource('feed-stocks', FeedStockController::class)->except('show');
         Route::resource('vaccinations', VaccinationController::class)->except('show');
         Route::resource('expenses', ExpenseLedgerController::class)->except('show');
+        Route::resource('pendapatan-lain', OtherIncomeController::class)->except('show')->parameters(['pendapatan-lain' => 'otherIncome'])->names('other-incomes');
         Route::resource('users', UserController::class)->except('show');
 
         // HP kandang: perangkat tempat pekerja masuk dengan nama + PIN

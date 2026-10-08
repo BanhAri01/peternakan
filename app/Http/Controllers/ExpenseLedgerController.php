@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\DailyLog;
 use App\Models\EggSale;
 use App\Models\ExpenseLedger;
+use App\Models\OtherIncome;
 use App\Models\Vaccination;
 use App\Services\FarmFinance;
 use App\Support\Format;
@@ -42,15 +43,16 @@ class ExpenseLedgerController extends Controller
         $expenseByDate = ExpenseLedger::whereBetween('transaction_date', [$startDate, $endDate])->selectRaw('transaction_date as d, SUM(total_amount) as t')->groupBy('transaction_date')->pluck('t', 'd');
         $feedByDate    = DailyLog::whereBetween('log_date', [$startDate, $endDate])->selectRaw('log_date as d, SUM(feed_cost_total) as t')->groupBy('log_date')->pluck('t', 'd');
         $vaccineByDate = Vaccination::whereBetween('vaccination_date', [$startDate, $endDate])->selectRaw('vaccination_date as d, SUM(cost) as t')->groupBy('vaccination_date')->pluck('t', 'd');
+        $otherByDate   = OtherIncome::whereBetween('income_date', [$startDate, $endDate])->selectRaw('income_date as d, SUM(total_amount) as t')->groupBy('income_date')->pluck('t', 'd');
 
         $norm = fn ($c) => $c->mapWithKeys(fn ($v, $k) => [Carbon::parse($k)->toDateString() => (float) $v]);
-        [$salesByDate, $expenseByDate, $feedByDate, $vaccineByDate] = array_map($norm, [$salesByDate, $expenseByDate, $feedByDate, $vaccineByDate]);
+        [$salesByDate, $expenseByDate, $feedByDate, $vaccineByDate, $otherByDate] = array_map($norm, [$salesByDate, $expenseByDate, $feedByDate, $vaccineByDate, $otherByDate]);
 
         $chart = ['labels' => [], 'income' => [], 'cost' => []];
         foreach (CarbonPeriod::create($startDate, $endDate) as $date) {
             $d = $date->toDateString();
             $chart['labels'][] = $date->translatedFormat('d M');
-            $chart['income'][] = $salesByDate[$d] ?? 0;
+            $chart['income'][] = ($salesByDate[$d] ?? 0) + ($otherByDate[$d] ?? 0);
             $chart['cost'][]   = ($expenseByDate[$d] ?? 0) + ($feedByDate[$d] ?? 0) + ($vaccineByDate[$d] ?? 0);
         }
 

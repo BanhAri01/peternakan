@@ -50,6 +50,7 @@
     <div class="col-lg-6">
         <x-panel title="Untung & rugi" icon="bi-calculator">
             <div class="kv"><span class="k">Hasil penjualan telur</span><span class="v text-success">@rupiah($summary['revenue'])</span></div>
+            <div class="kv"><span class="k">Pendapatan lain (afkir, kotoran, dll)</span><span class="v text-success">@rupiah($summary['other_income'])</span></div>
             <div class="divider-label">Dikurangi biaya</div>
             <div class="kv"><span class="k">Pakan yang dimakan ayam</span><span class="v">@rupiah($summary['feed_used'])</span></div>
             <div class="kv"><span class="k">Beli telur dari luar</span><span class="v">@rupiah($summary['egg_bought'])</span></div>
@@ -64,6 +65,7 @@
     <div class="col-lg-6">
         <x-panel title="Uang masuk & keluar (kas)" icon="bi-wallet2" subtitle="Uang yang benar-benar diterima dan dibayarkan.">
             <div class="kv"><span class="k">Uang diterima dari pembeli</span><span class="v text-success">@rupiah($summary['cash_in'])</span></div>
+            <div class="kv"><span class="k">Pendapatan lain</span><span class="v text-success">@rupiah($summary['other_income'])</span></div>
             <div class="kv"><span class="k">Piutang baru (belum dibayar)</span><span class="v text-warning">@rupiah($summary['new_debt'])</span></div>
             <div class="divider-label">Uang keluar</div>
             <div class="kv"><span class="k">Beli pakan</span><span class="v">@rupiah($summary['feed_bought'])</span></div>

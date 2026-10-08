@@ -14,6 +14,7 @@ use App\Models\ExpenseLedger;
 use App\Models\FeedPurchase;
 use App\Models\FeedStock;
 use App\Models\Invoice;
+use App\Models\OtherIncome;
 use App\Models\User;
 use App\Models\Vaccination;
 use App\Support\Format;
@@ -168,7 +169,8 @@ class ActivityRecorder
             $model instanceof EggSorting    => Format::date($model->sort_date),
             $model instanceof FeedPurchase,
             $model instanceof EggPurchase   => Format::date($model->purchase_date),
-            $model instanceof ExpenseLedger => $model->item_name ?: $model->category,
+            $model instanceof ExpenseLedger,
+            $model instanceof OtherIncome   => $model->item_name ?: $model->category,
             $model instanceof Vaccination   => $model->vaccine_name,
             $model instanceof FeedStock     => $model->feed_name,
             $model instanceof User          => $model->name,

@@ -53,6 +53,7 @@
                 <h2>Untung &amp; Rugi</h2>
                 <table class="kv">
                     <tr><td>Hasil penjualan telur</td><td class="r pos">{{ Format::rupiah($summary['revenue']) }}</td></tr>
+                    <tr><td>Pendapatan lain</td><td class="r pos">{{ Format::rupiah($summary['other_income']) }}</td></tr>
                     <tr><td>Pakan yang dimakan</td><td class="r">({{ Format::rupiah($summary['feed_used']) }})</td></tr>
                     <tr><td>Beli telur dari luar</td><td class="r">({{ Format::rupiah($summary['egg_bought']) }})</td></tr>
                     <tr><td>Biaya lain</td><td class="r">({{ Format::rupiah($summary['expenses']) }})</td></tr>
@@ -64,6 +65,7 @@
                 <h2>Uang Masuk &amp; Keluar</h2>
                 <table class="kv">
                     <tr><td>Uang diterima dari pembeli</td><td class="r pos">{{ Format::rupiah($summary['cash_in']) }}</td></tr>
+                    <tr><td>Pendapatan lain</td><td class="r pos">{{ Format::rupiah($summary['other_income']) }}</td></tr>
                     <tr><td>Beli pakan</td><td class="r">({{ Format::rupiah($summary['feed_bought']) }})</td></tr>
                     <tr><td>Beli telur</td><td class="r">({{ Format::rupiah($summary['egg_bought']) }})</td></tr>
                     <tr><td>Biaya lain + vaksin</td><td class="r">({{ Format::rupiah($summary['expenses'] + $summary['vaccines']) }})</td></tr>

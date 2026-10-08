@@ -44,6 +44,9 @@
                                     @case('pengeluaran')
                                         <div><b>{{ $item->item_name }}</b><div class="text-muted small">{{ $item->category }}</div></div>
                                         @break
+                                    @case('pendapatan')
+                                        <div><b>{{ $item->item_name }}</b><div class="text-muted small">{{ $item->category_label }}</div></div>
+                                        @break
                                     @case('vaksin')
                                         <div><b>{{ $item->vaccine_name }}</b><div class="text-muted small">{{ $item->coop->name ?? '-' }}</div></div>
                                         @break
@@ -63,6 +66,9 @@
                                         @break
                                     @case('pengeluaran')
                                         {{ Format::date($item->transaction_date) }} · <b>@rupiah($item->total_amount)</b>
+                                        @break
+                                    @case('pendapatan')
+                                        {{ Format::date($item->income_date) }} · <b>@rupiah($item->total_amount)</b>
                                         @break
                                     @case('vaksin')
                                         {{ Format::date($item->vaccination_date) }} · <b>@rupiah($item->cost)</b>

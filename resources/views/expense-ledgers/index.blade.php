@@ -35,7 +35,7 @@
 </x-panel>
 
 <div class="row g-3 mb-3">
-    <div class="col-sm-6 col-xl-3"><x-stat label="Uang masuk (penjualan)" :value="Format::rupiah($summary['cash_in'])" icon="bi-arrow-down-circle-fill" tone="success" :hint="'Nilai penjualan ' . Format::rupiah($summary['revenue'])" /></div>
+    <div class="col-sm-6 col-xl-3"><x-stat label="Uang masuk" :value="Format::rupiah($summary['cash_in'] + $summary['other_income'])" icon="bi-arrow-down-circle-fill" tone="success" :hint="'Penjualan telur ' . Format::rupiah($summary['cash_in']) . ' + pendapatan lain ' . Format::rupiah($summary['other_income'])" /></div>
     <div class="col-sm-6 col-xl-3"><x-stat label="Uang keluar" :value="Format::rupiah($summary['cash_out'])" icon="bi-arrow-up-circle-fill" tone="danger" hint="Pakan + telur + biaya lain + vaksin" /></div>
     <div class="col-sm-6 col-xl-3"><x-stat label="Biaya lain (Buku Kas)" :value="Format::rupiah($summary['expenses'])" icon="bi-receipt" tone="warning" /></div>
     <div class="col-sm-6 col-xl-3"><x-stat :label="$summary['net_profit'] >= 0 ? 'Perkiraan untung' : 'Perkiraan rugi'" :value="Format::rupiah($summary['net_profit'])" icon="bi-piggy-bank-fill" :tone="$summary['net_profit'] >= 0 ? 'success' : 'danger'" :alert="$summary['net_profit'] < 0" :href="route('reports.index')" hint="Lihat Laporan Bulanan" /></div>
@@ -43,7 +43,7 @@
 
 <div class="row g-3">
     <div class="col-lg-8">
-        <x-panel title="Uang masuk & biaya per hari" icon="bi-bar-chart-fill" subtitle="Hijau = penjualan. Merah = pakan dimakan + biaya lain + vaksin.">
+        <x-panel title="Uang masuk & biaya per hari" icon="bi-bar-chart-fill" subtitle="Hijau = penjualan + pendapatan lain. Merah = pakan dimakan + biaya lain + vaksin.">
             <div class="chart-box"><canvas id="cashChart" aria-label="Grafik uang masuk dan biaya"></canvas></div>
         </x-panel>
     </div>

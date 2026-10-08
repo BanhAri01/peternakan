@@ -12,6 +12,7 @@ use App\Models\EggSortingItem;
 use App\Models\ExpenseLedger;
 use App\Models\FeedStock;
 use App\Models\Invoice;
+use App\Models\OtherIncome;
 use App\Models\Vaccination;
 use App\Support\Format;
 use Illuminate\Http\Request;
@@ -27,6 +28,7 @@ class TrashController extends Controller
         'sortir'      => ['model' => EggSorting::class, 'label' => 'Sortir telur', 'icon' => 'bi-funnel'],
         'pengeluaran' => ['model' => ExpenseLedger::class, 'label' => 'Pengeluaran', 'icon' => 'bi-wallet2'],
         'vaksin'      => ['model' => Vaccination::class, 'label' => 'Vaksinasi', 'icon' => 'bi-shield-plus'],
+        'pendapatan'  => ['model' => OtherIncome::class, 'label' => 'Pendapatan lain', 'icon' => 'bi-cash-coin'],
     ];
 
     public function index(Request $request)
@@ -141,6 +143,7 @@ class TrashController extends Controller
             'nota'   => ['customer'],
             'panen'  => ['coop'],
             'vaksin' => ['coop'],
+            'pendapatan' => ['coop'],
             default  => [],
         };
     }
