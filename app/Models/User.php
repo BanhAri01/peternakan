@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Audit\RecordsActivity;
-use App\Notifications\ResetPasswordNotification;
 use App\Tenancy\FarmContext;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -70,11 +69,6 @@ class User extends Authenticatable
     public function hasPin(): bool
     {
         return !empty($this->pin);
-    }
-
-    public function sendPasswordResetNotification($token): void
-    {
-        $this->notify(new ResetPasswordNotification($token));
     }
 
     public function isSuperAdmin(): bool

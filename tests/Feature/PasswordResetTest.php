@@ -2,13 +2,9 @@
 
 namespace Tests\Feature;
 
-use App\Models\ActivityLog;
 use App\Models\User;
-use App\Notifications\ResetPasswordNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Notification;
-use Illuminate\Support\Facades\Password;
 use Tests\TestCase;
 
 class PasswordResetTest extends TestCase
@@ -21,66 +17,29 @@ class PasswordResetTest extends TestCase
         $this->setUpFarm();
     }
 
-    public function test_halaman_lupa_sandi_bisa_dibuka_dari_login(): void
+    public function test_lupa_sandi_mengarahkan_ke_whatsapp_admin_tanpa_email(): void
     {
+        config(['hefam.admin_whatsapp' => '6285133642784']);
+
         $this->get(route('login'))->assertOk()->assertSee(route('password.request'));
-        $this->get(route('password.request'))->assertOk()->assertSee('Lupa kata sandi');
+        $this->get(route('password.request'))
+            ->assertOk()
+            ->assertSee('wa.me/6285133642784', false)
+            ->assertSee('Chat Admin HEFAM')
+            ->assertDontSee('name="email"', false);
     }
 
-    public function test_pemilik_menerima_email_tautan_atur_ulang(): void
+    public function test_tanpa_nomor_admin_tetap_ada_petunjuk(): void
     {
-        Notification::fake();
+        config(['hefam.admin_whatsapp' => '']);
 
-        $this->post(route('password.email'), ['email' => 'OWNER@farm.test'])->assertSessionHas('success');
-
-        Notification::assertSentTo($this->owner, ResetPasswordNotification::class);
+        $this->get(route('password.request'))->assertOk()->assertSee('Hubungi admin HEFAM')->assertDontSee('wa.me', false);
     }
 
-    public function test_email_tidak_terdaftar_mendapat_pesan_yang_sama(): void
+    public function test_alur_reset_lewat_email_sudah_tidak_ada(): void
     {
-        Notification::fake();
-
-        $this->post(route('password.email'), ['email' => 'tidakada@farm.test'])->assertSessionHas('success');
-
-        Notification::assertNothingSent();
-    }
-
-    public function test_di_production_tanpa_email_disetel_pengguna_diarahkan_ke_admin(): void
-    {
-        Notification::fake();
-        $this->app['env'] = 'production';
-        $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class);
-        config(['mail.default' => 'log']);
-
-        $this->post(route('password.email'), ['email' => 'owner@farm.test'])->assertSessionHas('error', fn ($m) => str_contains($m, 'WhatsApp'));
-
-        Notification::assertNothingSent();
-    }
-
-    public function test_pemilik_bisa_mengganti_sandi_dengan_tautan(): void
-    {
-        $token = Password::createToken($this->owner);
-
-        $this->post(route('password.update'), [
-            'token' => $token, 'email' => 'owner@farm.test',
-            'password' => 'sandiBaru123', 'password_confirmation' => 'sandiBaru123',
-        ])->assertRedirect(route('login'));
-
-        $this->assertTrue(Hash::check('sandiBaru123', $this->owner->fresh()->password));
-        $this->actAsFarm($this->farm);
-        $this->assertSame(1, ActivityLog::where('event', 'password')->count());
-
-        $this->post(route('login.post'), ['email' => 'owner@farm.test', 'password' => 'sandiBaru123'])->assertRedirect('/');
-    }
-
-    public function test_tautan_palsu_ditolak(): void
-    {
-        $this->post(route('password.update'), [
-            'token' => 'palsu', 'email' => 'owner@farm.test',
-            'password' => 'sandiBaru123', 'password_confirmation' => 'sandiBaru123',
-        ])->assertSessionHasErrors('email');
-
-        $this->assertTrue(Hash::check('rahasia123', $this->owner->fresh()->password));
+        $this->post('/lupa-sandi', ['email' => 'owner@farm.test'])->assertStatus(405);
+        $this->get('/atur-ulang-sandi/token-apa-saja')->assertNotFound();
     }
 
     public function test_admin_membuat_sandi_baru_untuk_pemilik(): void

@@ -56,9 +56,6 @@ Route::middleware('guest')->group(function () {
     Route::post('/daftar', [RegisterController::class, 'store'])->middleware('throttle:5,1')->name('register.store');
 
     Route::get('/lupa-sandi', [PasswordResetController::class, 'request'])->name('password.request');
-    Route::post('/lupa-sandi', [PasswordResetController::class, 'email'])->middleware('throttle:5,1')->name('password.email');
-    Route::get('/atur-ulang-sandi/{token}', [PasswordResetController::class, 'edit'])->name('password.reset');
-    Route::post('/atur-ulang-sandi', [PasswordResetController::class, 'update'])->middleware('throttle:5,1')->name('password.update');
 });
 
 // =========================================================================
