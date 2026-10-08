@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Tenancy\BelongsToFarm;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Vaccination extends Model
 {
-    use HasFactory;
+    use HasFactory, BelongsToFarm;
 
     protected $fillable = [
         'vaccination_date',

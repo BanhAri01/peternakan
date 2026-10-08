@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Tenancy\FarmRule;
 use App\Models\EggGrade;
 use App\Models\EggSorting;
 use App\Services\EggStock;
@@ -35,7 +36,7 @@ class EggSortingController extends Controller
         $rules = [
             'sort_date'               => 'required|date|before_or_equal:today',
             'items'                   => 'required|array',
-            'items.*.egg_grade_id'    => 'required|exists:egg_grades,id',
+            'items.*.egg_grade_id'    => ['required', FarmRule::exists('egg_grades')],
             'items.*.trays_count'     => 'nullable|integer|min:0|max:100000',
             'items.*.extra_eggs'      => 'nullable|integer|min:0|max:100000',
             'items.*.weight_kg'       => 'nullable|numeric|min:0|max:100000',

@@ -3,13 +3,19 @@
 namespace Tests\Feature;
 
 use App\Models\Coop;
+use App\Models\Device;
 use App\Models\EggGrade;
+use App\Models\Farm;
 use App\Models\FeedStock;
 use App\Models\User;
+use App\Services\DeviceService;
+use App\Tenancy\FarmContext;
+use Illuminate\Support\Str;
 
 // Data dasar peternakan untuk pengujian
 trait FarmTestHelpers
 {
+    protected Farm $farm;
     protected User $owner;
     protected User $worker;
     protected Coop $coop;
@@ -18,8 +24,11 @@ trait FarmTestHelpers
 
     protected function setUpFarm(): void
     {
-        $this->owner  = User::create(['name' => 'Pemilik', 'role' => 'owner', 'email' => 'owner@farm.test', 'password' => 'rahasia123']);
-        $this->worker = User::create(['name' => 'Wayan', 'role' => 'worker', 'pin' => '2580']);
+        $this->farm = Farm::create(['name' => 'Peternakan Uji', 'status' => 'active']);
+        $this->actAsFarm($this->farm);
+
+        $this->owner  = User::create(['farm_id' => $this->farm->id, 'name' => 'Pemilik', 'role' => 'owner', 'email' => 'owner@farm.test', 'password' => 'rahasia123']);
+        $this->worker = User::create(['farm_id' => $this->farm->id, 'name' => 'Wayan', 'role' => 'worker', 'pin' => '2580']);
 
         $this->coop = Coop::create([
             'name' => 'Kandang A', 'capacity' => 1200, 'initial_population' => 1000, 'current_population' => 1000,
@@ -27,6 +36,25 @@ trait FarmTestHelpers
         ]);
         $this->feed  = FeedStock::create(['feed_name' => 'Pakan Layer', 'stock_kg' => 1000, 'cost_per_kg' => 7000]);
         $this->grade = EggGrade::create(['name' => 'Telur Besar', 'code' => 'B', 'is_active' => true]);
+    }
+
+    // Jadikan peternakan ini aktif untuk kode di dalam test (di luar request)
+    protected function actAsFarm(Farm $farm): void
+    {
+        app(FarmContext::class)->set($farm);
+    }
+
+    // Daftarkan "HP kandang" untuk peternakan, lalu kirim cookie-nya di request berikutnya
+    protected function useFarmDevice(?Farm $farm = null): Device
+    {
+        $farm ??= $this->farm;
+        $device = new Device(['uuid' => (string) Str::uuid(), 'name' => 'HP Uji', 'is_active' => true]);
+        $device->farm_id = $farm->id;
+        $device->save();
+
+        $this->withCookie(DeviceService::COOKIE, $device->uuid);
+
+        return $device;
     }
 
     protected function harvestPayload(array $overrides = []): array

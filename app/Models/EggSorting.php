@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Tenancy\BelongsToFarm;
 use Illuminate\Database\Eloquent\Model;
 
 // Kegiatan sortir: telur campur dipilah menjadi beberapa jenis (besar, kecil, retak, dll)
 class EggSorting extends Model
 {
+    use BelongsToFarm;
+
     protected $fillable = ['sort_date', 'input_count', 'input_kg', 'notes', 'recorded_by'];
 
     protected $casts = [

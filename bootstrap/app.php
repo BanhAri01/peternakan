@@ -14,8 +14,19 @@ return Application::configure(basePath: dirname(__DIR__))
         // Pengguna yang sudah masuk diarahkan ke halaman depan sesuai perannya
         $middleware->redirectUsersTo('/');
 
+        // Peternakan aktif diambil dari user yang login (dipakai semua model data peternakan)
+        $middleware->web(append: [
+            \App\Tenancy\SetFarmContext::class,
+        ]);
+        // Harus berjalan sebelum route model binding, agar /coops/{coop} hanya menemukan data peternakan sendiri
+        $middleware->prependToPriorityList(
+            before: \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            prepend: \App\Tenancy\SetFarmContext::class,
+        );
+
         $middleware->alias([
             'role' => \App\Http\Middleware\EnsureRole::class,
+            'farm' => \App\Tenancy\EnsureActiveFarm::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -9,6 +9,7 @@ use App\Models\EggGrade;
 use App\Models\EggPurchase;
 use App\Models\EggSale;
 use App\Models\EggSorting;
+use App\Models\Farm;
 use App\Models\ExpenseLedger;
 use App\Models\FeedPurchase;
 use App\Models\Invoice;
@@ -17,6 +18,8 @@ use App\Models\Setting;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Models\Vaccination;
+use App\Services\FarmProvisioner;
+use App\Tenancy\FarmContext;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use RuntimeException;
@@ -35,6 +38,19 @@ class DemoFarmSeeder extends Seeder
 
         mt_srand(42);
 
+        // Admin HEFAM (pengelola semua peternakan)
+        User::create(['name' => 'Admin HEFAM', 'role' => 'superadmin', 'email' => 'admin@hefam.id', 'password' => 'password']);
+
+        // Peternakan kedua (masa coba) untuk menguji pemisahan data antar peternakan
+        app(FarmProvisioner::class)->create([
+            'farm_name' => 'Telur Jaya Farm', 'owner_name' => 'Ibu Putu', 'phone' => '081355556666',
+            'city' => 'Tabanan', 'email' => 'jaya@hefam.id', 'password' => 'password',
+        ]);
+
+        // Peternakan utama dengan data 60 hari
+        $farm = Farm::create(['name' => 'Sinar Abadi Farm', 'owner_name' => 'Bapak Ketut', 'phone' => '081234567890', 'city' => 'Bangli', 'status' => 'active']);
+        app(FarmContext::class)->set($farm);
+
         Setting::put([
             'farm_name'    => 'Sinar Abadi Farm',
             'farm_owner'   => 'Bapak Ketut',
@@ -45,8 +61,8 @@ class DemoFarmSeeder extends Seeder
             'receipt_promo' => 'Terima pesanan untuk warung, toko & hajatan. Gratis antar minimal 10 rak di wilayah Bangli.',
         ]);
 
-        $owner = User::create(['name' => 'Bapak Ketut', 'role' => 'owner', 'email' => 'demo@hefam.id', 'password' => 'password']);
-        $workers = collect(['Wayan', 'Made', 'Komang'])->map(fn ($n) => User::create(['name' => $n, 'role' => 'worker', 'pin' => '1234']));
+        $owner = User::create(['farm_id' => $farm->id, 'name' => 'Bapak Ketut', 'role' => 'owner', 'email' => 'demo@hefam.id', 'password' => 'password']);
+        $workers = collect(['Wayan', 'Made', 'Komang'])->map(fn ($n) => User::create(['farm_id' => $farm->id, 'name' => $n, 'role' => 'worker', 'pin' => '1234']));
 
         $grades = collect([
             ['name' => 'Telur Besar', 'code' => 'B'],

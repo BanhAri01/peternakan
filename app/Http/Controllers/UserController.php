@@ -11,7 +11,7 @@ class UserController extends Controller
 {
     public function index()
     {
-        $users = User::orderBy('role', 'asc')->orderBy('name', 'asc')->paginate(10);
+        $users = User::ofCurrentFarm()->orderBy('role', 'asc')->orderBy('name', 'asc')->paginate(10);
         return view('users.index', compact('users'));
     }
 
@@ -47,6 +47,7 @@ class UserController extends Controller
             $validated['pin'] = null;
         }
 
+        $validated['farm_id'] = $request->user()->farm_id;
         User::create($validated);
 
         return redirect()->route('users.index')->with('success', 'Pengguna baru berhasil ditambahkan!');

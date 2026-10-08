@@ -327,6 +327,10 @@
     .menu-btn i { font-size: 1.35rem; }
     @media (max-width: 991.98px) { .menu-btn { display: inline-flex; } }
 
+    /* Pengingat masa coba */
+    .trial-banner { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; padding: .7rem 1.5rem; background: var(--warning-soft); color: #6b4000; font-weight: 600; border-bottom: 1px solid #ecd09a; }
+    .trial-banner a { margin-left: auto; font-weight: 800; color: #6b4000; }
+
     /* Menu pekerja: dua tombol besar di bawah bilah atas */
     .worker-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; padding: .75rem 1rem 0; max-width: 880px; width: 100%; margin: 0 auto; }
     .worker-tabs a {

@@ -16,7 +16,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Satu konteks peternakan per request
+        $this->app->scoped(\App\Tenancy\FarmContext::class);
     }
 
     /**

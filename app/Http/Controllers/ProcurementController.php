@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Tenancy\FarmRule;
 use App\Models\EggGrade;
 use App\Models\EggPurchase;
 use App\Models\FeedPurchase;
@@ -39,7 +40,7 @@ class ProcurementController extends Controller
     {
         $data = $request->validate([
             'supplier_name'  => 'required|string|max:255',
-            'egg_grade_id'   => 'required|exists:egg_grades,id',
+            'egg_grade_id'   => ['required', FarmRule::exists('egg_grades')],
             'purchase_date'  => 'required|date|before_or_equal:today',
             'unit_type'      => 'required|in:kg,krat,butir',
             'quantity_unit'  => 'required|numeric|min:0.01',
@@ -68,7 +69,7 @@ class ProcurementController extends Controller
     {
         $data = $request->validate([
             'supplier_name' => 'required|string|max:255',
-            'feed_stock_id' => 'required|exists:feed_stocks,id',
+            'feed_stock_id' => ['required', FarmRule::exists('feed_stocks')],
             'purchase_date' => 'required|date|before_or_equal:today',
             'sacks_count'   => 'nullable|integer|min:0',
             'extra_kg'      => 'nullable|numeric|min:0',

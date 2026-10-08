@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Tenancy\FarmRule;
 use App\Models\EggGrade;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -19,7 +20,7 @@ class EggGradeController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'name' => 'required|string|max:100|unique:egg_grades,name',
+            'name' => ['required', 'string', 'max:100', FarmRule::unique('egg_grades', 'name')],
             'code' => 'nullable|string|max:20',
         ]);
 
@@ -31,7 +32,7 @@ class EggGradeController extends Controller
     public function update(Request $request, EggGrade $grade)
     {
         $data = $request->validate([
-            'name' => ['required', 'string', 'max:100', Rule::unique('egg_grades', 'name')->ignore($grade->id)],
+            'name' => ['required', 'string', 'max:100', FarmRule::unique('egg_grades', 'name')->ignore($grade->id)],
             'code' => 'nullable|string|max:20',
         ]);
 

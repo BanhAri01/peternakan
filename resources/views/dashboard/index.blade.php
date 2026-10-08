@@ -24,6 +24,27 @@
 
 <x-alerts />
 
+@if($onboardingLeft > 0)
+    <x-panel title="Langkah awal memakai HEFAM" icon="bi-flag-fill" tone="egg" :subtitle="(count($onboarding) - $onboardingLeft) . ' dari ' . count($onboarding) . ' langkah selesai'">
+        <div class="progress-thin mb-3"><span style="width: {{ (count($onboarding) - $onboardingLeft) / count($onboarding) * 100 }}%"></span></div>
+        <div class="row g-2">
+            @foreach($onboarding as $i => $step)
+                <div class="col-md-6 col-xl-4">
+                    <a href="{{ $step['url'] }}" class="d-flex gap-3 align-items-start p-3 rounded-3 border text-decoration-none text-reset h-100" style="background: {{ $step['done'] ? 'var(--success-soft)' : '#fff' }}">
+                        <span class="step-no" style="{{ $step['done'] ? 'background:var(--success)' : '' }}">
+                            @if($step['done'])<i class="bi bi-check-lg"></i>@else{{ $i + 1 }}@endif
+                        </span>
+                        <span>
+                            <b class="d-block {{ $step['done'] ? 'text-decoration-line-through text-muted' : '' }}">{{ $step['title'] }}</b>
+                            <small class="text-muted">{{ $step['text'] }}</small>
+                        </span>
+                    </a>
+                </div>
+            @endforeach
+        </div>
+    </x-panel>
+@endif
+
 {{-- ===================== ANGKA UTAMA ===================== --}}
 <div class="row g-3 mb-3">
     <div class="col-sm-6 col-xl-3">

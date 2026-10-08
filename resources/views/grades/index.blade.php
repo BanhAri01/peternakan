@@ -49,16 +49,16 @@
                                 @endif
                             </span>
                         </div>
-                        <form x-show="edit" x-cloak action="{{ route('grades.update', $grade) }}" method="POST" class="d-flex flex-wrap gap-2">
+                        <div x-show="edit" x-cloak><form action="{{ route('grades.update', $grade) }}" method="POST" class="d-flex flex-wrap gap-2">
                             @csrf
                             @method('PUT')
                             <input type="text" name="name" value="{{ $grade->name }}" class="form-control" style="flex:2 1 160px" required aria-label="Nama jenis telur">
                             <input type="text" name="code" value="{{ $grade->code }}" class="form-control" style="flex:1 1 70px" placeholder="Kode" aria-label="Kode">
                             <button type="submit" class="btn btn-primary btn-sm">Simpan</button>
                             <button type="button" class="btn btn-light btn-sm" @click="edit = false">Batal</button>
-                        </form>
+                        </form></div>
                     </div>
-                    <div class="d-flex gap-2 flex-shrink-0" x-show="!edit">
+                    <div x-show="!edit" class="flex-shrink-0"><div class="d-flex gap-2">
                         <button type="button" class="btn btn-light btn-sm" @click="edit = true"><i class="bi bi-pencil"></i> Ganti nama</button>
                         @unless($grade->is_mixed)
                             <form action="{{ route('grades.toggle', $grade) }}" method="POST">
@@ -68,7 +68,7 @@
                                 </button>
                             </form>
                         @endunless
-                    </div>
+                    </div></div>
                 </li>
             @endforeach
         </ul>

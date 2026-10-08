@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Tenancy\FarmRule;
 use App\Models\Customer;
 use App\Models\EggGrade;
 use App\Models\EggSale;
@@ -60,7 +61,7 @@ class EggSaleController extends Controller
             'customer_phone'         => 'nullable|string|max:30',
             'sale_date'              => 'required|date|before_or_equal:today',
             'lines'                  => 'required|array|min:1|max:20',
-            'lines.*.egg_grade_id'   => 'required|exists:egg_grades,id',
+            'lines.*.egg_grade_id'   => ['required', FarmRule::exists('egg_grades')],
             'lines.*.unit_type'      => 'required|in:kg,krat,butir',
             'lines.*.quantity_unit'  => 'required|numeric|min:0.01|max:1000000',
             'lines.*.price_per_unit' => 'required|numeric|min:1|max:100000000',

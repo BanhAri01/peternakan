@@ -51,6 +51,13 @@ class SettingController extends Controller
 
         Setting::put(array_map(fn ($v) => $v ?? '', $data));
 
+        // Samakan identitas di data langganan (dipakai panel admin HEFAM)
+        $request->user()->farm?->update([
+            'name'       => $data['farm_name'],
+            'owner_name' => ($data['farm_owner'] ?? null) ?: $request->user()->farm->owner_name,
+            'phone'      => ($data['farm_phone'] ?? null) ?: $request->user()->farm->phone,
+        ]);
+
         return redirect()->route('settings.edit')->with('success', 'Pengaturan peternakan berhasil disimpan.');
     }
 

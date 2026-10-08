@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Tenancy\BelongsToFarm;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Coop extends Model
 {
-    use HasFactory;
+    use HasFactory, BelongsToFarm;
 
     public const STATUSES = [
         'active' => 'Aktif (sedang produksi)',

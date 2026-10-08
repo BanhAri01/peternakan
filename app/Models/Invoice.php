@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Tenancy\BelongsToFarm;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -9,6 +10,8 @@ use Illuminate\Support\Facades\DB;
 // Nota penjualan: berisi satu atau beberapa baris telur (EggSale)
 class Invoice extends Model
 {
+    use BelongsToFarm;
+
     protected $fillable = ['number', 'customer_id', 'sale_date', 'due_date', 'notes', 'created_by'];
 
     protected $casts = [

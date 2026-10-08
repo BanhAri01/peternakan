@@ -15,6 +15,11 @@ class EnsureRole
         }
 
         if (!in_array($request->user()->role, $roles)) {
+            // Admin HEFAM tidak membuka halaman peternakan, arahkan ke panel admin
+            if ($request->user()->isSuperAdmin()) {
+                return redirect()->route('admin.farms.index');
+            }
+
             // Jika pekerja mencoba akses menu owner, kembalikan ke input panen
             if ($request->user()->isWorker()) {
                 return redirect()->route('daily-logs.create')->with('error', 'Akses dibatasi. Anda hanya memiliki izin mencatat data panen.');

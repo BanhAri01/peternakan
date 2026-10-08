@@ -1,7 +1,11 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\FarmController as AdminFarmController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DeviceController;
+use App\Http\Controllers\RegisterController;
+use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\CoopController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DailyLogController;
@@ -26,6 +30,10 @@ Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login'])->name('login.post');
     Route::post('/login-worker', [AuthController::class, 'loginWorker'])->name('login.worker');
+
+    // Pendaftaran peternakan baru (SaaS)
+    Route::get('/daftar', [RegisterController::class, 'create'])->name('register');
+    Route::post('/daftar', [RegisterController::class, 'store'])->middleware('throttle:5,1')->name('register.store');
 });
 
 // =========================================================================
@@ -37,15 +45,34 @@ Route::middleware('auth')->group(function () {
 
     // Halaman depan sesuai peran
     Route::get('/', function () {
-        return auth()->user()->isOwner()
-            ? redirect()->route('owner.dashboard')
-            : redirect()->route('daily-logs.create');
+        $user = auth()->user();
+
+        return match (true) {
+            $user->isSuperAdmin() => redirect()->route('admin.farms.index'),
+            $user->isOwner()      => redirect()->route('owner.dashboard'),
+            default               => redirect()->route('daily-logs.create'),
+        };
+    });
+
+    // Info langganan (tetap bisa dibuka pemilik walau masa langganan habis)
+    Route::get('/langganan', [SubscriptionController::class, 'show'])->middleware('role:owner')->name('subscription.show');
+
+    // ---------------------------------------------------------------------
+    // ADMIN HEFAM: kelola semua peternakan
+    // ---------------------------------------------------------------------
+    Route::middleware('role:superadmin')->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/peternakan', [AdminFarmController::class, 'index'])->name('farms.index');
+        Route::get('/peternakan/baru', [AdminFarmController::class, 'create'])->name('farms.create');
+        Route::post('/peternakan', [AdminFarmController::class, 'store'])->name('farms.store');
+        Route::get('/peternakan/{farm}', [AdminFarmController::class, 'edit'])->name('farms.edit');
+        Route::put('/peternakan/{farm}', [AdminFarmController::class, 'update'])->name('farms.update');
+        Route::post('/peternakan/{farm}/perpanjang', [AdminFarmController::class, 'extend'])->name('farms.extend');
     });
 
     // ---------------------------------------------------------------------
     // PEKERJA & OWNER: catat panen harian
     // ---------------------------------------------------------------------
-    Route::middleware('role:worker,owner')->group(function () {
+    Route::middleware(['farm', 'role:worker,owner'])->group(function () {
         Route::get('/panen/input', [DailyLogController::class, 'create'])->name('daily-logs.create');
         Route::post('/panen/simpan', [DailyLogController::class, 'store'])->name('daily-logs.store');
 
@@ -57,7 +84,7 @@ Route::middleware('auth')->group(function () {
     // ---------------------------------------------------------------------
     // KHUSUS OWNER
     // ---------------------------------------------------------------------
-    Route::middleware('role:owner')->group(function () {
+    Route::middleware(['farm', 'role:owner'])->group(function () {
 
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('owner.dashboard');
 
@@ -110,5 +137,12 @@ Route::middleware('auth')->group(function () {
         Route::resource('vaccinations', VaccinationController::class)->except('show');
         Route::resource('expenses', ExpenseLedgerController::class)->except('show');
         Route::resource('users', UserController::class)->except('show');
+
+        // HP kandang: perangkat tempat pekerja masuk dengan nama + PIN
+        Route::get('/hp-kandang', [DeviceController::class, 'index'])->name('devices.index');
+        Route::post('/hp-kandang', [DeviceController::class, 'store'])->name('devices.store');
+        Route::put('/hp-kandang/{device}', [DeviceController::class, 'update'])->name('devices.update');
+        Route::delete('/hp-kandang/{device}', [DeviceController::class, 'destroy'])->name('devices.destroy');
+        Route::post('/hp-kandang/serahkan', [DeviceController::class, 'handOver'])->name('devices.hand-over');
     });
 });

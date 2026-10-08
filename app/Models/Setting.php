@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Tenancy\BelongsToFarm;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 
 class Setting extends Model
 {
+    use BelongsToFarm;
+
     protected $fillable = ['key', 'value'];
 
     private const CACHE_KEY = 'farm-settings';
@@ -36,20 +39,19 @@ class Setting extends Model
         'farm_logo'        => '',        // logo dalam bentuk data URI (disimpan di database)
     ];
 
-    private static ?array $memo = null;
+    /** @var array<int, array> pengaturan per peternakan selama satu request */
+    private static array $memo = [];
 
     public static function allValues(): array
     {
-        if (self::$memo !== null) {
-            return self::$memo;
-        }
+        $farmId = app(\App\Tenancy\FarmContext::class)->id();
 
-        // Saat migrasi belum dijalankan, pakai nilai bawaan tanpa menyimpan cache
-        if (!Schema::hasTable('settings')) {
+        // Tanpa peternakan aktif (mis. halaman login) atau sebelum migrasi: pakai nilai bawaan
+        if ($farmId === null || !Schema::hasTable('settings')) {
             return self::DEFAULTS;
         }
 
-        return self::$memo = Cache::rememberForever(self::CACHE_KEY, function () {
+        return self::$memo[$farmId] ??= Cache::rememberForever(self::CACHE_KEY . '-' . $farmId, function () {
             $saved = static::query()->pluck('value', 'key')->filter(fn ($v) => $v !== null && $v !== '');
 
             return array_merge(self::DEFAULTS, $saved->all());
@@ -68,7 +70,7 @@ class Setting extends Model
 
     public static function flushMemo(): void
     {
-        self::$memo = null;
+        self::$memo = [];
     }
 
     public static function put(array $values): void
@@ -77,7 +79,7 @@ class Setting extends Model
             static::updateOrCreate(['key' => $key], ['value' => $value]);
         }
 
-        Cache::forget(self::CACHE_KEY);
-        self::$memo = null;
+        Cache::forget(self::CACHE_KEY . '-' . app(\App\Tenancy\FarmContext::class)->id());
+        self::$memo = [];
     }
 }

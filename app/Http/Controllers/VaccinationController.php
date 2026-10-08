@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Tenancy\FarmRule;
 use App\Models\Coop;
 use App\Models\Vaccination;
 use Illuminate\Http\Request;
@@ -31,7 +32,7 @@ class VaccinationController extends Controller
         $validated = $request->validate([
             'vaccination_date' => 'required|date',
             'coop_ids'         => 'required|array|min:1',
-            'coop_ids.*'       => 'exists:coops,id',
+            'coop_ids.*'       => [FarmRule::exists('coops')],
             'age_weeks'        => 'required|integer|min:0',
             'vaccine_name'     => 'required|string|max:255',
             'target_disease'   => 'nullable|string|max:255',
@@ -79,7 +80,7 @@ class VaccinationController extends Controller
     {
         $validated = $request->validate([
             'vaccination_date' => 'required|date',
-            'coop_id'          => 'required|exists:coops,id',
+            'coop_id'          => ['required', FarmRule::exists('coops')],
             'age_weeks'        => 'required|integer|min:0',
             'vaccine_name'     => 'required|string|max:255',
             'target_disease'   => 'nullable|string|max:255',

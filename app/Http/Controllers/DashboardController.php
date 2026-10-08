@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Coop;
+use App\Models\Device;
 use App\Models\DailyLog;
 use App\Models\DailyLogGrade;
 use App\Models\EggGrade;
@@ -10,6 +11,7 @@ use App\Models\EggSale;
 use App\Models\EggSortingItem;
 use App\Models\FeedStock;
 use App\Models\Setting;
+use App\Models\User;
 use App\Services\EggStock;
 use App\Services\FarmFinance;
 use App\Support\Format;
@@ -217,7 +219,17 @@ class DashboardController extends Controller
         // ---------------- Keuangan bulan berjalan ----------------
         $month = FarmFinance::summary($date->copy()->startOfMonth()->toDateString(), $day);
 
-        return view('dashboard.index', compact(
+        // Langkah awal untuk peternakan baru
+        $onboarding = [
+            ['done' => $activeCoops->isNotEmpty(), 'title' => 'Tambah kandang', 'text' => 'Isi nama kandang, jumlah ayam, dan umur ayam.', 'url' => route('coops.create'), 'icon' => 'bi-house-add-fill'],
+            ['done' => FeedStock::exists(), 'title' => 'Tambah jenis pakan', 'text' => 'Isi stok pakan dan harga per kg.', 'url' => route('feed-stocks.create'), 'icon' => 'bi-box-seam-fill'],
+            ['done' => User::ofCurrentFarm()->where('role', 'worker')->whereNotNull('pin')->exists(), 'title' => 'Tambah pekerja + PIN', 'text' => 'Pekerja masuk dengan nama dan PIN, tanpa email.', 'url' => route('users.create'), 'icon' => 'bi-person-plus-fill'],
+            ['done' => Device::where('is_active', true)->exists(), 'title' => 'Daftarkan HP kandang', 'text' => 'Buka aplikasi di HP pekerja lalu tekan "Jadikan HP kandang".', 'url' => route('devices.index'), 'icon' => 'bi-phone-fill'],
+            ['done' => DailyLog::exists(), 'title' => 'Catat panen pertama', 'text' => 'Catat telur, pakan, dan ayam mati hari ini.', 'url' => route('daily-logs.create'), 'icon' => 'bi-clipboard2-check-fill'],
+        ];
+        $onboardingLeft = collect($onboarding)->where('done', false)->count();
+
+        return view('dashboard.index', compact('onboarding', 'onboardingLeft',
             'date', 'population', 'eggCount', 'eggKg', 'feedKg', 'feedCost', 'mortality', 'cull', 'hdp', 'fcr',
             'yesterdayEggs', 'hppPerKg', 'avgPrice', 'priceSource', 'salesToday', 'totalDebt', 'coopCards',
             'feeds', 'alerts', 'chart', 'gradeMix', 'eggStocks', 'mixedWaiting', 'month', 'hdpWarn', 'logs', 'activeCoops'

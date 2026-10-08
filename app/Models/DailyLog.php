@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Tenancy\BelongsToFarm;
 use Illuminate\Database\Eloquent\Model;
 
 class DailyLog extends Model
 {
+    use BelongsToFarm;
+
     protected $fillable = [
         'coop_id',
         'log_date',

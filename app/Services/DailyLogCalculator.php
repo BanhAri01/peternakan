@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Tenancy\FarmRule;
 use App\Models\FeedStock;
 use App\Models\Setting;
 
@@ -13,16 +14,16 @@ class DailyLogCalculator
     public static function rules(): array
     {
         return [
-            'coop_id'               => 'required|exists:coops,id',
+            'coop_id'               => ['required', FarmRule::exists('coops')],
             'log_date'              => 'required|date|before_or_equal:today',
-            'feed_stock_id'         => 'required|exists:feed_stocks,id',
+            'feed_stock_id'         => ['required', FarmRule::exists('feed_stocks')],
             'feed_sacks'            => 'nullable|integer|min:0|max:1000',
             'extra_feed_kg'         => 'nullable|numeric|min:0|max:50000',
             'mortality'             => 'nullable|integer|min:0',
             'cull'                  => 'nullable|integer|min:0',
             'notes'                 => 'nullable|string|max:500',
             'grades'                => 'required|array',
-            'grades.*.egg_grade_id' => 'required|exists:egg_grades,id',
+            'grades.*.egg_grade_id' => ['required', FarmRule::exists('egg_grades')],
             'grades.*.trays_count'  => 'nullable|integer|min:0|max:100000',
             'grades.*.extra_eggs'   => 'nullable|integer|min:0|max:100000',
             'grades.*.weight_kg'    => 'nullable|numeric|min:0|max:100000',

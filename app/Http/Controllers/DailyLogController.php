@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Tenancy\FarmRule;
 use App\Models\Coop;
 use App\Models\DailyLog;
 use App\Models\EggGrade;
@@ -75,7 +76,7 @@ class DailyLogController extends Controller
     {
         $rules = DailyLogCalculator::rules();
 
-        $rules['coop_id'] = ['required', Rule::exists('coops', 'id')->where('status', 'active')];
+        $rules['coop_id'] = ['required', FarmRule::exists('coops')->where('status', 'active')];
         $rules['log_date'] = [
             'required', 'date', 'before_or_equal:today',
             Rule::unique('daily_logs')->where(fn ($q) => $q->where('coop_id', $request->coop_id)),

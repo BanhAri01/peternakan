@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -15,18 +14,16 @@ class ExampleTest extends TestCase
         $this->get('/')->assertRedirect(route('login'));
     }
 
-    public function test_halaman_login_menampilkan_kolom_pin_pekerja(): void
+    public function test_halaman_login_di_hp_biasa_menjelaskan_cara_daftar_hp_kandang(): void
     {
-        User::create(['name' => 'Made', 'role' => 'worker', 'pin' => '2580']);
-
         $this->get(route('login'))
             ->assertOk()
-            ->assertSee('name="pin"', false)
-            ->assertSee('Made');
+            ->assertSee('HP ini belum didaftarkan sebagai HP kandang')
+            ->assertSee('name="email"', false);
     }
 
-    public function test_halaman_login_tanpa_pekerja_tetap_bisa_dibuka(): void
+    public function test_halaman_daftar_bisa_dibuka(): void
     {
-        $this->get(route('login'))->assertOk()->assertSee('Belum ada akun pekerja');
+        $this->get(route('register'))->assertOk()->assertSee('Daftarkan peternakan Anda');
     }
 }
