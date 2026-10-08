@@ -95,6 +95,16 @@
 </head>
 <body class="{{ $isOwner ? 'has-bottom-nav' : '' }}">
 
+@if(\App\Http\Controllers\ImpersonationController::isActive())
+    <div class="impersonate-bar" role="alert">
+        <span><i class="bi bi-person-badge-fill"></i> Mode bantuan admin: Anda masuk sebagai <b>{{ $user?->name }}</b> ({{ $farm?->name }})</span>
+        <form action="{{ route('impersonate.stop') }}" method="POST">
+            @csrf
+            <button type="submit" class="btn btn-sm btn-light" data-no-lock><i class="bi bi-arrow-return-left"></i> Kembali ke Admin</button>
+        </form>
+    </div>
+@endif
+
 <div class="app-shell">
     @if($hasSidebar)
         <aside class="sidebar" aria-label="Menu utama">

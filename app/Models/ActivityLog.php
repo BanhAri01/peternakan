@@ -24,6 +24,9 @@ class ActivityLog extends Model
         'paid'          => ['mencatat pembayaran', 'success', 'bi-cash-coin'],
         'login'         => ['masuk aplikasi', 'neutral', 'bi-box-arrow-in-right'],
         'password'      => ['mengatur ulang kata sandi', 'warning', 'bi-key-fill'],
+        'impersonate'   => ['bantuan admin dimulai', 'info', 'bi-person-badge-fill'],
+        'impersonate_end' => ['bantuan admin selesai', 'neutral', 'bi-person-check-fill'],
+        'export'        => ['mengunduh ekspor Excel', 'info', 'bi-file-earmark-spreadsheet-fill'],
     ];
 
     public const TYPES = [

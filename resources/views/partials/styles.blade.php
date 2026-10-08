@@ -1012,6 +1012,9 @@
     .plan-price { font-weight: 800; font-size: 1.6rem; color: var(--brand); }
     .plan-note { color: var(--muted); font-size: .92rem; }
 
+    .impersonate-bar { position: sticky; top: 0; z-index: 1050; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: .5rem 1rem;
+                       padding: .55rem 1rem; background: #8a4b00; color: #fff; font-weight: 600; }
+
     @media print {
         .sidebar, .topbar, .bottom-nav, .app-footer, .page-actions, .no-print { display: none !important; }
         .main { margin: 0; }

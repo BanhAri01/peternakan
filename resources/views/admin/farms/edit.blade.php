@@ -9,6 +9,12 @@
     @if($farm->phone)
         <a href="https://wa.me/{{ Format::waNumber($farm->phone) }}" target="_blank" rel="noopener" class="btn btn-wa"><i class="bi bi-whatsapp"></i> Chat pemilik</a>
     @endif
+    @if($farm->owner)
+        <form action="{{ route('admin.farms.impersonate', $farm) }}" method="POST" data-confirm="Anda akan melihat aplikasi persis seperti {{ $farm->owner->name }}. Semua yang Anda ubah tercatat di Riwayat Perubahan." data-confirm-title="Masuk sebagai pemilik?" data-confirm-button="Ya, masuk">
+            @csrf
+            <button type="submit" class="btn btn-light"><i class="bi bi-person-badge-fill"></i> Masuk sebagai pemilik</button>
+        </form>
+    @endif
 </x-page-header>
 
 <x-alerts />

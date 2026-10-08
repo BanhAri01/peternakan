@@ -2,6 +2,7 @@
 
 namespace App\Audit;
 
+use App\Http\Controllers\ImpersonationController;
 use App\Models\ActivityLog;
 use App\Models\Coop;
 use App\Models\Customer;
@@ -97,7 +98,7 @@ class ActivityRecorder
         ActivityLog::create([
             'farm_id'       => $farmId,
             'user_id'       => $user?->id,
-            'user_name'     => $user ? Str::limit($user->name, 97) : 'Sistem',
+            'user_name'     => $user ? Str::limit($user->name . (ImpersonationController::isActive() ? ' (dibantu admin HEFAM)' : ''), 97) : 'Sistem',
             'event'         => $event,
             'subject_type'  => $type,
             'subject_id'    => $subjectId,

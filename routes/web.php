@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\BackupController;
 use App\Http\Controllers\Admin\FarmController as AdminFarmController;
 use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\MedicineController;
 use App\Http\Controllers\OtherIncomeController;
 use App\Http\Controllers\PasswordResetController;
@@ -63,6 +64,7 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
 
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+    Route::post('/bantuan/selesai', [ImpersonationController::class, 'stop'])->name('impersonate.stop');
 
     Route::get('/sesi/token', fn () => response()
         ->json(['token' => csrf_token(), 'user' => auth()->id()])
@@ -99,6 +101,7 @@ Route::middleware('auth')->group(function () {
         Route::put('/peternakan/{farm}', [AdminFarmController::class, 'update'])->name('farms.update');
         Route::post('/peternakan/{farm}/perpanjang', [AdminFarmController::class, 'extend'])->name('farms.extend');
         Route::post('/peternakan/{farm}/sandi-baru', [AdminFarmController::class, 'resetOwnerPassword'])->name('farms.reset-password');
+        Route::post('/peternakan/{farm}/masuk', [ImpersonationController::class, 'start'])->name('farms.impersonate');
 
         Route::get('/backup', [BackupController::class, 'index'])->name('backups.index');
         Route::post('/backup', [BackupController::class, 'store'])->middleware('throttle:3,10')->name('backups.store');
