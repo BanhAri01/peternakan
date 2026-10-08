@@ -19,4 +19,19 @@ class FeedStock extends Model
         'stock_kg'    => 'decimal:2',
         'cost_per_kg' => 'decimal:2',
     ];
+
+    public function purchases()
+    {
+        return $this->hasMany(FeedPurchase::class);
+    }
+
+    public function dailyLogs()
+    {
+        return $this->hasMany(DailyLog::class);
+    }
+
+    public function getStockValueAttribute(): float
+    {
+        return (float) $this->stock_kg * (float) $this->cost_per_kg;
+    }
 }

@@ -3,247 +3,243 @@
 namespace App\Http\Controllers;
 
 use App\Models\Coop;
-use App\Models\FeedStock;
 use App\Models\DailyLog;
 use App\Models\EggGrade;
+use App\Models\FeedStock;
+use App\Models\Setting;
+use App\Services\DailyLogCalculator;
+use App\Support\Format;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class DailyLogController extends Controller
 {
-    public function create()
+    // Riwayat semua laporan panen (khusus owner)
+    public function index(Request $request)
     {
-        $coops = Coop::where('status', 'active')->get();
-        $feedStocks = FeedStock::all();
-        $eggGrades = EggGrade::where('is_active', true)->get();
+        $request->validate(['start' => 'nullable|date', 'end' => 'nullable|date', 'coop_id' => 'nullable|integer']);
 
-        return view('daily_logs.create', compact('coops', 'feedStocks', 'eggGrades'));
+        $start  = $request->date('start') ?? Carbon::today()->subDays(13);
+        $end    = $request->date('end') ?? Carbon::today();
+        $coopId = $request->integer('coop_id') ?: null;
+
+        $query = DailyLog::with(['coop', 'feedStock', 'recorder'])
+            ->whereBetween('log_date', [$start->toDateString(), $end->toDateString()])
+            ->when($coopId, fn ($q) => $q->where('coop_id', $coopId));
+
+        $totals = (clone $query)->selectRaw('COUNT(*) as n, SUM(eggs_total_count) as eggs, SUM(eggs_total_kg) as kg,
+            SUM(feed_consumed_kg) as feed, SUM(mortality) + SUM(cull) as loss, AVG(hdp_percentage) as hdp')->first();
+
+        $logs = $query->orderByDesc('log_date')->orderBy('coop_id')->paginate(20)->withQueryString();
+
+        $coops = Coop::orderBy('name')->get(['id', 'name']);
+
+        return view('daily_logs.index', compact('logs', 'coops', 'start', 'end', 'coopId', 'totals'));
+    }
+
+    public function create(Request $request)
+    {
+        $request->validate(['date' => 'nullable|date']);
+
+        $date = $request->date('date') ?? Carbon::today();
+        if ($date->isFuture()) {
+            $date = Carbon::today();
+        }
+
+        $loggedCoopIds = DailyLog::where('log_date', $date->toDateString())->pluck('coop_id')->all();
+
+        $coops      = Coop::where('status', 'active')->orderBy('name')->get();
+        $feedStocks = FeedStock::orderBy('feed_name')->get();
+        $eggGrades  = EggGrade::where('is_active', true)->orderBy('id')->get();
+        $sackKg     = Setting::num('sack_kg');
+
+        // Kandang pertama yang belum dicatat dipilih otomatis
+        $suggestedCoop = old('coop_id') ?? $coops->first(fn ($c) => !in_array($c->id, $loggedCoopIds))?->id;
+
+        // Pakan terakhir yang dipakai kandang ini (agar tidak perlu memilih ulang)
+        $lastFeedByCoop = DailyLog::whereIn('id', DailyLog::selectRaw('MAX(id)')->groupBy('coop_id'))
+            ->pluck('feed_stock_id', 'coop_id');
+
+        $todayLogs = DailyLog::with('coop')->where('log_date', $date->toDateString())->get();
+
+        return view('daily_logs.create', compact(
+            'date', 'coops', 'feedStocks', 'eggGrades', 'sackKg', 'loggedCoopIds',
+            'suggestedCoop', 'lastFeedByCoop', 'todayLogs'
+        ));
     }
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'coop_id' => 'required|exists:coops,id',
-            'log_date' => 'required|date',
-            'feed_stock_id' => 'required|exists:feed_stocks,id',
-            'feed_sacks' => 'nullable|integer|min:0',
-            'extra_feed_kg' => 'nullable|numeric|min:0',
-            'mortality' => 'nullable|integer|min:0',
-            'cull' => 'nullable|integer|min:0',
-            'notes' => 'nullable|string|max:500',
-            'grades' => 'required|array',
-            'grades.*.egg_grade_id' => 'required|exists:egg_grades,id',
-            'grades.*.trays_count' => 'nullable|integer|min:0',
-            'grades.*.extra_eggs' => 'nullable|integer|min:0',
-            'grades.*.weight_kg' => 'nullable|numeric|min:0',
-        ]);
+        $rules = DailyLogCalculator::rules();
 
-        $coop = Coop::findOrFail($validated['coop_id']);
-        $feed = FeedStock::findOrFail($validated['feed_stock_id']);
+        $rules['coop_id'] = ['required', Rule::exists('coops', 'id')->where('status', 'active')];
+        $rules['log_date'] = [
+            'required', 'date', 'before_or_equal:today',
+            Rule::unique('daily_logs')->where(fn ($q) => $q->where('coop_id', $request->coop_id)),
+        ];
 
-        $totalFeedKg = (($validated['feed_sacks'] ?? 0) * 50) + ($validated['extra_feed_kg'] ?? 0);
-        $totalFeedCost = round($totalFeedKg * $feed->cost_per_kg, 2);
-
-        $totalEggsCount = 0;
-        $totalEggsKg = 0;
-        $gradeDetails = [];
-
-        foreach ($validated['grades'] as $item) {
-            $trays = $item['trays_count'] ?? 0;
-            $extra = $item['extra_eggs'] ?? 0;
-            $kg = $item['weight_kg'] ?? 0;
-            $count = ($trays * 30) + $extra;
-
-            if ($count > 0 || $kg > 0) {
-                $totalEggsCount += $count;
-                $totalEggsKg += $kg;
-                $gradeDetails[] = [
-                    'egg_grade_id' => $item['egg_grade_id'],
-                    'trays_count' => $trays,
-                    'extra_eggs' => $extra,
-                    'total_eggs' => $count,
-                    'weight_kg' => $kg,
-                ];
-            }
+        // Pekerja hanya boleh mencatat hari ini atau kemarin
+        if ($request->user()->isWorker()) {
+            $rules['log_date'][] = 'after_or_equal:' . Carbon::yesterday()->toDateString();
         }
 
-        $activePop = $coop->current_population;
-        $hdp = $activePop > 0 ? round(($totalEggsCount / $activePop) * 100, 2) : 0;
-        $fcr = $totalEggsKg > 0 ? min(999.99, round($totalFeedKg / $totalEggsKg, 2)) : null;
+        $data = $request->validate($rules, [
+            'log_date.after_or_equal' => 'Pekerja hanya bisa mencatat panen hari ini atau kemarin. Hubungi pemilik untuk tanggal lain.',
+            'log_date.before_or_equal' => 'Tanggal panen tidak boleh di masa depan.',
+        ]);
 
-        DB::transaction(function () use ($validated, $totalFeedKg, $totalFeedCost, $totalEggsCount, $totalEggsKg, $hdp, $fcr, $gradeDetails, $coop, $feed) {
+        $coop = Coop::findOrFail($data['coop_id']);
+        $feed = FeedStock::findOrFail($data['feed_stock_id']);
+        $calc = DailyLogCalculator::calculate($data, $feed, $coop->current_population);
+
+        if ($calc['eggs_total_count'] === 0 && $calc['feed_consumed_kg'] == 0 && empty($data['mortality']) && empty($data['cull'])) {
+            return back()->withInput()->with('error', 'Formulir masih kosong. Isi minimal jumlah telur atau pakan.');
+        }
+
+        if (($data['mortality'] ?? 0) + ($data['cull'] ?? 0) > $coop->current_population) {
+            return back()->withInput()->withErrors(['mortality' => 'Jumlah ayam mati + afkir melebihi jumlah ayam di ' . $coop->name . ' (' . Format::number($coop->current_population) . ' ekor).']);
+        }
+
+        DB::transaction(function () use ($data, $calc, $coop, $feed, $request) {
             $log = DailyLog::create([
-                'coop_id' => $validated['coop_id'],
-                'log_date' => $validated['log_date'],
-                'mortality' => $validated['mortality'] ?? 0,
-                'cull' => $validated['cull'] ?? 0,
-                'feed_stock_id' => $validated['feed_stock_id'],
-                'feed_consumed_kg' => $totalFeedKg,
-                'feed_cost_total' => $totalFeedCost,
-                'eggs_total_count' => $totalEggsCount,
-                'eggs_total_kg' => $totalEggsKg,
-                'hdp_percentage' => $hdp,
-                'fcr' => $fcr,
-                'notes' => $validated['notes'] ?? null,
+                'coop_id'          => $coop->id,
+                'log_date'         => $data['log_date'],
+                'mortality'        => $data['mortality'] ?? 0,
+                'cull'             => $data['cull'] ?? 0,
+                'feed_stock_id'    => $feed->id,
+                'feed_consumed_kg' => $calc['feed_consumed_kg'],
+                'feed_cost_total'  => $calc['feed_cost_total'],
+                'eggs_total_count' => $calc['eggs_total_count'],
+                'eggs_total_kg'    => $calc['eggs_total_kg'],
+                'hdp_percentage'   => $calc['hdp_percentage'],
+                'fcr'              => $calc['fcr'],
+                'notes'            => $data['notes'] ?? null,
+                'recorded_by'      => $request->user()->id,
             ]);
 
-            foreach ($gradeDetails as $detail) {
-                $log->grades()->create($detail);
-            }
+            $log->grades()->createMany($calc['grades']);
 
-            $loss = ($validated['mortality'] ?? 0) + ($validated['cull'] ?? 0);
+            $loss = ($data['mortality'] ?? 0) + ($data['cull'] ?? 0);
             if ($loss > 0) {
                 $coop->decrement('current_population', $loss);
             }
 
-            if ($totalFeedKg > 0) {
-                $feed->decrement('stock_kg', $totalFeedKg);
+            if ($calc['feed_consumed_kg'] > 0) {
+                $feed->decrement('stock_kg', $calc['feed_consumed_kg']);
             }
         });
 
-        return redirect()->route('daily-logs.create')->with('success', 'Panen telur per grade berhasil disimpan!');
+        $message = sprintf(
+            'Tersimpan! %s: %s telur (%s), %s kg pakan.',
+            $coop->name,
+            Format::number($calc['eggs_total_count']),
+            Format::trays($calc['eggs_total_count']),
+            Format::number($calc['feed_consumed_kg'], 1)
+        );
+
+        return redirect()->route('daily-logs.create', ['date' => $data['log_date']])->with('success', $message);
     }
 
     public function edit(DailyLog $dailyLog)
     {
-        $coops = Coop::where('status', 'active')->get();
-        $feedStocks = FeedStock::all();
-        $eggGrades = EggGrade::all();
+        $dailyLog->load(['grades', 'coop', 'recorder']);
 
-        $dailyLog->load('grades');
+        $coops      = Coop::where('status', 'active')->orWhere('id', $dailyLog->coop_id)->orderBy('name')->get();
+        $feedStocks = FeedStock::orderBy('feed_name')->get();
+        $eggGrades  = EggGrade::where('is_active', true)
+            ->orWhereIn('id', $dailyLog->grades->pluck('egg_grade_id'))
+            ->orderBy('id')->get();
 
-        $feedSacks = floor($dailyLog->feed_consumed_kg / 50);
-        $extraFeedKg = $dailyLog->feed_consumed_kg - ($feedSacks * 50);
+        $sackKg      = Setting::num('sack_kg') ?: 50;
+        $feedSacks   = (int) floor($dailyLog->feed_consumed_kg / $sackKg);
+        $extraFeedKg = round($dailyLog->feed_consumed_kg - ($feedSacks * $sackKg), 2);
 
-        return view('daily_logs.edit', compact('dailyLog', 'coops', 'feedStocks', 'eggGrades', 'feedSacks', 'extraFeedKg'));
+        return view('daily_logs.edit', compact('dailyLog', 'coops', 'feedStocks', 'eggGrades', 'feedSacks', 'extraFeedKg', 'sackKg'));
     }
 
     public function update(Request $request, DailyLog $dailyLog)
     {
-        $validated = $request->validate([
-            'coop_id' => 'required|exists:coops,id',
-            'log_date' => [
-                'required',
-                'date',
-                Rule::unique('daily_logs')
-                    ->where(fn($query) => $query->where('coop_id', $request->coop_id))
-                    ->ignore($dailyLog->id)
-            ],
-            'feed_stock_id' => 'required|exists:feed_stocks,id',
-            'feed_sacks' => 'nullable|integer|min:0',
-            'extra_feed_kg' => 'nullable|numeric|min:0',
-            'mortality' => 'nullable|integer|min:0',
-            'cull' => 'nullable|integer|min:0',
-            'notes' => 'nullable|string|max:500',
-            'grades' => 'required|array',
-            'grades.*.egg_grade_id' => 'required|exists:egg_grades,id',
-            'grades.*.trays_count' => 'nullable|integer|min:0',
-            'grades.*.extra_eggs' => 'nullable|integer|min:0',
-            'grades.*.weight_kg' => 'nullable|numeric|min:0',
-        ]);
+        $rules = DailyLogCalculator::rules();
+        $rules['log_date'] = [
+            'required', 'date', 'before_or_equal:today',
+            Rule::unique('daily_logs')
+                ->where(fn ($q) => $q->where('coop_id', $request->coop_id))
+                ->ignore($dailyLog->id),
+        ];
 
-        $newCoop = Coop::findOrFail($validated['coop_id']);
-        $newFeed = FeedStock::findOrFail($validated['feed_stock_id']);
+        $data = $request->validate($rules);
 
-        $newTotalFeedKg = (($validated['feed_sacks'] ?? 0) * 50) + ($validated['extra_feed_kg'] ?? 0);
-        $newTotalFeedCost = round($newTotalFeedKg * $newFeed->cost_per_kg, 2);
+        $newCoop = Coop::findOrFail($data['coop_id']);
+        $newFeed = FeedStock::findOrFail($data['feed_stock_id']);
 
-        $newTotalEggsCount = 0;
-        $newTotalEggsKg = 0;
-        $gradeDetails = [];
+        $oldLoss   = $dailyLog->mortality + $dailyLog->cull;
+        $oldFeedKg = (float) $dailyLog->feed_consumed_kg;
 
-        foreach ($validated['grades'] as $item) {
-            $trays = $item['trays_count'] ?? 0;
-            $extra = $item['extra_eggs'] ?? 0;
-            $kg = $item['weight_kg'] ?? 0;
-            $count = ($trays * 30) + $extra;
+        // Populasi sebelum penyusutan hari itu
+        $population = $newCoop->current_population + ($dailyLog->coop_id == $newCoop->id ? $oldLoss : 0);
+        $calc       = DailyLogCalculator::calculate($data, $newFeed, $population);
 
-            if ($count > 0 || $kg > 0) {
-                $newTotalEggsCount += $count;
-                $newTotalEggsKg += $kg;
-                $gradeDetails[] = [
-                    'egg_grade_id' => $item['egg_grade_id'],
-                    'trays_count' => $trays,
-                    'extra_eggs' => $extra,
-                    'total_eggs' => $count,
-                    'weight_kg' => $kg,
-                ];
-            }
+        if (($data['mortality'] ?? 0) + ($data['cull'] ?? 0) > $population) {
+            return back()->withInput()->withErrors(['mortality' => 'Jumlah ayam mati + afkir melebihi jumlah ayam di kandang (' . Format::number($population) . ' ekor).']);
         }
 
-        $oldLoss = ($dailyLog->mortality ?? 0) + ($dailyLog->cull ?? 0);
-        $newLoss = ($validated['mortality'] ?? 0) + ($validated['cull'] ?? 0);
-        $oldFeedKg = $dailyLog->feed_consumed_kg ?? 0;
-
-        if ($dailyLog->coop_id == $newCoop->id) {
-            $populationBeforeLog = $newCoop->current_population + $oldLoss;
-        } else {
-            $populationBeforeLog = $newCoop->current_population;
-        }
-
-        $hdp = $populationBeforeLog > 0
-            ? round(($newTotalEggsCount / $populationBeforeLog) * 100, 2)
-            : 0;
-
-        $fcr = $newTotalEggsKg > 0
-            ? min(999.99, round($newTotalFeedKg / $newTotalEggsKg, 2))
-            : null;
-
-        DB::transaction(function () use (
-            $dailyLog,
-            $validated,
-            $newCoop,
-            $newFeed,
-            $newTotalFeedKg,
-            $newTotalFeedCost,
-            $newTotalEggsCount,
-            $newTotalEggsKg,
-            $hdp,
-            $fcr,
-            $gradeDetails,
-            $oldLoss,
-            $oldFeedKg,
-            $newLoss
-        ) {
+        DB::transaction(function () use ($dailyLog, $data, $calc, $newCoop, $newFeed, $oldLoss, $oldFeedKg) {
+            // Kembalikan dulu dampak catatan lama
             if ($oldLoss > 0) {
                 Coop::where('id', $dailyLog->coop_id)->increment('current_population', $oldLoss);
             }
-
-            if ($oldFeedKg > 0) {
+            if ($oldFeedKg > 0 && $dailyLog->feed_stock_id) {
                 FeedStock::where('id', $dailyLog->feed_stock_id)->increment('stock_kg', $oldFeedKg);
             }
 
             $dailyLog->update([
-                'coop_id' => $validated['coop_id'],
-                'log_date' => $validated['log_date'],
-                'mortality' => $validated['mortality'] ?? 0,
-                'cull' => $validated['cull'] ?? 0,
-                'feed_stock_id' => $validated['feed_stock_id'],
-                'feed_consumed_kg' => $newTotalFeedKg,
-                'feed_cost_total' => $newTotalFeedCost,
-                'eggs_total_count' => $newTotalEggsCount,
-                'eggs_total_kg' => $newTotalEggsKg,
-                'hdp_percentage' => $hdp,
-                'fcr' => $fcr,
-                'notes' => $validated['notes'] ?? null,
+                'coop_id'          => $newCoop->id,
+                'log_date'         => $data['log_date'],
+                'mortality'        => $data['mortality'] ?? 0,
+                'cull'             => $data['cull'] ?? 0,
+                'feed_stock_id'    => $newFeed->id,
+                'feed_consumed_kg' => $calc['feed_consumed_kg'],
+                'feed_cost_total'  => $calc['feed_cost_total'],
+                'eggs_total_count' => $calc['eggs_total_count'],
+                'eggs_total_kg'    => $calc['eggs_total_kg'],
+                'hdp_percentage'   => $calc['hdp_percentage'],
+                'fcr'              => $calc['fcr'],
+                'notes'            => $data['notes'] ?? null,
             ]);
 
             $dailyLog->grades()->delete();
+            $dailyLog->grades()->createMany($calc['grades']);
 
-            foreach ($gradeDetails as $detail) {
-                $dailyLog->grades()->create($detail);
-            }
-
+            // Terapkan dampak catatan baru
+            $newLoss = ($data['mortality'] ?? 0) + ($data['cull'] ?? 0);
             if ($newLoss > 0) {
-                $newCoop->decrement('current_population', $newLoss);
+                $newCoop->refresh()->decrement('current_population', $newLoss);
             }
-
-            if ($newTotalFeedKg > 0) {
-                $newFeed->decrement('stock_kg', $newTotalFeedKg);
+            if ($calc['feed_consumed_kg'] > 0) {
+                $newFeed->refresh()->decrement('stock_kg', $calc['feed_consumed_kg']);
             }
         });
 
-        return redirect()->route('daily-logs.create')->with('success', 'Data panen berhasil diperbarui!');
+        return redirect()->route('daily-logs.index')->with('success', 'Laporan panen ' . $newCoop->name . ' tanggal ' . Format::date($data['log_date']) . ' berhasil diperbarui.');
+    }
+
+    public function destroy(DailyLog $dailyLog)
+    {
+        DB::transaction(function () use ($dailyLog) {
+            // Kembalikan populasi dan stok pakan seperti sebelum dicatat
+            $loss = $dailyLog->mortality + $dailyLog->cull;
+            if ($loss > 0) {
+                Coop::where('id', $dailyLog->coop_id)->increment('current_population', $loss);
+            }
+            if ($dailyLog->feed_consumed_kg > 0 && $dailyLog->feed_stock_id) {
+                FeedStock::where('id', $dailyLog->feed_stock_id)->increment('stock_kg', $dailyLog->feed_consumed_kg);
+            }
+
+            $dailyLog->delete();
+        });
+
+        return back()->with('success', 'Laporan panen dihapus. Jumlah ayam dan stok pakan sudah dikembalikan.');
     }
 }

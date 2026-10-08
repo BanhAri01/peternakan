@@ -20,6 +20,10 @@ class FeedPurchase extends Model
         'notes',
     ];
 
+    protected $casts = [
+        'purchase_date' => \App\Casts\DateOnly::class,
+    ];
+
     protected static function booted()
     {
         static::creating(function ($purchase) {

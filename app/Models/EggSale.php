@@ -27,6 +27,44 @@ class EggSale extends Model
         'notes',
     ];
 
+    protected $casts = [
+        'sale_date' => \App\Casts\DateOnly::class,
+        'due_date'  => \App\Casts\DateOnly::class,
+    ];
+
+    public const UNITS = [
+        'kg'    => 'Kilo (kg)',
+        'krat'  => 'Rak / Krat (30 butir)',
+        'butir' => 'Butir',
+    ];
+
+    public function getStatusLabelAttribute(): string
+    {
+        return match ($this->payment_status) {
+            'paid'    => 'Lunas',
+            'partial' => 'Dibayar sebagian',
+            default   => 'Belum dibayar',
+        };
+    }
+
+    public function getStatusToneAttribute(): string
+    {
+        return match ($this->payment_status) {
+            'paid'    => 'success',
+            'partial' => 'warning',
+            default   => 'danger',
+        };
+    }
+
+    public function getUnitLabelAttribute(): string
+    {
+        return match ($this->unit_type) {
+            'krat'  => 'rak',
+            'butir' => 'butir',
+            default => 'kg',
+        };
+    }
+
     protected static function booted()
     {
         static::saving(function ($sale) {

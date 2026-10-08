@@ -1,223 +1,211 @@
 @extends('layouts.app')
 
+@section('title', 'Belanja Pakan & Telur')
+
+@php use App\Support\Format; @endphp
+
 @section('content')
-<div class="container-fluid px-lg-5">
+<x-page-header title="Belanja Pakan & Telur" subtitle="Catat pakan yang datang ke gudang dan telur yang dibeli dari peternak lain. Stok bertambah otomatis." icon="bi-truck">
+    <a href="{{ route('suppliers.index') }}" class="btn btn-light"><i class="bi bi-shop"></i> Daftar Pemasok</a>
+    <a href="{{ route('feed-stocks.index') }}" class="btn btn-light"><i class="bi bi-box-seam"></i> Stok Pakan</a>
+</x-page-header>
 
-    <!-- Header Section -->
-    <div class="card shadow-sm border-0 mb-4">
-        <div class="card-body p-4">
-            <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1.5 text-uppercase fw-bold mb-2">
-                <i class="bi bi-truck me-1"></i> Rantai Pasok & Gudang
-            </span>
-            <h2 class="fw-black text-dark mb-1">Pengadaan Pakan & Kulakan Telur Luar</h2>
-            <p class="text-muted mb-0">Pencatatan restock karung pakan gudang dan pemborongan telur rekanan.</p>
-        </div>
-    </div>
+<x-alerts />
 
-    @if(session('success'))
-        <div class="alert alert-success d-flex align-items-center mb-4 rounded-3 p-3 shadow-sm border-0 bg-success-subtle text-success-emphasis" role="alert">
-            <i class="bi bi-check-circle-fill fs-4 me-3"></i>
-            <div class="fw-bold">{{ session('success') }}</div>
-        </div>
-    @endif
+<div class="row g-3 mb-3">
+    <div class="col-md-6"><x-stat label="Belanja pakan bulan ini" :value="Format::rupiah($monthFeed)" icon="bi-box-seam-fill" tone="brand" /></div>
+    <div class="col-md-6"><x-stat label="Beli telur bulan ini" :value="Format::rupiah($monthEgg)" icon="bi-egg-fill" tone="egg" /></div>
+</div>
 
-    <div class="row g-4 mb-4">
+<ul class="nav nav-pills gap-2 mb-3" role="tablist">
+    <li class="nav-item">
+        <a href="{{ route('procurement.index') }}" class="btn {{ $tab === 'pakan' ? 'btn-primary' : 'btn-light' }}"><i class="bi bi-box-seam-fill"></i> Pakan datang</a>
+    </li>
+    <li class="nav-item">
+        <a href="{{ route('procurement.index', ['tab' => 'telur']) }}" class="btn {{ $tab === 'telur' ? 'btn-egg' : 'btn-light' }}"><i class="bi bi-egg-fill"></i> Beli telur dari luar</a>
+    </li>
+</ul>
 
-        <!-- Form Kulakan Telur Luar -->
-        <div class="col-lg-6" x-data="{ unit: 'krat' }">
-            <div class="card shadow-sm border-0 border-top border-4 border-warning h-100">
-                <div class="card-header bg-white p-4 border-bottom">
-                    <span class="badge bg-warning-subtle text-dark border border-warning-subtle px-2.5 py-1 text-uppercase fw-bold mb-1">Trading Komoditas</span>
-                    <h4 class="fw-black text-dark mb-1">Kulakan Telur Dari Luar</h4>
-                    <p class="text-muted small mb-0">Menambah stok gudang telur tanpa menambah beban populasi kandang.</p>
-                </div>
-                <div class="card-body p-4">
-                    <form action="{{ route('procurement.egg-purchase.store') }}" method="POST">
+<datalist id="supplier_list">
+    @foreach($suppliers as $s)
+        <option value="{{ $s->name }}">
+    @endforeach
+</datalist>
+
+@if($tab === 'pakan')
+    <div class="row g-3">
+        <div class="col-xl-5">
+            <x-panel title="Catat pakan yang datang" icon="bi-plus-circle-fill" tone="brand">
+                @if($feedStocks->isEmpty())
+                    <x-empty icon="bi-box-seam" title="Belum ada jenis pakan">
+                        <x-slot:action><a href="{{ route('feed-stocks.create') }}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Tambah jenis pakan</a></x-slot:action>
+                    </x-empty>
+                @else
+                    <form action="{{ route('procurement.feed-purchase.store') }}" method="POST"
+                          x-data="{ sacks: @js(old('sacks_count', '')), extra: @js(old('extra_kg', '')), price: @js(old('cost_per_kg', '')), sackKg: {{ (float) $sackKg }},
+                                    kg() { return (Number(this.sacks) || 0) * this.sackKg + (Number(this.extra) || 0) },
+                                    total() { return this.kg() * (Number(this.price) || 0) } }">
                         @csrf
-
-                        <!-- Satuan Kulakan -->
-                        <div class="mb-3">
-                            <label class="form-label text-secondary small text-uppercase fw-bold d-block">Satuan Kulakan</label>
-                            <div class="btn-group w-100" role="group">
-                                <button type="button" @click="unit = 'krat'" :class="unit === 'krat' ? 'btn-primary active' : 'btn-outline-secondary'" class="btn btn-sm py-2 fw-bold">
-                                    Krat (30 btr)
-                                </button>
-                                <button type="button" @click="unit = 'kg'" :class="unit === 'kg' ? 'btn-primary active' : 'btn-outline-secondary'" class="btn btn-sm py-2 fw-bold">
-                                    Kiloan (Kg)
-                                </button>
-                                <button type="button" @click="unit = 'butir'" :class="unit === 'butir' ? 'btn-primary active' : 'btn-outline-secondary'" class="btn btn-sm py-2 fw-bold">
-                                    Butir
-                                </button>
-                            </div>
-                            <input type="hidden" name="unit_type" :value="unit">
-                        </div>
-
-                        <div class="row g-3 mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label text-secondary small text-uppercase fw-bold">Pilih Grade Telur</label>
-                                <select name="egg_grade_id" class="form-select fw-bold" required>
-                                    @foreach($eggGrades as $g)
-                                        <option value="{{ $g->id }}">{{ $g->name }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label text-secondary small text-uppercase fw-bold">Beli Dari Peternak</label>
-                                <input list="supplier_list" name="supplier_id" placeholder="Nama peternak..." class="form-control fw-bold" required>
-                                <datalist id="supplier_list">
-                                    @foreach($suppliers as $s)
-                                        <option value="{{ $s->id }}">{{ $s->name }}</option>
-                                    @endforeach
-                                </datalist>
-                            </div>
-                        </div>
-
-                        <div class="p-3 bg-warning-subtle rounded-3 border border-warning-subtle mb-3">
-                            <div class="row g-2">
-                                <div class="col-6">
-                                    <label class="form-label text-dark small text-uppercase fw-bold text-center d-block mb-1" x-text="unit === 'krat' ? 'Jumlah Krat' : (unit === 'kg' ? 'Jumlah Kg' : 'Jumlah Butir')"></label>
-                                    <input type="number" step="any" name="quantity_unit" placeholder="0" class="form-control text-center fw-bold fs-4 bg-white" required>
-                                </div>
-                                <div class="col-6">
-                                    <label class="form-label text-dark small text-uppercase fw-bold text-center d-block mb-1" x-text="unit === 'krat' ? 'Harga Beli/Krat' : (unit === 'kg' ? 'Harga Beli/Kg' : 'Harga Beli/Butir')"></label>
-                                    <input type="number" name="price_per_unit" placeholder="0" class="form-control text-center fw-bold fs-4 bg-white" required>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row g-3 mb-4">
-                            <div class="col-md-6">
-                                <label class="form-label text-secondary small text-uppercase fw-bold">Tanggal Transaksi</label>
-                                <input type="date" name="purchase_date" value="{{ date('Y-m-d') }}" class="form-control fw-bold" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label text-secondary small text-uppercase fw-bold">Timbangan Riil KG (Opsional)</label>
-                                <input type="number" step="0.1" name="weight_kg" placeholder="Otomatis jika kosong" class="form-control fw-bold">
-                            </div>
-                        </div>
-
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-dark btn-lg py-2.5 fw-bold">
-                                <i class="bi bi-box-arrow-in-down me-1"></i> MASUKKAN TELUR KE GUDANG
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-
-        <!-- Form Restock Pakan -->
-        <div class="col-lg-6">
-            <div class="card shadow-sm border-0 border-top border-4 border-primary h-100">
-                <div class="card-header bg-white p-4 border-bottom">
-                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2.5 py-1 text-uppercase fw-bold mb-1">Ransum Gudang</span>
-                    <h4 class="fw-black text-dark mb-1">Penerimaan / Restock Bahan Pakan</h4>
-                    <p class="text-muted small mb-0">Memperbarui stok fisik ransum dan modal harga beli rata-rata.</p>
-                </div>
-                <div class="card-body p-4">
-                    <form action="{{ route('procurement.feed-purchase.store') }}" method="POST">
-                        @csrf
-
-                        <div class="mb-3">
-                            <label class="form-label text-secondary small text-uppercase fw-bold">Pilih Jenis Bahan Pakan</label>
-                            <select name="feed_stock_id" class="form-select form-select-lg fw-bold" required>
+                        <x-field label="Jenis pakan" name="feed_stock_id" required>
+                            <select id="feed_stock_id" name="feed_stock_id" class="form-select" required>
                                 @foreach($feedStocks as $feed)
-                                    <option value="{{ $feed->id }}">{{ $feed->feed_name }} (Stok saat ini: {{ number_format($feed->stock_kg, 0) }} kg)</option>
+                                    <option value="{{ $feed->id }}" @selected(old('feed_stock_id') == $feed->id)>{{ $feed->feed_name }} (sisa {{ Format::number($feed->stock_kg) }} kg)</option>
                                 @endforeach
                             </select>
-                        </div>
-
-                        <div class="row g-3 mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label text-secondary small text-uppercase fw-bold">Supplier / Distributor</label>
-                                <input list="supplier_list_feed" name="supplier_id" placeholder="Nama toko/agen..." class="form-control fw-bold" required>
-                                <datalist id="supplier_list_feed">
-                                    @foreach($suppliers as $s)
-                                        <option value="{{ $s->id }}">{{ $s->name }}</option>
-                                    @endforeach
-                                </datalist>
+                        </x-field>
+                        <div class="row g-3">
+                            <div class="col-sm-7">
+                                <x-field label="Dibeli dari" name="supplier_name" required>
+                                    <input type="text" id="supplier_name" name="supplier_name" list="supplier_list" value="{{ old('supplier_name') }}" class="form-control" placeholder="Nama toko pakan" autocomplete="off" required>
+                                </x-field>
                             </div>
-                            <div class="col-md-6">
-                                <label class="form-label text-secondary small text-uppercase fw-bold">Tanggal Kedatangan</label>
-                                <input type="date" name="purchase_date" value="{{ date('Y-m-d') }}" class="form-control fw-bold" required>
+                            <div class="col-sm-5">
+                                <x-field label="Tanggal datang" name="purchase_date" required>
+                                    <input type="date" id="purchase_date" name="purchase_date" value="{{ old('purchase_date', today()->toDateString()) }}" max="{{ today()->toDateString() }}" class="form-control" required>
+                                </x-field>
                             </div>
                         </div>
-
-                        <div class="p-3 bg-primary-subtle rounded-3 border border-primary-subtle mb-3">
-                            <div class="row g-2">
-                                <div class="col-6">
-                                    <label class="form-label text-primary-emphasis small text-uppercase fw-bold text-center d-block mb-1">Jumlah Karung (@50kg)</label>
-                                    <input type="number" name="sacks_count" placeholder="0" class="form-control text-center fw-bold fs-4 bg-white">
-                                </div>
-                                <div class="col-6">
-                                    <label class="form-label text-primary-emphasis small text-uppercase fw-bold text-center d-block mb-1">+ Tambahan (KG)</label>
-                                    <input type="number" step="0.5" name="extra_kg" placeholder="0" class="form-control text-center fw-bold fs-4 bg-white">
-                                </div>
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="mini-label" for="sacks_count">Jumlah karung ({{ Format::number($sackKg) }} kg)</label>
+                                <input type="number" id="sacks_count" name="sacks_count" min="0" step="1" x-model="sacks" class="form-control num-lg" placeholder="0">
                             </div>
+                            <div class="col-6">
+                                <label class="mini-label" for="extra_kg">+ Tambahan (kg)</label>
+                                <input type="number" id="extra_kg" name="extra_kg" min="0" step="0.1" x-model="extra" class="form-control num-lg" placeholder="0">
+                            </div>
+                            @error('sacks_count')<div class="col-12"><div class="field-error"><i class="bi bi-exclamation-circle-fill"></i> {{ $message }}</div></div>@enderror
                         </div>
-
-                        <div class="mb-4">
-                            <label class="form-label text-secondary small text-uppercase fw-bold">Harga Modal Beli Per KG (Rp)</label>
-                            <input type="number" name="cost_per_kg" placeholder="Misal: 6800" class="form-control form-control-lg text-center fw-black fs-4" required>
+                        <x-field label="Harga beli per kg" name="cost_per_kg" required>
+                            <div class="input-group">
+                                <span class="input-group-text">Rp</span>
+                                <input type="number" id="cost_per_kg" name="cost_per_kg" min="1" step="1" x-model="price" class="form-control num-lg" placeholder="Contoh: 7400" required>
+                            </div>
+                        </x-field>
+                        <div class="summary-bar">
+                            <div><div class="k">Total pakan</div><div class="v" x-text="angka(kg()) + ' kg'"></div></div>
+                            <div><div class="k">Total bayar</div><div class="v" x-text="rupiah(total())"></div></div>
                         </div>
-
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary btn-lg py-2.5 fw-bold">
-                                <i class="bi bi-plus-circle-fill me-1"></i> TAMBAHKAN STOK PAKAN GUDANG
-                            </button>
-                        </div>
+                        <x-field label="Catatan" name="notes" optional>
+                            <input type="text" id="notes" name="notes" value="{{ old('notes') }}" class="form-control" placeholder="Nomor nota, dll">
+                        </x-field>
+                        <button type="submit" class="btn btn-primary btn-xl w-100"><i class="bi bi-box-arrow-in-down"></i> Masukkan ke Gudang</button>
                     </form>
-                </div>
-            </div>
+                @endif
+            </x-panel>
         </div>
-
-    </div>
-
-    <!-- Riwayat Pembelian Telur Rekanan -->
-    <div class="card shadow-sm border-0 mb-4">
-        <div class="card-header bg-white p-4 border-bottom">
-            <h4 class="fw-black text-dark mb-1">Riwayat Pembelian Telur Dari Rekanan</h4>
-            <p class="text-muted small mb-0">Catatan pemborongan telur luar yang telah masuk ke inventaris gudang.</p>
-        </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Tanggal</th>
-                            <th>Supplier</th>
-                            <th>Grade</th>
-                            <th>Kuantitas</th>
-                            <th>Harga Satuan</th>
-                            <th class="text-end">Total Modal Beli</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($recentEggPurchases as $item)
-                            <tr>
-                                <td class="text-muted">{{ $item->purchase_date }}</td>
-                                <td class="fw-bold text-dark">{{ $item->supplier->name ?? 'Peternak Rekanan' }}</td>
-                                <td>
-                                    <span class="badge bg-warning-subtle text-dark border border-warning-subtle">
-                                        {{ $item->grade->name ?? '-' }}
-                                    </span>
-                                </td>
-                                <td class="fw-bold">
-                                    {{ $item->quantity_unit }} {{ $item->unit_type }} <span class="text-muted small fw-normal">({{ $item->weight_kg }} kg)</span>
-                                </td>
-                                <td>Rp {{ number_format($item->price_per_unit, 0, ',', '.') }}</td>
-                                <td class="text-end fw-black text-dark fs-6">Rp {{ number_format($item->total_cost, 0, ',', '.') }}</td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="6" class="text-center py-5 text-muted">Belum ada transaksi kulakan telur.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
+        <div class="col-xl-7">
+            <x-panel title="Riwayat pakan datang" icon="bi-clock-history" flush>
+                @if($feedPurchases->isEmpty())
+                    <x-empty icon="bi-truck" title="Belum ada pembelian pakan" />
+                @else
+                    <div class="table-wrap">
+                        <table class="tbl stack">
+                            <thead><tr><th>Tanggal</th><th>Pakan</th><th class="num">Jumlah</th><th class="num">Harga/kg</th><th class="num">Total</th></tr></thead>
+                            <tbody>
+                                @foreach($feedPurchases as $p)
+                                    <tr>
+                                        <td class="title-cell"><div><b>{{ Format::date($p->purchase_date) }}</b><div class="text-muted small">{{ $p->supplier->name ?? '-' }}</div></div></td>
+                                        <td data-label="Pakan">{{ $p->feedStock->feed_name ?? '-' }}</td>
+                                        <td data-label="Jumlah" class="num">{{ Format::number($p->quantity_kg) }} kg</td>
+                                        <td data-label="Harga/kg" class="num">@rupiah($p->cost_per_kg)</td>
+                                        <td data-label="Total" class="num"><b>@rupiah($p->total_cost)</b></td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @endif
+                @if($feedPurchases->hasPages())
+                    <x-slot:footer>{{ $feedPurchases->links() }}</x-slot:footer>
+                @endif
+            </x-panel>
         </div>
     </div>
-
-</div>
+@else
+    <div class="row g-3">
+        <div class="col-xl-5">
+            <x-panel title="Catat telur yang dibeli" icon="bi-plus-circle-fill" tone="egg" subtitle="Menambah stok telur untuk dijual lagi, tanpa mengubah data kandang.">
+                <form action="{{ route('procurement.egg-purchase.store') }}" method="POST"
+                      x-data="{ unit: @js(old('unit_type', 'krat')), qty: @js(old('quantity_unit', '')), price: @js(old('price_per_unit', '')),
+                                label() { return { kg: 'kg', krat: 'rak', butir: 'butir' }[this.unit] },
+                                total() { return (Number(this.qty) || 0) * (Number(this.price) || 0) } }">
+                    @csrf
+                    <div class="row g-3">
+                        <div class="col-sm-7">
+                            <x-field label="Dibeli dari" name="supplier_name" required>
+                                <input type="text" id="supplier_name" name="supplier_name" list="supplier_list" value="{{ old('supplier_name') }}" class="form-control" placeholder="Nama peternak" autocomplete="off" required>
+                            </x-field>
+                        </div>
+                        <div class="col-sm-5">
+                            <x-field label="Tanggal" name="purchase_date" required>
+                                <input type="date" id="purchase_date" name="purchase_date" value="{{ old('purchase_date', today()->toDateString()) }}" max="{{ today()->toDateString() }}" class="form-control" required>
+                            </x-field>
+                        </div>
+                    </div>
+                    <x-field label="Jenis telur" name="egg_grade_id" required>
+                        <select id="egg_grade_id" name="egg_grade_id" class="form-select" required>
+                            @foreach($eggGrades as $g)
+                                <option value="{{ $g->id }}" @selected(old('egg_grade_id') == $g->id)>{{ $g->name }}</option>
+                            @endforeach
+                        </select>
+                    </x-field>
+                    <div class="field">
+                        <span class="field-label">Dibeli per</span>
+                        <div class="choices">
+                            <label class="choice"><input type="radio" name="unit_type" value="krat" x-model="unit"><span>Rak<small>isi 30</small></span></label>
+                            <label class="choice"><input type="radio" name="unit_type" value="kg" x-model="unit"><span>Kilo<small>ditimbang</small></span></label>
+                            <label class="choice"><input type="radio" name="unit_type" value="butir" x-model="unit"><span>Butir<small>eceran</small></span></label>
+                        </div>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label class="field-label" for="quantity_unit">Jumlah <span x-text="label()"></span> <span class="req">*</span></label>
+                            <input type="number" id="quantity_unit" name="quantity_unit" min="0.01" step="any" x-model="qty" class="form-control num-lg" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="field-label" for="price_per_unit">Harga per <span x-text="label()"></span> <span class="req">*</span></label>
+                            <input type="number" id="price_per_unit" name="price_per_unit" min="1" step="1" x-model="price" class="form-control num-lg" required>
+                            <div class="money-preview" x-show="price" x-text="'= ' + rupiah(price)"></div>
+                        </div>
+                    </div>
+                    <div class="field mt-3" x-show="unit !== 'kg'">
+                        <label class="field-label" for="weight_kg">Berat ditimbang (kg) <span class="opt">(boleh kosong)</span></label>
+                        <input type="number" id="weight_kg" name="weight_kg" min="0" step="0.01" value="{{ old('weight_kg') }}" class="form-control" placeholder="Jika kosong, dihitung otomatis">
+                    </div>
+                    <div class="summary-bar mt-3" style="grid-template-columns:1fr">
+                        <div><div class="k">Total bayar</div><div class="v" x-text="rupiah(total())"></div></div>
+                    </div>
+                    <button type="submit" class="btn btn-egg btn-xl w-100"><i class="bi bi-box-arrow-in-down"></i> Masukkan ke Stok Telur</button>
+                </form>
+            </x-panel>
+        </div>
+        <div class="col-xl-7">
+            <x-panel title="Riwayat beli telur" icon="bi-clock-history" flush>
+                @if($eggPurchases->isEmpty())
+                    <x-empty icon="bi-egg" title="Belum ada pembelian telur" />
+                @else
+                    <div class="table-wrap">
+                        <table class="tbl stack">
+                            <thead><tr><th>Tanggal</th><th>Telur</th><th class="num">Jumlah</th><th class="num">Total</th></tr></thead>
+                            <tbody>
+                                @foreach($eggPurchases as $p)
+                                    <tr>
+                                        <td class="title-cell"><div><b>{{ Format::date($p->purchase_date) }}</b><div class="text-muted small">{{ $p->supplier->name ?? '-' }}</div></div></td>
+                                        <td data-label="Telur">{{ $p->grade->name ?? '-' }}</td>
+                                        <td data-label="Jumlah" class="num">{{ Format::number($p->quantity_unit, 2) }} {{ ['krat' => 'rak', 'kg' => 'kg', 'butir' => 'butir'][$p->unit_type] ?? $p->unit_type }}<div class="text-muted small">{{ Format::number($p->weight_kg, 1) }} kg</div></td>
+                                        <td data-label="Total" class="num"><b>@rupiah($p->total_cost)</b></td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @endif
+                @if($eggPurchases->hasPages())
+                    <x-slot:footer>{{ $eggPurchases->links() }}</x-slot:footer>
+                @endif
+            </x-panel>
+        </div>
+    </div>
+@endif
 @endsection

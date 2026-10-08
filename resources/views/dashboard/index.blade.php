@@ -1,442 +1,283 @@
 @extends('layouts.app')
 
+@section('title', 'Beranda')
+
+@php
+    use App\Support\Format;
+    $isToday  = $date->isToday();
+    $eggDiff  = $eggCount - $yesterdayEggs;
+    $hour     = (int) now()->format('H');
+    $greeting = $hour < 11 ? 'Selamat pagi' : ($hour < 15 ? 'Selamat siang' : ($hour < 19 ? 'Selamat sore' : 'Selamat malam'));
+@endphp
+
 @section('content')
-<div class="container-fluid px-lg-5">
-    @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show shadow-sm border-0 mb-4" role="alert">
-            <i class="bi bi-check-circle-fill me-2"></i>
-            {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
+<x-page-header
+    :title="$greeting . ', ' . auth()->user()->name"
+    :subtitle="($isToday ? 'Ringkasan peternakan hari ini, ' : 'Ringkasan peternakan tanggal ') . Format::dayDate($date) . '.'"
+    icon="bi-house-door-fill">
+    <a href="{{ route('owner.dashboard') }}" class="btn {{ $isToday ? 'btn-primary' : 'btn-light' }}">Hari ini</a>
+    <a href="{{ route('owner.dashboard', ['date' => today()->subDay()->toDateString()]) }}" class="btn {{ $date->isYesterday() ? 'btn-primary' : 'btn-light' }}">Kemarin</a>
+    <form method="GET">
+        <input type="date" name="date" value="{{ $date->toDateString() }}" max="{{ today()->toDateString() }}" class="form-control" onchange="this.form.submit()" aria-label="Pilih tanggal">
+    </form>
+</x-page-header>
 
-    <div class="card shadow-sm border-0 mb-4">
-        <div class="card-body p-4 d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
-            <div>
-                <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1.5 text-uppercase fw-bold mb-2">
-                    <i class="bi bi-graph-up-arrow me-1"></i> Analisis Harian Farm
-                </span>
-                <h2 class="fw-black text-dark mb-1">Ringkasan Operasional & Finansial</h2>
-                <p class="text-muted mb-0">Evaluasi batas impas HPP, rasio konversi pakan (FCR), dan performa tiap kandang.</p>
-            </div>
+<x-alerts />
 
-            <form method="GET" action="{{ route('owner.dashboard') }}" class="d-flex flex-wrap align-items-center gap-2">
-                <a href="{{ route('owner.dashboard', ['date' => date('Y-m-d')]) }}" class="btn {{ $selectedDate === date('Y-m-d') ? 'btn-primary' : 'btn-outline-secondary' }}">
-                    Hari Ini
-                </a>
-                <a href="{{ route('owner.dashboard', ['date' => date('Y-m-d', strtotime('-1 day'))]) }}" class="btn {{ $selectedDate === date('Y-m-d', strtotime('-1 day')) ? 'btn-primary' : 'btn-outline-secondary' }}">
-                    Kemarin
-                </a>
-                <div class="input-group" style="width: 220px;">
-                    <span class="input-group-text bg-white fw-bold text-muted"><i class="bi bi-calendar3"></i></span>
-                    <input type="date" name="date" value="{{ $selectedDate }}" onchange="this.form.submit()" class="form-control fw-bold">
+{{-- ===================== ANGKA UTAMA ===================== --}}
+<div class="row g-3 mb-3">
+    <div class="col-sm-6 col-xl-3">
+        <x-stat label="Telur dikumpulkan" :value="Format::number($eggCount)" unit="butir" icon="bi-egg-fill" tone="egg">
+            {{ Format::trays($eggCount) }} &middot; {{ Format::number($eggKg, 1) }} kg
+            @if($yesterdayEggs > 0)
+                <div class="{{ $eggDiff >= 0 ? 'text-success' : 'text-danger' }} fw-bold">
+                    <i class="bi {{ $eggDiff >= 0 ? 'bi-arrow-up' : 'bi-arrow-down' }}"></i>
+                    {{ Format::number(abs($eggDiff)) }} butir dibanding kemarin
                 </div>
-            </form>
-        </div>
-    </div>
-
-    <div class="row g-3 mb-4">
-        <div class="col-md-6 col-xl-3">
-            <div class="card shadow-sm border-0 border-top border-4 border-success h-100">
-                <div class="card-body p-4">
-                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1 text-uppercase fw-bold">Modal Bersih (HPP)</span>
-                    <div class="my-3">
-                        <span class="fs-1 fw-black text-dark">Rp {{ number_format($hppPerKg, 0, ',', '.') }}</span>
-                        <span class="text-muted fw-bold fs-6">/ kg</span>
-                    </div>
-                    <div class="pt-2 border-top d-flex justify-content-between text-muted small">
-                        <span>Batas Impas Jual:</span>
-                        <span class="fw-bold text-success">Pakan + Biaya Ops</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-6 col-xl-3">
-            <div class="card shadow-sm border-0 border-top border-4 border-warning h-100">
-                <div class="card-body p-4">
-                    <span class="badge bg-warning-subtle text-dark border border-warning-subtle px-2.5 py-1 text-uppercase fw-bold">Total Panen Telur</span>
-                    <div class="my-3">
-                        <span class="fs-1 fw-black text-dark">{{ number_format($totalEggKg, 1) }}</span>
-                        <span class="text-warning-emphasis fw-bold fs-5">KG</span>
-                    </div>
-                    <div class="pt-2 border-top d-flex justify-content-between text-muted small">
-                        <span>Total Butir:</span>
-                        <span class="fw-bold text-dark">{{ number_format($totalEggCount) }} <span class="fw-normal">({{ $totalEggTrays }} rak + {{ $totalEggExtra }} btr)</span></span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-6 col-xl-3">
-            <div class="card shadow-sm border-0 border-top border-4 border-primary h-100">
-                <div class="card-body p-4">
-                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2.5 py-1 text-uppercase fw-bold">Performa Farm (HDP)</span>
-                    <div class="my-3">
-                        <span class="fs-1 fw-black {{ $overallHdp >= 75 ? 'text-primary' : 'text-warning' }}">{{ $overallHdp }}%</span>
-                        <span class="text-muted fw-bold fs-6">Rata-rata</span>
-                    </div>
-                    <div class="pt-2 border-top d-flex justify-content-between text-muted small">
-                        <span>FCR: <strong class="text-dark">{{ $overallFcr > 0 ? $overallFcr : '-' }}</strong></span>
-                        <span>Pakan: <strong class="text-dark">{{ number_format($totalFeedConsumedKg, 0) }} kg</strong></span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-6 col-xl-3">
-            <div class="card shadow-sm border-0 border-top border-4 border-danger h-100">
-                <div class="card-body p-4">
-                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2.5 py-1 text-uppercase fw-bold">Penyusutan Ayam</span>
-                    <div class="my-3">
-                        <span class="fs-1 fw-black {{ ($totalMortality + $totalCull) > 5 ? 'text-danger' : 'text-dark' }}">{{ $totalMortality + $totalCull }}</span>
-                        <span class="text-muted fw-bold fs-6">ekor</span>
-                    </div>
-                    <div class="pt-2 border-top d-flex justify-content-between text-muted small">
-                        <span>Mati: <strong class="text-dark">{{ $totalMortality }}</strong></span>
-                        <span>Afkir Sakit: <strong class="text-dark">{{ $totalCull }}</strong></span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="card shadow-sm border-0 mb-4">
-        <div class="card-header bg-white p-4 border-bottom d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2">
-            <div>
-                <h4 class="fw-black text-dark mb-1">Hasil Panen Berdasarkan Grade (Hari Ini)</h4>
-                <p class="text-muted small mb-0">Akumulasi seluruh kandang berdasarkan kategori sortir aktif.</p>
-            </div>
-            @if(Route::has('grades.index'))
-                <a href="{{ route('grades.index') }}" class="btn btn-outline-primary btn-sm fw-bold">
-                    <i class="bi bi-gear-fill me-1"></i> Kelola Kategori Grade
-                </a>
             @endif
-        </div>
-
-        <div class="card-body p-4">
-            <div class="row g-3">
-                @forelse($gradeBreakdown as $gb)
-                    <div class="col-6 col-md-4 col-xl-3">
-                        <div class="p-3 bg-light rounded-3 border border-warning-subtle">
-                            <span class="text-muted text-uppercase fw-bold small d-block">{{ $gb['name'] }}</span>
-                            <div class="fs-2 fw-black text-dark my-1">
-                                {{ number_format($gb['weight_kg'], 1) }} <span class="fs-6 fw-bold text-warning-emphasis">KG</span>
-                            </div>
-                            <div class="small text-muted">
-                                Kontribusi: <strong>{{ $totalEggKg > 0 ? round(($gb['weight_kg'] / $totalEggKg) * 100, 1) : 0 }}%</strong>
-                            </div>
-                        </div>
-                    </div>
-                @empty
-                    <div class="col-12">
-                        <div class="p-4 text-center text-muted bg-light rounded-3">
-                            Belum ada data grading telur pada tanggal {{ date('d/m/Y', strtotime($selectedDate)) }}.
-                        </div>
-                    </div>
-                @endforelse
-            </div>
-        </div>
+        </x-stat>
     </div>
-
-    <div class="row g-4 mb-4">
-        <div class="col-lg-8">
-            <div class="card shadow-sm border-0 h-100">
-                <div class="card-header bg-white p-4 border-bottom">
-                    <h5 class="fw-black text-dark mb-1">Tren Produksi & Konsumsi Ransum Pakan (7 Hari)</h5>
-                    <p class="text-muted small mb-0">Perbandingan kilogram panen telur vs kilogram pakan.</p>
-                </div>
-                <div class="card-body p-4">
-                    <div style="height: 300px;">
-                        <canvas id="trendChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-lg-4">
-            <div class="card shadow-sm border-0 h-100">
-                <div class="card-header bg-white p-4 border-bottom">
-                    <h5 class="fw-black text-dark mb-1">Proporsi Grade Telur</h5>
-                    <p class="text-muted small mb-0">Persentase sortir panen hari ini.</p>
-                </div>
-                <div class="card-body p-4 d-flex align-items-center justify-content-center">
-                    <div style="height: 280px; width: 100%;">
-                        @if(count($gradeBreakdown) > 0)
-                            <canvas id="gradeChart"></canvas>
-                        @else
-                            <div class="text-center text-muted small py-5">Belum ada data grading pada tanggal ini.</div>
-                        @endif
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div class="col-sm-6 col-xl-3">
+        <x-stat label="Produksi (HDP)" :value="Format::number($hdp, 1) . '%'" icon="bi-graph-up-arrow"
+                :tone="$logs->isEmpty() ? 'neutral' : ($hdp >= $hdpWarn ? 'success' : 'danger')" :alert="$logs->isNotEmpty() && $hdp < $hdpWarn">
+            Persen ayam yang bertelur hari itu.
+            <div>Batas aman: {{ Format::number($hdpWarn) }}% ke atas</div>
+        </x-stat>
     </div>
-
-    <div class="card shadow-sm border-0 mb-4">
-        <div class="card-header bg-white p-4 border-bottom d-flex justify-content-between align-items-center">
-            <div>
-                <h4 class="fw-black text-dark mb-1">Performa Teknis & Finansial Tiap Kandang</h4>
-                <p class="text-muted small mb-0">Sortir grade, efisiensi ransum pakan, dan kontribusi laba harian.</p>
-            </div>
-            <span class="badge bg-dark fs-6 px-3 py-2 rounded-pill">{{ count($coopDetails) }} Kandang Aktif</span>
-        </div>
-
-        <div class="card-body p-4">
-            <div class="d-flex flex-column gap-4">
-                @forelse($coopDetails as $item)
-                    <div class="card border-2 shadow-none {{ $item['statusColor'] === 'rose' ? 'border-danger' : ($item['statusColor'] === 'amber' ? 'border-warning' : 'border-secondary-subtle') }}">
-                        <div class="card-header bg-light py-3 px-4 d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3">
-                            <div>
-                                <h5 class="fw-black text-dark mb-0 d-inline-block me-2">{{ $item['coop']->name }}</h5>
-                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Umur: {{ round($item['age_weeks']) }} Minggu</span>
-                                <div class="small fw-bold {{ $item['statusColor'] === 'rose' ? 'text-danger' : ($item['statusColor'] === 'amber' ? 'text-warning' : 'text-muted') }}">
-                                    Status: {{ $item['statusNote'] }}
-                                </div>
-                            </div>
-
-                            <div class="d-flex align-items-center gap-3 flex-wrap">
-                                @if($item['log'])
-                                    <a href="{{ route('daily-logs.edit', $item['log']->id) }}" class="btn btn-outline-primary btn-sm fw-bold">
-                                        <i class="bi bi-pencil-square me-1"></i> Edit
-                                    </a>
-                                @endif
-
-                                <div>
-                                    <span class="text-muted small d-block">Populasi Aktif</span>
-                                    <strong class="fs-5 text-dark">{{ number_format($item['coop']->current_population) }} ekor</strong>
-                                </div>
-
-                                @if($item['log'])
-                                    <div>
-                                        <span class="text-muted small d-block">Penyusutan</span>
-                                        <strong class="fs-5 {{ ($item['log']->mortality + $item['log']->cull) > 0 ? 'text-danger' : 'text-dark' }}">
-                                            {{ $item['log']->mortality + $item['log']->cull }} ekor
-                                        </strong>
-                                    </div>
-                                @endif
-                            </div>
-                        </div>
-
-                        @if($item['log'])
-                            <div class="card-body p-4">
-                                <div class="row g-4 divide-lg-start">
-                                    <div class="col-lg-4">
-                                        <div class="d-flex justify-content-between align-items-baseline mb-2">
-                                            <span class="badge bg-warning-subtle text-dark border border-warning-subtle">Hasil Telur</span>
-                                            <div>
-                                                <span class="fs-4 fw-black text-dark">{{ $item['log']->eggs_total_kg }} kg</span>
-                                                <span class="badge bg-primary ms-1">{{ $item['log']->hdp_percentage }}% HDP</span>
-                                            </div>
-                                        </div>
-
-                                        <div class="p-2.5 bg-light rounded-3 mb-3 small">
-                                            Total Butir: <strong class="text-dark">{{ number_format($item['log']->eggs_total_count) }}</strong>
-                                            <span class="text-muted d-block mt-0.5">({{ floor($item['log']->eggs_total_count / 30) }} rak + {{ $item['log']->eggs_total_count % 30 }} btr)</span>
-                                        </div>
-
-                                        <div class="small">
-                                            <span class="fw-bold text-muted text-uppercase d-block mb-1">Rincian Grade:</span>
-                                            @forelse($item['log']->grades as $g)
-                                                <div class="d-flex justify-content-between py-1 border-bottom">
-                                                    <span>{{ $g->grade->name ?? 'Grade' }}</span>
-                                                    <strong class="text-dark">{{ $g->trays_count }} rak + {{ $g->extra_eggs }} btr ({{ $g->weight_kg }} kg)</strong>
-                                                </div>
-                                            @empty
-                                                <span class="text-muted fst-italic">Belum ada rincian grade.</span>
-                                            @endforelse
-                                        </div>
-                                    </div>
-
-                                    <div class="col-lg-4 border-start border-light-subtle">
-                                        <div class="d-flex justify-content-between align-items-baseline mb-2">
-                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Konsumsi Pakan</span>
-                                            <span class="fs-4 fw-black text-dark">{{ $item['log']->feed_consumed_kg }} kg</span>
-                                        </div>
-
-                                        <div class="d-flex flex-column gap-2 small">
-                                            <div class="d-flex justify-content-between py-1 border-bottom">
-                                                <span class="text-muted">Jenis Ransum:</span>
-                                                <strong class="text-dark">{{ $item['log']->feedStock->feed_name ?? 'Pakan Campur' }}</strong>
-                                            </div>
-
-                                            <div class="d-flex justify-content-between py-1 border-bottom">
-                                                <span class="text-muted">Takaran Rata-rata:</span>
-                                                <strong class="text-dark">{{ $item['feedGramPerHen'] }} gr / ekor</strong>
-                                            </div>
-
-                                            <div class="d-flex justify-content-between py-1 border-bottom">
-                                                <span class="text-muted">FCR:</span>
-                                                <strong class="{{ $item['log']->fcr > 2.3 ? 'text-warning' : 'text-success' }} fs-6">{{ $item['log']->fcr ?? '-' }}</strong>
-                                            </div>
-
-                                            <div class="d-flex justify-content-between py-1">
-                                                <span class="text-muted">Biaya Pakan:</span>
-                                                <strong class="text-dark">Rp {{ number_format($item['feedCostDaily'], 0, ',', '.') }}</strong>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="col-lg-4 border-start border-light-subtle">
-                                        <div class="d-flex justify-content-between align-items-baseline mb-2">
-                                            <span class="text-muted fw-bold small text-uppercase">Margin Finansial</span>
-                                            <span class="badge {{ $item['marginDaily'] >= 0 ? 'bg-success' : 'bg-danger' }}">
-                                                {{ $item['marginDaily'] >= 0 ? 'SURPLUS' : 'DEFISIT' }}
-                                            </span>
-                                        </div>
-
-                                        <div class="d-flex flex-column gap-2 small">
-                                            <div class="d-flex justify-content-between py-1 border-bottom">
-                                                <span class="text-muted">Estimasi Nilai Telur:</span>
-                                                <strong class="text-dark">Rp {{ number_format($item['eggRevenueEst'], 0, ',', '.') }}</strong>
-                                            </div>
-
-                                            <div class="d-flex justify-content-between py-1 border-bottom">
-                                                <span class="text-muted">Beban Pakan:</span>
-                                                <strong class="text-danger">(Rp {{ number_format($item['feedCostDaily'], 0, ',', '.') }})</strong>
-                                            </div>
-
-                                            <div class="d-flex justify-content-between py-1 border-bottom">
-                                                <span class="text-muted">Laba Harian:</span>
-                                                <strong class="fs-6 {{ $item['marginDaily'] >= 0 ? 'text-success' : 'text-danger' }}">
-                                                    Rp {{ number_format($item['marginDaily'], 0, ',', '.') }}
-                                                </strong>
-                                            </div>
-
-                                            <div class="p-2 bg-success-subtle border border-success-subtle rounded-3 d-flex justify-content-between align-items-center mt-1">
-                                                <span class="fw-bold text-success-emphasis">Margin/Ekor:</span>
-                                                <span class="fs-6 fw-black {{ $item['marginPerHen'] >= 100 ? 'text-success' : ($item['marginPerHen'] > 0 ? 'text-warning' : 'text-danger') }}">
-                                                    Rp {{ number_format($item['marginPerHen'], 0, ',', '.') }}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        @else
-                            <div class="card-body p-4 text-center text-muted small">
-                                Belum ada laporan panen tercatat untuk kandang ini pada tanggal terpilih.
-                            </div>
-                        @endif
-                    </div>
-                @empty
-                    <div class="text-center text-muted py-4">Belum ada data kandang terdaftar.</div>
-                @endforelse
-            </div>
-        </div>
+    <div class="col-sm-6 col-xl-3">
+        <x-stat label="Jumlah ayam" :value="Format::number($population)" unit="ekor" icon="bi-feather" tone="info">
+            Di {{ $activeCoops->count() }} kandang aktif
+            @if($mortality + $cull > 0)
+                <div class="text-danger fw-bold"><i class="bi bi-heartbreak-fill"></i> {{ $mortality }} mati, {{ $cull }} afkir</div>
+            @else
+                <div class="text-success fw-bold"><i class="bi bi-check-circle"></i> Tidak ada yang mati</div>
+            @endif
+        </x-stat>
     </div>
-
-    <div class="card shadow-sm border-0 mb-4">
-        <div class="card-header bg-white p-4 border-bottom d-flex justify-content-between align-items-center">
-            <div>
-                <h4 class="fw-black text-dark mb-1">Ketahanan Stok Ransum Pakan Gudang</h4>
-                <p class="text-muted small mb-0">Estimasi sisa hari pemakaian sebelum batas aman pemesanan ulang.</p>
-            </div>
-            <a href="{{ route('procurement.index') }}" class="btn btn-outline-primary btn-sm fw-bold">
-                Kelola Pengadaan &rarr;
-            </a>
-        </div>
-
-        <div class="card-body p-4">
-            <div class="row g-3">
-                @foreach($feedStocks as $feed)
-                    <div class="col-md-6 col-lg-3">
-                        <div class="p-3 rounded-3 border {{ $feed['days_left'] <= 3 ? 'bg-danger-subtle border-danger-subtle' : 'bg-light border-light-subtle' }}">
-                            <div class="fw-bold text-dark text-truncate">{{ $feed['name'] }}</div>
-                            <div class="small text-muted mt-1">Sisa Stok: {{ number_format($feed['stock_kg'], 0, ',', '.') }} kg</div>
-                            <div class="pt-2 mt-2 border-top d-flex justify-content-between align-items-baseline">
-                                <span class="small text-muted text-uppercase fw-bold">Estimasi Habis:</span>
-                                <span class="fs-4 fw-black {{ $feed['days_left'] <= 3 ? 'text-danger' : 'text-primary' }}">
-                                    {{ $feed['days_left'] }} Hari
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                @endforeach
-            </div>
-        </div>
+    <div class="col-sm-6 col-xl-3">
+        <x-stat label="Pakan dipakai" :value="Format::number($feedKg)" unit="kg" icon="bi-box-seam-fill" tone="brand">
+            Biaya pakan @rupiah($feedCost)
+            <div>Efisiensi (FCR): <b>{{ $fcr ? Format::number($fcr, 2) : '-' }}</b></div>
+        </x-stat>
     </div>
 </div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <x-stat label="Modal per kg telur" :value="$hppPerKg > 0 ? Format::rupiah($hppPerKg) : '-'" icon="bi-calculator-fill" tone="neutral">
+            Pakan + biaya lain dibagi kg telur. Jual di atas angka ini agar untung.
+        </x-stat>
+    </div>
+    <div class="col-md-4">
+        <x-stat label="Penjualan hari ini" :value="Format::rupiah($salesToday)" icon="bi-basket2-fill" tone="success" :href="route('sales.index')">
+            Harga rata-rata: @rupiah($avgPrice)/kg <span class="d-block small">({{ $priceSource }})</span>
+        </x-stat>
+    </div>
+    <div class="col-md-4">
+        <x-stat label="Piutang belum dibayar" :value="Format::rupiah($totalDebt)" icon="bi-hourglass-split" :tone="$totalDebt > 0 ? 'warning' : 'success'" :href="route('customers.index')">
+            Uang pelanggan yang belum masuk. Tekan untuk melihat rinciannya.
+        </x-stat>
+    </div>
+</div>
+
+<div class="row g-3">
+    {{-- ===================== PERLU PERHATIAN ===================== --}}
+    <div class="col-lg-5">
+        <x-panel title="Perlu perhatian" icon="bi-bell-fill" flush>
+            @if(empty($alerts))
+                <x-empty icon="bi-emoji-smile" title="Semua aman">Tidak ada masalah yang perlu ditangani.</x-empty>
+            @else
+                <ul class="alert-list">
+                    @foreach($alerts as $a)
+                        <li>
+                            <span class="dot {{ $a['tone'] }}"><i class="bi {{ $a['icon'] }}"></i></span>
+                            <div class="txt">
+                                <b>{{ $a['title'] }}</b>
+                                <span>{{ $a['text'] }}</span>
+                            </div>
+                            <a href="{{ $a['url'] }}" class="btn btn-light btn-sm flex-shrink-0">{{ $a['cta'] }}</a>
+                        </li>
+                    @endforeach
+                </ul>
+            @endif
+        </x-panel>
+
+        <x-panel title="Keuangan bulan ini" icon="bi-wallet2" :subtitle="'1 ' . $date->translatedFormat('F') . ' s/d ' . Format::date($date)">
+            <div class="kv"><span class="k">Hasil penjualan telur</span><span class="v text-success">@rupiah($month['revenue'])</span></div>
+            <div class="kv"><span class="k">Pakan yang dimakan</span><span class="v">@rupiah($month['feed_used'])</span></div>
+            <div class="kv"><span class="k">Biaya lain (gaji, listrik, obat, dll)</span><span class="v">@rupiah($month['expenses'] + $month['vaccines'])</span></div>
+            @if($month['egg_bought'] > 0)
+                <div class="kv"><span class="k">Beli telur dari luar</span><span class="v">@rupiah($month['egg_bought'])</span></div>
+            @endif
+            <div class="kv total">
+                <span class="k">{{ $month['net_profit'] >= 0 ? 'Perkiraan untung' : 'Perkiraan rugi' }}</span>
+                <span class="v {{ $month['net_profit'] >= 0 ? 'text-success' : 'text-danger' }}">@rupiah($month['net_profit'])</span>
+            </div>
+            <x-slot:footer>
+                <a href="{{ route('reports.index') }}" class="fw-bold text-decoration-none">Lihat laporan lengkap <i class="bi bi-arrow-right"></i></a>
+            </x-slot:footer>
+        </x-panel>
+    </div>
+
+    {{-- ===================== GRAFIK ===================== --}}
+    <div class="col-lg-7">
+        <x-panel title="Hasil telur 14 hari terakhir" icon="bi-bar-chart-line-fill" subtitle="Batang = berat telur (kg). Garis = persen produksi (HDP).">
+            <div class="chart-box"><canvas id="trendChart" aria-label="Grafik hasil telur 14 hari"></canvas></div>
+        </x-panel>
+
+        <x-panel title="Jenis telur hari ini" icon="bi-egg-fill">
+            @if($gradeMix->isEmpty())
+                <x-empty icon="bi-egg" title="Belum ada data">Belum ada panen tercatat pada tanggal ini.</x-empty>
+            @else
+                @php $mixTotal = max(0.01, $gradeMix->sum('kg')); @endphp
+                @foreach($gradeMix as $g)
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <b>{{ $g->name }}</b>
+                            <span class="tabular"><b>{{ Format::number($g->kg, 1) }} kg</b> <span class="text-muted">· {{ Format::number($g->eggs) }} butir · {{ Format::number($g->kg / $mixTotal * 100, 0) }}%</span></span>
+                        </div>
+                        <div class="progress-thin"><span style="width: {{ $g->kg / $mixTotal * 100 }}%; background: var(--egg)"></span></div>
+                    </div>
+                @endforeach
+            @endif
+        </x-panel>
+    </div>
+</div>
+
+{{-- ===================== KANDANG ===================== --}}
+<div class="d-flex align-items-center justify-content-between mt-2 mb-3 flex-wrap gap-2">
+    <h2 class="h4 fw-800 mb-0"><i class="bi bi-house-heart-fill text-success me-1"></i> Keadaan tiap kandang</h2>
+    <a href="{{ route('coops.index') }}" class="btn btn-light btn-sm">Kelola kandang <i class="bi bi-arrow-right"></i></a>
+</div>
+
+@if($coopCards->isEmpty())
+    <x-panel>
+        <x-empty icon="bi-house-add" title="Belum ada kandang aktif">
+            <x-slot:action><a href="{{ route('coops.create') }}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Tambah Kandang</a></x-slot:action>
+        </x-empty>
+    </x-panel>
+@else
+    <div class="row g-3 mb-4">
+        @foreach($coopCards as $card)
+            @php $log = $card['log']; @endphp
+            <div class="col-md-6 col-xxl-4">
+                <section class="panel coop-card mb-0">
+                    <div class="panel-head">
+                        <div>
+                            <h3 class="panel-title">{{ $card['coop']->name }}</h3>
+                            <p class="panel-sub">{{ $card['coop']->strain ?: 'Ayam petelur' }} &middot; umur {{ $card['age'] }} minggu &middot; {{ Format::number($card['coop']->current_population) }} ekor</p>
+                        </div>
+                        <x-tag :tone="$card['status']['tone']">{{ $card['status']['text'] }}</x-tag>
+                    </div>
+                    <div class="panel-body">
+                        @if($log)
+                            <div class="metric-row mb-3">
+                                <div class="metric"><span class="k">Telur</span><span class="v">{{ Format::number($log->eggs_total_count) }}</span></div>
+                                <div class="metric"><span class="k">Produksi</span><span class="v {{ $log->hdp_percentage < $hdpWarn ? 'text-danger' : 'text-success' }}">{{ Format::number($log->hdp_percentage, 1) }}%</span></div>
+                                <div class="metric"><span class="k">Berat</span><span class="v">{{ Format::number($log->eggs_total_kg, 1) }} kg</span></div>
+                            </div>
+                            <div class="kv"><span class="k">Dalam rak</span><span class="v">{{ Format::trays($log->eggs_total_count) }}</span></div>
+                            <div class="kv"><span class="k">Pakan</span><span class="v">{{ Format::number($log->feed_consumed_kg, 1) }} kg @if($card['gramPerHen'])<span class="text-muted fw-normal">({{ $card['gramPerHen'] }} gr/ekor)</span>@endif</span></div>
+                            <div class="kv"><span class="k">Mati / afkir</span><span class="v {{ $log->mortality + $log->cull > 0 ? 'text-danger' : '' }}">{{ $log->mortality }} / {{ $log->cull }} ekor</span></div>
+                            <div class="kv"><span class="k">Perkiraan untung pakan</span><span class="v {{ $card['margin'] >= 0 ? 'text-success' : 'text-danger' }}">@rupiah($card['margin'])</span></div>
+                            @if($log->notes)
+                                <div class="help-tip mt-2"><i class="bi bi-chat-left-text"></i><span>{{ $log->notes }}</span></div>
+                            @endif
+                        @else
+                            <x-empty icon="bi-clipboard" title="Belum ada laporan" class="py-3">
+                                @if($isToday)
+                                    <x-slot:action><a href="{{ route('daily-logs.create') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Catat sekarang</a></x-slot:action>
+                                @endif
+                            </x-empty>
+                        @endif
+                    </div>
+                    <div class="panel-foot d-flex justify-content-between align-items-center gap-2">
+                        <small class="text-muted">{{ $log && $log->recorder ? 'Dicatat oleh ' . $log->recorder->name : '' }}</small>
+                        <span class="d-flex gap-2">
+                            @if($log)
+                                <a href="{{ route('daily-logs.edit', $log) }}" class="btn btn-light btn-sm"><i class="bi bi-pencil"></i> Ubah</a>
+                            @endif
+                            <a href="{{ route('coops.show', $card['coop']) }}" class="btn btn-light btn-sm">Detail <i class="bi bi-arrow-right"></i></a>
+                        </span>
+                    </div>
+                </section>
+            </div>
+        @endforeach
+    </div>
+@endif
+
+{{-- ===================== STOK PAKAN ===================== --}}
+<x-panel title="Stok pakan di gudang" icon="bi-box-seam-fill" subtitle="Perkiraan hari dihitung dari pemakaian rata-rata 7 hari terakhir." flush>
+    <x-slot:actions>
+        <a href="{{ route('procurement.index') }}" class="btn btn-light btn-sm"><i class="bi bi-truck"></i> Catat pembelian pakan</a>
+    </x-slot:actions>
+    @if($feeds->isEmpty())
+        <x-empty icon="bi-box-seam" title="Belum ada jenis pakan" />
+    @else
+        <div class="table-wrap">
+            <table class="tbl stack">
+                <thead><tr><th>Jenis pakan</th><th class="num">Sisa stok</th><th class="num">Pemakaian/hari</th><th>Cukup untuk</th></tr></thead>
+                <tbody>
+                    @foreach($feeds as $f)
+                        @php
+                            $days = $f['days_left'];
+                            $tone = $f['feed']->stock_kg < 0 ? 'danger' : ($days === null ? 'neutral' : ($days <= \App\Models\Setting::num('low_feed_days') ? 'warning' : 'success'));
+                        @endphp
+                        <tr>
+                            <td class="title-cell"><b>{{ $f['feed']->feed_name }}</b></td>
+                            <td data-label="Sisa stok" class="num">{{ Format::number($f['feed']->stock_kg) }} kg</td>
+                            <td data-label="Pemakaian/hari" class="num">{{ $f['per_day'] > 0 ? Format::number($f['per_day']) . ' kg' : '-' }}</td>
+                            <td data-label="Cukup untuk">
+                                <x-tag :tone="$tone">{{ $days === null ? 'Belum dipakai' : '± ' . $days . ' hari' }}</x-tag>
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    @endif
+</x-panel>
 @endsection
 
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
-    const ctxTrend = document.getElementById('trendChart').getContext('2d');
+    (function () {
+        var data = @json($chart);
+        Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+        Chart.defaults.font.size = 13;
+        Chart.defaults.color = '#3c473d';
 
-    new Chart(ctxTrend, {
-        type: 'line',
-        data: {
-            labels: @json($chartDates),
-            datasets: [
-                {
-                    label: 'Panen Telur (Kg)',
-                    data: @json($chartEggKg),
-                    borderColor: '#f59e0b',
-                    backgroundColor: 'rgba(245, 158, 11, 0.15)',
-                    borderWidth: 3,
-                    fill: true,
-                    tension: 0.35,
-                    pointRadius: 4
-                },
-                {
-                    label: 'Konsumsi Pakan (Kg)',
-                    data: @json($chartFeedKg),
-                    borderColor: '#2563eb',
-                    borderDash: [5, 5],
-                    borderWidth: 2,
-                    fill: false,
-                    tension: 0.35,
-                    pointRadius: 3
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'top'
-                }
+        new Chart(document.getElementById('trendChart'), {
+            data: {
+                labels: data.labels,
+                datasets: [
+                    { type: 'bar', label: 'Berat telur (kg)', data: data.eggs, backgroundColor: 'rgba(185, 119, 14, .75)', borderRadius: 6, yAxisID: 'y' },
+                    { type: 'line', label: 'Produksi HDP (%)', data: data.hdp, borderColor: '#3f5a26', backgroundColor: '#3f5a26', borderWidth: 3, tension: .3, pointRadius: 4, spanGaps: true, yAxisID: 'y1' }
+                ]
             },
-            scales: {
-                y: {
-                    grid: {
-                        color: '#e2e8f0'
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { position: 'bottom', labels: { usePointStyle: true, padding: 16 } },
+                    tooltip: {
+                        callbacks: {
+                            label: function (c) {
+                                if (c.raw === null) return c.dataset.label + ': belum dicatat';
+                                return c.dataset.label + ': ' + angka(c.raw, 1);
+                            }
+                        }
                     }
                 },
-                x: {
-                    grid: {
-                        display: false
-                    }
+                scales: {
+                    y: { beginAtZero: true, title: { display: true, text: 'kg' }, grid: { color: '#ebe7dc' } },
+                    y1: { position: 'right', min: 0, max: 100, title: { display: true, text: '%' }, grid: { display: false } },
+                    x: { grid: { display: false } }
                 }
             }
-        }
-    });
-
-    @if(count($gradeBreakdown) > 0)
-    const ctxGrade = document.getElementById('gradeChart').getContext('2d');
-
-    new Chart(ctxGrade, {
-        type: 'doughnut',
-        data: {
-            labels: @json(collect($gradeBreakdown)->pluck('name')),
-            datasets: [{
-                data: @json(collect($gradeBreakdown)->pluck('weight_kg')),
-                backgroundColor: ['#f59e0b', '#2563eb', '#10b981', '#ec4899', '#8b5cf6'],
-                borderWidth: 2
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            cutout: '70%',
-            plugins: {
-                legend: {
-                    position: 'bottom'
-                }
-            }
-        }
-    });
-    @endif
+        });
+    })();
 </script>
 @endpush

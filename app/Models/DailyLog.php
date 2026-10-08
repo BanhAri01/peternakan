@@ -19,10 +19,11 @@ class DailyLog extends Model
         'hdp_percentage',
         'fcr',
         'notes',
+        'recorded_by',
     ];
 
     protected $casts = [
-        'log_date' => 'date',
+        'log_date' => \App\Casts\DateOnly::class,
         'feed_consumed_kg' => 'decimal:2',
         'feed_cost_total' => 'decimal:2',
         'eggs_total_kg' => 'decimal:2',
@@ -43,5 +44,10 @@ class DailyLog extends Model
     public function grades()
     {
         return $this->hasMany(DailyLogGrade::class);
+    }
+
+    public function recorder()
+    {
+        return $this->belongsTo(User::class, 'recorded_by');
     }
 }

@@ -24,7 +24,7 @@ class Vaccination extends Model
     ];
 
     protected $casts = [
-        'vaccination_date' => 'date',
+        'vaccination_date' => \App\Casts\DateOnly::class,
         'cost'             => 'decimal:2',
     ];
 

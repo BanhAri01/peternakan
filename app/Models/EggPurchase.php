@@ -21,6 +21,10 @@ class EggPurchase extends Model
         'notes',
     ];
 
+    protected $casts = [
+        'purchase_date' => \App\Casts\DateOnly::class,
+    ];
+
     protected static function booted()
     {
         static::saving(function ($item) {

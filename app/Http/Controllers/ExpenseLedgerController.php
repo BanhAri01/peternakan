@@ -3,11 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\DailyLog;
-use App\Models\EggPurchase;
 use App\Models\EggSale;
 use App\Models\ExpenseLedger;
-use App\Models\FeedPurchase;
 use App\Models\Vaccination;
+use App\Services\FarmFinance;
+use App\Support\Format;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Http\Request;
@@ -16,231 +16,72 @@ class ExpenseLedgerController extends Controller
 {
     public function index(Request $request)
     {
+        $request->validate([
+            'start_date' => 'nullable|date',
+            'end_date'   => 'nullable|date',
+            'category'   => 'nullable|string|max:255',
+        ]);
+
         $startDate = $request->get('start_date', Carbon::now()->startOfMonth()->toDateString());
-        $endDate = $request->get('end_date', Carbon::now()->toDateString());
-
-        $expenseQuery = ExpenseLedger::whereBetween('transaction_date', [$startDate, $endDate]);
-
-        if ($request->filled('category')) {
-            $expenseQuery->where('category', $request->category);
+        $endDate   = $request->get('end_date', Carbon::now()->toDateString());
+        if ($startDate > $endDate) {
+            [$startDate, $endDate] = [$endDate, $startDate];
         }
 
-        $totalExpense = (clone $expenseQuery)->sum('total_amount');
-        $expenses = (clone $expenseQuery)
-            ->latest('transaction_date')
-            ->paginate(10)
-            ->withQueryString();
+        $expenseQuery = ExpenseLedger::whereBetween('transaction_date', [$startDate, $endDate])
+            ->when($request->filled('category'), fn ($q) => $q->where('category', $request->category));
 
-        $categories = ExpenseLedger::select('category')
-            ->distinct()
-            ->pluck('category');
+        $filteredTotal = (float) (clone $expenseQuery)->sum('total_amount');
+        $expenses = (clone $expenseQuery)->latest('transaction_date')->latest('id')->paginate(15)->withQueryString();
 
-        // ==========================================
-        // LAPORAN PENJUALAN
-        // ==========================================
+        $categories = ExpenseLedger::select('category')->distinct()->orderBy('category')->pluck('category');
+        $summary    = FarmFinance::summary($startDate, $endDate);
 
-        $salesQuery = EggSale::whereBetween('sale_date', [$startDate, $endDate]);
+        // Grafik harian: uang masuk vs uang keluar
+        $salesByDate   = EggSale::whereBetween('sale_date', [$startDate, $endDate])->selectRaw('sale_date as d, SUM(total_amount) as t')->groupBy('sale_date')->pluck('t', 'd');
+        $expenseByDate = ExpenseLedger::whereBetween('transaction_date', [$startDate, $endDate])->selectRaw('transaction_date as d, SUM(total_amount) as t')->groupBy('transaction_date')->pluck('t', 'd');
+        $feedByDate    = DailyLog::whereBetween('log_date', [$startDate, $endDate])->selectRaw('log_date as d, SUM(feed_cost_total) as t')->groupBy('log_date')->pluck('t', 'd');
+        $vaccineByDate = Vaccination::whereBetween('vaccination_date', [$startDate, $endDate])->selectRaw('vaccination_date as d, SUM(cost) as t')->groupBy('vaccination_date')->pluck('t', 'd');
 
-        $totalSalesRevenue = (clone $salesQuery)->sum('total_amount');
-        $totalCashIn = (clone $salesQuery)->sum('paid_amount');
-        $totalNewDebt = (clone $salesQuery)->sum('debt_amount');
+        $norm = fn ($c) => $c->mapWithKeys(fn ($v, $k) => [Carbon::parse($k)->toDateString() => (float) $v]);
+        [$salesByDate, $expenseByDate, $feedByDate, $vaccineByDate] = array_map($norm, [$salesByDate, $expenseByDate, $feedByDate, $vaccineByDate]);
 
-        // ==========================================
-        // BEBAN & BIAYA
-        // ==========================================
-
-        $feedConsumedCost = DailyLog::whereBetween(
-            'log_date',
-            [$startDate, $endDate]
-        )->sum('feed_cost_total');
-
-        $cashOutFeedPurchase = FeedPurchase::whereBetween(
-            'purchase_date',
-            [$startDate, $endDate]
-        )->sum('total_cost');
-
-        $cashOutEggPurchase = EggPurchase::whereBetween(
-            'purchase_date',
-            [$startDate, $endDate]
-        )->sum('total_cost');
-
-        $operationalCost = ExpenseLedger::whereBetween(
-            'transaction_date',
-            [$startDate, $endDate]
-        )->sum('total_amount');
-
-        // Biaya vaksinasi
-        $vaccineCost = Vaccination::whereBetween(
-            'vaccination_date',
-            [$startDate, $endDate]
-        )->sum('cost');
-
-        // ==========================================
-        // LABA BERSIH
-        // ==========================================
-
-        $totalCogsAndOpEx =
-            $feedConsumedCost +
-            $cashOutEggPurchase +
-            $operationalCost +
-            $vaccineCost;
-
-        $netProfit = $totalSalesRevenue - $totalCogsAndOpEx;
-
-        // ==========================================
-        // ARUS KAS
-        // ==========================================
-
-        $totalCashOut =
-            $cashOutFeedPurchase +
-            $cashOutEggPurchase +
-            $operationalCost +
-            $vaccineCost;
-
-        $netCashFlow = $totalCashIn - $totalCashOut;
-
-        // ==========================================
-        // PIUTANG
-        // ==========================================
-
-        $totalAllDebt = EggSale::where(
-            'payment_status',
-            '!=',
-            'paid'
-        )->sum('debt_amount');
-
-        // ==========================================
-        // DATA GRAFIK
-        // ==========================================
-
-        $period = CarbonPeriod::create($startDate, $endDate);
-
-        $chartLabels = [];
-        $chartSalesData = [];
-        $chartExpenseData = [];
-        $chartProfitData = [];
-
-        $salesByDate = EggSale::whereBetween(
-            'sale_date',
-            [$startDate, $endDate]
-        )
-            ->selectRaw('sale_date, SUM(total_amount) as total')
-            ->groupBy('sale_date')
-            ->pluck('total', 'sale_date');
-
-        $expenseByDate = ExpenseLedger::whereBetween(
-            'transaction_date',
-            [$startDate, $endDate]
-        )
-            ->selectRaw('transaction_date, SUM(total_amount) as total')
-            ->groupBy('transaction_date')
-            ->pluck('total', 'transaction_date');
-
-        $feedCostByDate = DailyLog::whereBetween(
-            'log_date',
-            [$startDate, $endDate]
-        )
-            ->selectRaw('log_date, SUM(feed_cost_total) as total')
-            ->groupBy('log_date')
-            ->pluck('total', 'log_date');
-
-        $vaccineCostByDate = Vaccination::whereBetween(
-            'vaccination_date',
-            [$startDate, $endDate]
-        )
-            ->selectRaw('vaccination_date, SUM(cost) as total')
-            ->groupBy('vaccination_date')
-            ->pluck('total', 'vaccination_date');
-
-        foreach ($period as $date) {
-            $d = $date->format('Y-m-d');
-
-            $chartLabels[] = $date->format('d M');
-
-            $s = (float) ($salesByDate[$d] ?? 0);
-            $e = (float) ($expenseByDate[$d] ?? 0);
-            $f = (float) ($feedCostByDate[$d] ?? 0);
-            $v = (float) ($vaccineCostByDate[$d] ?? 0);
-
-            $chartSalesData[] = $s;
-            $chartExpenseData[] = $e + $v;
-            $chartProfitData[] = $s - ($e + $f + $v);
+        $chart = ['labels' => [], 'income' => [], 'cost' => []];
+        foreach (CarbonPeriod::create($startDate, $endDate) as $date) {
+            $d = $date->toDateString();
+            $chart['labels'][] = $date->translatedFormat('d M');
+            $chart['income'][] = $salesByDate[$d] ?? 0;
+            $chart['cost'][]   = ($expenseByDate[$d] ?? 0) + ($feedByDate[$d] ?? 0) + ($vaccineByDate[$d] ?? 0);
         }
 
-        // ==========================================
-        // KOMPOSISI BIAYA
-        // ==========================================
-
-        $expenseCategoriesBreakdown = ExpenseLedger::whereBetween(
-            'transaction_date',
-            [$startDate, $endDate]
-        )
+        $byCategory = ExpenseLedger::whereBetween('transaction_date', [$startDate, $endDate])
             ->selectRaw('category, SUM(total_amount) as total')
-            ->groupBy('category')
+            ->groupBy('category')->orderByDesc('total')
             ->pluck('total', 'category');
 
-        // Tambahkan vaksinasi sebagai kategori biaya
-        if ($vaccineCost > 0) {
-            $expenseCategoriesBreakdown->put('Vaksinasi', $vaccineCost);
-        }
-
-        $categoryLabels = $expenseCategoriesBreakdown->keys()->toArray();
-        $categoryData = $expenseCategoriesBreakdown->values()->toArray();
-
         return view('expense-ledgers.index', compact(
-            'startDate',
-            'endDate',
-            'expenses',
-            'totalExpense',
-            'categories',
-            'totalSalesRevenue',
-            'totalCashIn',
-            'totalNewDebt',
-            'feedConsumedCost',
-            'cashOutFeedPurchase',
-            'cashOutEggPurchase',
-            'operationalCost',
-            'vaccineCost',
-            'netProfit',
-            'totalCashOut',
-            'netCashFlow',
-            'totalAllDebt',
-            'chartLabels',
-            'chartSalesData',
-            'chartExpenseData',
-            'chartProfitData',
-            'categoryLabels',
-            'categoryData'
+            'startDate', 'endDate', 'expenses', 'filteredTotal', 'categories', 'summary', 'chart', 'byCategory'
         ));
     }
 
     public function create()
     {
-        return view('expense-ledgers.create');
+        return view('expense-ledgers.create', ['expense' => new ExpenseLedger([
+            'transaction_date' => today(),
+            'expense_type'     => 'Operasional',
+            'quantity'         => 1,
+            'unit'             => 'Pcs',
+            'payment_method'   => 'Tunai / Kas Kecil',
+            'officer'          => auth()->user()->name,
+        ])]);
     }
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'transaction_date' => 'required|date',
-            'expense_type' => 'required|string|max:255',
-            'category' => 'required|string|max:255',
-            'item_name' => 'required|string|max:255',
-            'supplier' => 'nullable|string|max:255',
-            'quantity' => 'required|numeric|min:0.01',
-            'unit' => 'required|string|max:50',
-            'unit_price' => 'required|numeric|min:0',
-            'total_amount' => 'required|numeric|min:0',
-            'payment_method' => 'required|string|max:100',
-            'officer' => 'required|string|max:255',
-            'notes' => 'nullable|string',
-        ]);
+        $data = $this->validated($request);
+        $expense = ExpenseLedger::create($data);
 
-        ExpenseLedger::create($validated);
-
-        return redirect()
-            ->route('expenses.index')
-            ->with('success', 'Catatan pengeluaran kas berhasil dibukukan!');
+        return redirect()->route('expenses.index')->with('success', 'Pengeluaran "' . $expense->item_name . '" sebesar ' . Format::rupiah($expense->total_amount) . ' tercatat.');
     }
 
     public function edit(ExpenseLedger $expense)
@@ -250,34 +91,37 @@ class ExpenseLedgerController extends Controller
 
     public function update(Request $request, ExpenseLedger $expense)
     {
-        $validated = $request->validate([
-            'transaction_date' => 'required|date',
-            'expense_type' => 'required|string|max:255',
-            'category' => 'required|string|max:255',
-            'item_name' => 'required|string|max:255',
-            'supplier' => 'nullable|string|max:255',
-            'quantity' => 'required|numeric|min:0.01',
-            'unit' => 'required|string|max:50',
-            'unit_price' => 'required|numeric|min:0',
-            'total_amount' => 'required|numeric|min:0',
-            'payment_method' => 'required|string|max:100',
-            'officer' => 'required|string|max:255',
-            'notes' => 'nullable|string',
-        ]);
+        $expense->update($this->validated($request));
 
-        $expense->update($validated);
-
-        return redirect()
-            ->route('expenses.index')
-            ->with('success', 'Data buku keuangan berhasil diperbarui!');
+        return redirect()->route('expenses.index')->with('success', 'Catatan pengeluaran berhasil diperbarui.');
     }
 
     public function destroy(ExpenseLedger $expense)
     {
         $expense->delete();
 
-        return redirect()
-            ->route('expenses.index')
-            ->with('success', 'Data pengeluaran berhasil dihapus!');
+        return back()->with('success', 'Catatan pengeluaran dihapus.');
+    }
+
+    private function validated(Request $request): array
+    {
+        $data = $request->validate([
+            'transaction_date' => 'required|date|before_or_equal:today',
+            'expense_type'     => 'required|string|max:255',
+            'category'         => 'required|string|max:255',
+            'item_name'        => 'required|string|max:255',
+            'supplier'         => 'nullable|string|max:255',
+            'quantity'         => 'required|numeric|min:0.01',
+            'unit'             => 'required|string|max:50',
+            'unit_price'       => 'required|numeric|min:0',
+            'payment_method'   => 'required|string|max:100',
+            'officer'          => 'required|string|max:255',
+            'notes'            => 'nullable|string|max:1000',
+        ]);
+
+        // Total selalu dihitung ulang di server (jumlah x harga satuan)
+        $data['total_amount'] = round($data['quantity'] * $data['unit_price'], 2);
+
+        return $data;
     }
 }

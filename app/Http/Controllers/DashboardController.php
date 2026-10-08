@@ -5,10 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\Coop;
 use App\Models\DailyLog;
 use App\Models\DailyLogGrade;
-use App\Models\EggGrade;
 use App\Models\EggSale;
 use App\Models\FeedStock;
-use App\Models\OperationalCost;
+use App\Models\Setting;
+use App\Services\FarmFinance;
+use App\Support\Format;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -16,169 +17,183 @@ class DashboardController extends Controller
 {
     public function index(Request $request)
     {
-        $selectedDate = $request->get('date', Carbon::today()->toDateString());
+        $request->validate(['date' => 'nullable|date']);
 
-        // 1. Data Log Harian dengan Relasi
-        $dailyLogs = DailyLog::with(['coop', 'feedStock', 'grades.grade'])
-            ->where('log_date', $selectedDate)
-            ->get();
+        $date = $request->date('date') ?? Carbon::today();
+        if ($date->isFuture()) {
+            $date = Carbon::today();
+        }
+        $day       = $date->toDateString();
+        $yesterday = $date->copy()->subDay()->toDateString();
 
-        // 2. Ringkasan Global Farm Hari Ini
-        $totalEggKg          = $dailyLogs->sum('eggs_total_kg');
-        $totalEggCount       = $dailyLogs->sum('eggs_total_count');
-        $totalEggTrays       = floor($totalEggCount / 30);
-        $totalEggExtra       = $totalEggCount % 30;
-        $totalMortality      = $dailyLogs->sum('mortality');
-        $totalCull           = $dailyLogs->sum('cull');
-        $totalFeedConsumedKg = $dailyLogs->sum('feed_consumed_kg');
-        $totalFeedCost       = $dailyLogs->sum('feed_cost_total');
+        $hdpWarn     = Setting::num('hdp_warning');
+        $lowFeedDays = Setting::num('low_feed_days');
+        $eggPrice    = Setting::num('egg_price_per_kg');
 
-        // 3. Populasi & HDP Farm Global
-        $totalActivePop = Coop::where('status', 'active')->sum('current_population');
-        $overallHdp     = $totalActivePop > 0 ? round(($totalEggCount / $totalActivePop) * 100, 1) : 0;
-        $overallFcr     = $totalEggKg > 0 ? round($totalFeedConsumedKg / $totalEggKg, 2) : 0;
+        // ---------------- Data hari terpilih ----------------
+        $logs = DailyLog::with(['coop', 'feedStock', 'grades.grade', 'recorder'])->where('log_date', $day)->get()->keyBy('coop_id');
+        $yesterdayLogs = DailyLog::where('log_date', $yesterday)->get()->keyBy('coop_id');
 
-        // 4. Kalkulasi HPP Real-time
-        $monthlyOps = OperationalCost::whereBetween('expense_date', [
-            Carbon::parse($selectedDate)->subDays(30)->toDateString(),
-            $selectedDate
-        ])->sum('amount');
-        $dailyOpsCost        = $monthlyOps > 0 ? ($monthlyOps / 30) : 0;
-        $totalProductionCost = $totalFeedCost + $dailyOpsCost;
-        $hppPerKg            = $totalEggKg > 0 ? round($totalProductionCost / $totalEggKg) : 0;
+        $activeCoops = Coop::where('status', 'active')->orderBy('name')->get();
+        $population  = (int) $activeCoops->sum('current_population');
 
-        // 5. Rata-rata Harga Jual Telur Terkini
-        $avgSalePricePerKg = EggSale::whereBetween('sale_date', [
-            Carbon::parse($selectedDate)->subDays(7)->toDateString(),
-            $selectedDate
-        ])->avg('price_per_kg') ?: 25000;
+        $eggCount  = (int) $logs->sum('eggs_total_count');
+        $eggKg     = (float) $logs->sum('eggs_total_kg');
+        $feedKg    = (float) $logs->sum('feed_consumed_kg');
+        $feedCost  = (float) $logs->sum('feed_cost_total');
+        $mortality = (int) $logs->sum('mortality');
+        $cull      = (int) $logs->sum('cull');
 
-        // 6. Data Trend 7 Hari untuk Chart Garis
-        $sevenDaysDates = collect(range(6, 0))->map(function ($days) use ($selectedDate) {
-            return Carbon::parse($selectedDate)->subDays($days)->toDateString();
+        // HDP farm = total telur ÷ jumlah ayam di kandang yang sudah dicatat (populasi saat dicatat)
+        $loggedPopulation = $logs->sum(fn ($l) => $l->hdp_percentage > 0
+            ? $l->eggs_total_count / ($l->hdp_percentage / 100)
+            : ($l->coop->current_population ?? 0));
+        $hdp = $loggedPopulation > 0 ? round($eggCount / $loggedPopulation * 100, 1) : 0;
+        $fcr = $eggKg > 0 ? round($feedKg / $eggKg, 2) : null;
+
+        // Bandingkan dengan kemarin hanya untuk kandang yang sudah dicatat hari ini
+        $yesterdayEggs = (int) $yesterdayLogs->only($logs->keys()->all())->sum('eggs_total_count');
+
+        // Modal per kg telur = (pakan hari ini + rata-rata biaya lain per hari) ÷ kg telur
+        $overhead = FarmFinance::dailyOverhead($day);
+        $hppPerKg = $eggKg > 0 ? round(($feedCost + $overhead) / $eggKg) : 0;
+
+        // Harga jual rata-rata 30 hari terakhir (pakai harga acuan jika belum ada penjualan)
+        $avgPrice = (float) EggSale::whereBetween('sale_date', [$date->copy()->subDays(29)->toDateString(), $day])
+            ->where('weight_kg', '>', 0)
+            ->selectRaw('SUM(total_amount) / SUM(weight_kg) as p')->value('p');
+        $priceSource = $avgPrice > 0 ? 'rata-rata penjualan 30 hari' : 'harga acuan di Pengaturan';
+        $avgPrice    = $avgPrice > 0 ? $avgPrice : $eggPrice;
+
+        $salesToday = (float) EggSale::where('sale_date', $day)->sum('total_amount');
+        $totalDebt  = (float) EggSale::where('debt_amount', '>', 0)->sum('debt_amount');
+
+        // ---------------- Kartu per kandang ----------------
+        $coopCards = $activeCoops->map(function ($coop) use ($logs, $yesterdayLogs, $day, $hdpWarn, $avgPrice) {
+            $log  = $logs->get($coop->id);
+            $prev = $yesterdayLogs->get($coop->id);
+            $pop  = $coop->current_population + ($log ? $log->mortality + $log->cull : 0);
+
+            $status = ['tone' => 'neutral', 'text' => 'Belum dicatat'];
+            if ($log) {
+                $status = ['tone' => 'success', 'text' => 'Normal'];
+                if ($log->hdp_percentage < $hdpWarn) {
+                    $status = ['tone' => 'danger', 'text' => 'Produksi rendah'];
+                } elseif ($prev && ($prev->hdp_percentage - $log->hdp_percentage) >= 5) {
+                    $status = ['tone' => 'warning', 'text' => 'Produksi turun'];
+                }
+            }
+
+            $revenue = $log ? $log->eggs_total_kg * $avgPrice : 0;
+            $margin  = $log ? $revenue - $log->feed_cost_total : 0;
+
+            return [
+                'coop'       => $coop,
+                'log'        => $log,
+                'prev'       => $prev,
+                'age'        => $coop->ageInWeeks($day),
+                'status'     => $status,
+                'gramPerHen' => $log && $pop > 0 ? round($log->feed_consumed_kg * 1000 / $pop) : null,
+                'revenue'    => $revenue,
+                'margin'     => $margin,
+            ];
         });
 
-        $chartDates = [];
-        $chartEggKg = [];
-        $chartFeedKg = [];
+        // ---------------- Stok pakan ----------------
+        // Pemakaian per jenis pakan 7 hari terakhir
+        $usageByFeed = DailyLog::whereBetween('log_date', [$date->copy()->subDays(6)->toDateString(), $day])
+            ->selectRaw('feed_stock_id, SUM(feed_consumed_kg) / 7 as per_day')
+            ->groupBy('feed_stock_id')->pluck('per_day', 'feed_stock_id');
 
-        foreach ($sevenDaysDates as $d) {
-            $chartDates[]  = Carbon::parse($d)->format('d M');
-            $chartEggKg[]  = (float) DailyLog::where('log_date', $d)->sum('eggs_total_kg');
-            $chartFeedKg[] = (float) DailyLog::where('log_date', $d)->sum('feed_consumed_kg');
+        $feeds = FeedStock::orderBy('feed_name')->get()->map(function ($feed) use ($usageByFeed) {
+            $perDay = (float) ($usageByFeed[$feed->id] ?? 0);
+
+            return [
+                'feed'      => $feed,
+                'per_day'   => $perDay,
+                'days_left' => $perDay > 0 ? (int) floor(max(0, $feed->stock_kg) / $perDay) : null,
+            ];
+        });
+
+        // ---------------- Hal yang perlu diperhatikan ----------------
+        $alerts = [];
+
+        if ($date->isToday()) {
+            $missing = $activeCoops->reject(fn ($c) => $logs->has($c->id));
+            if ($missing->isNotEmpty()) {
+                $alerts[] = ['tone' => 'info', 'icon' => 'bi-clipboard-x', 'title' => $missing->count() . ' kandang belum dicatat hari ini',
+                    'text' => $missing->pluck('name')->join(', '), 'url' => route('daily-logs.create'), 'cta' => 'Catat sekarang'];
+            }
         }
 
-        // 7. Komposisi Grade Telur Hari Ini untuk Donut Chart
-        $gradeBreakdown = DailyLogGrade::with('grade')
-            ->whereHas('dailyLog', function ($q) use ($selectedDate) {
-                $q->where('log_date', $selectedDate);
-            })
-            ->get()
-            ->groupBy('egg_grade_id')
-            ->map(function ($items) {
-                return [
-                    'name'      => $items->first()->grade->name ?? 'Grade',
-                    'weight_kg' => (float) $items->sum('weight_kg'),
-                ];
-            })
-            ->values();
-
-        // 8. Rincian Eksekutif Sangat Detail Per Kandang
-        $coopDetails = Coop::where('status', 'active')->get()->map(function ($coop) use ($selectedDate, $avgSalePricePerKg) {
-            $weeksPassed     = Carbon::parse($coop->chick_in_date)->diffInWeeks(Carbon::parse($selectedDate));
-            $currentAgeWeeks = $coop->initial_age_weeks + $weeksPassed;
-
-            $log = DailyLog::with(['grades.grade', 'feedStock'])
-                ->where('coop_id', $coop->id)
-                ->where('log_date', $selectedDate)
-                ->first();
-
-            $yesterdayLog = DailyLog::where('coop_id', $coop->id)
-                ->where('log_date', Carbon::parse($selectedDate)->subDay()->toDateString())
-                ->first();
-
-            $statusColor = 'emerald';
-            $statusNote  = 'Performa Normal';
-
-            if (!$log) {
-                $statusColor = 'slate';
-                $statusNote  = 'Belum Ada Input';
-            } else {
-                if ($log->hdp_percentage < 68) {
-                    $statusColor = 'rose';
-                    $statusNote  = 'Kritis! HDP < 68% (Potensi Tekor / Evaluasi Afkir)';
-                } elseif ($yesterdayLog && ($yesterdayLog->hdp_percentage - $log->hdp_percentage) >= 4.0) {
-                    $statusColor = 'amber';
-                    $statusNote  = 'Drop Produksi Anomali (> 4%)';
-                }
+        foreach ($coopCards as $card) {
+            if (!$card['log']) {
+                continue;
+            }
+            if ($card['status']['tone'] === 'danger') {
+                $alerts[] = ['tone' => 'danger', 'icon' => 'bi-graph-down-arrow', 'title' => $card['coop']->name . ': produksi rendah (' . Format::number($card['log']->hdp_percentage, 1) . '%)',
+                    'text' => 'Di bawah batas ' . Format::number($hdpWarn) . '%. Periksa pakan, air minum, dan kesehatan ayam.', 'url' => route('coops.show', $card['coop']), 'cta' => 'Lihat kandang'];
+            } elseif ($card['status']['tone'] === 'warning') {
+                $alerts[] = ['tone' => 'warning', 'icon' => 'bi-arrow-down-right', 'title' => $card['coop']->name . ': produksi turun dibanding kemarin',
+                    'text' => 'Dari ' . Format::number($card['prev']->hdp_percentage, 1) . '% menjadi ' . Format::number($card['log']->hdp_percentage, 1) . '%.', 'url' => route('coops.show', $card['coop']), 'cta' => 'Lihat kandang'];
             }
 
-            $feedGramPerHen = 0;
-            $eggRevenueEst  = 0;
-            $feedCostDaily  = 0;
-            $marginDaily    = 0;
-            $marginPerHen   = 0;
-
-            if ($log) {
-                $pop = $coop->current_population;
-                if ($pop > 0) {
-                    $feedGramPerHen = round(($log->feed_consumed_kg * 1000) / $pop, 1);
-                }
-
-                $eggRevenueEst = round($log->eggs_total_kg * $avgSalePricePerKg);
-                $feedCostDaily = $log->feed_cost_total;
-                $marginDaily   = $eggRevenueEst - $feedCostDaily;
-                $marginPerHen  = $pop > 0 ? round($marginDaily / $pop) : 0;
+            $loss = $card['log']->mortality + $card['log']->cull;
+            if ($loss > 0 && $card['coop']->current_population > 0 && $loss / ($card['coop']->current_population + $loss) >= 0.005) {
+                $alerts[] = ['tone' => 'danger', 'icon' => 'bi-heartbreak-fill', 'title' => $card['coop']->name . ': ' . $loss . ' ekor mati/afkir',
+                    'text' => 'Angka kematian cukup tinggi. Pertimbangkan memanggil dokter hewan.', 'url' => route('coops.show', $card['coop']), 'cta' => 'Lihat kandang'];
             }
+        }
 
-            return [
-                'coop'           => $coop,
-                'age_weeks'      => $currentAgeWeeks,
-                'log'            => $log,
-                'statusColor'    => $statusColor,
-                'statusNote'     => $statusNote,
-                'feedGramPerHen' => $feedGramPerHen,
-                'eggRevenueEst'  => $eggRevenueEst,
-                'feedCostDaily'  => $feedCostDaily,
-                'marginDaily'    => $marginDaily,
-                'marginPerHen'   => $marginPerHen,
-            ];
-        });
+        foreach ($feeds as $f) {
+            if ($f['feed']->stock_kg < 0) {
+                $alerts[] = ['tone' => 'danger', 'icon' => 'bi-box-seam', 'title' => 'Stok ' . $f['feed']->feed_name . ' minus',
+                    'text' => 'Pakan dipakai melebihi stok tercatat. Catat pembelian pakan yang belum dimasukkan.', 'url' => route('procurement.index'), 'cta' => 'Catat pembelian'];
+            } elseif ($f['days_left'] !== null && $f['days_left'] <= $lowFeedDays) {
+                $alerts[] = ['tone' => 'warning', 'icon' => 'bi-box-seam', 'title' => 'Pakan ' . $f['feed']->feed_name . ' tinggal ±' . $f['days_left'] . ' hari',
+                    'text' => 'Sisa ' . Format::number($f['feed']->stock_kg) . ' kg. Segera pesan pakan.', 'url' => route('procurement.index'), 'cta' => 'Catat pembelian'];
+            }
+        }
 
-        // 9. Ketahanan Pakan Gudang
-        $avgDailyFeed = DailyLog::whereBetween('log_date', [
-            Carbon::parse($selectedDate)->subDays(7)->toDateString(),
-            $selectedDate
-        ])->avg('feed_consumed_kg') ?: ($totalFeedConsumedKg ?: 100);
+        $overdue = EggSale::with('customer')->where('debt_amount', '>', 0)->whereNotNull('due_date')->where('due_date', '<', $day)->get();
+        if ($overdue->isNotEmpty()) {
+            $alerts[] = ['tone' => 'warning', 'icon' => 'bi-alarm', 'title' => $overdue->count() . ' tagihan sudah lewat jatuh tempo',
+                'text' => 'Total ' . Format::rupiah($overdue->sum('debt_amount')) . ' dari ' . $overdue->pluck('customer.name')->unique()->join(', '), 'url' => route('customers.index'), 'cta' => 'Lihat piutang'];
+        }
 
-        $feedStocks = FeedStock::all()->map(function ($feed) use ($avgDailyFeed) {
-            $daysLeft = $avgDailyFeed > 0 ? floor($feed->stock_kg / $avgDailyFeed) : 0;
-            return [
-                'name'      => $feed->feed_name,
-                'stock_kg'  => $feed->stock_kg,
-                'days_left' => $daysLeft,
-            ];
-        });
+        // ---------------- Grafik 14 hari ----------------
+        $trendStart = $date->copy()->subDays(13);
+        $trend = DailyLog::whereBetween('log_date', [$trendStart->toDateString(), $day])
+            ->selectRaw('log_date, SUM(eggs_total_count) as eggs, SUM(eggs_total_kg) as kg, SUM(feed_consumed_kg) as feed, AVG(hdp_percentage) as hdp')
+            ->groupBy('log_date')->get()
+            ->keyBy(fn ($r) => Carbon::parse($r->log_date)->toDateString());
+
+        $chart = ['labels' => [], 'eggs' => [], 'hdp' => [], 'feed' => []];
+        for ($d = $trendStart->copy(); $d->lte($date); $d->addDay()) {
+            $row = $trend->get($d->toDateString());
+            $chart['labels'][] = $d->translatedFormat('d M');
+            $chart['eggs'][]   = $row ? (float) $row->kg : null;
+            $chart['hdp'][]    = $row ? round((float) $row->hdp, 1) : null;
+            $chart['feed'][]   = $row ? (float) $row->feed : null;
+        }
+
+        // ---------------- Komposisi jenis telur ----------------
+        $gradeMix = DailyLogGrade::query()
+            ->join('daily_logs', 'daily_logs.id', '=', 'daily_log_grades.daily_log_id')
+            ->join('egg_grades', 'egg_grades.id', '=', 'daily_log_grades.egg_grade_id')
+            ->where('daily_logs.log_date', $day)
+            ->selectRaw('egg_grades.name, SUM(daily_log_grades.total_eggs) as eggs, SUM(daily_log_grades.weight_kg) as kg')
+            ->groupBy('egg_grades.name')
+            ->orderByDesc('kg')
+            ->get();
+
+        // ---------------- Keuangan bulan berjalan ----------------
+        $month = FarmFinance::summary($date->copy()->startOfMonth()->toDateString(), $day);
 
         return view('dashboard.index', compact(
-            'selectedDate',
-            'totalEggKg',
-            'totalEggCount',
-            'totalEggTrays',
-            'totalEggExtra',
-            'totalMortality',
-            'totalCull',
-            'totalFeedConsumedKg',
-            'overallHdp',
-            'overallFcr',
-            'hppPerKg',
-            'totalProductionCost',
-            'chartDates',
-            'chartEggKg',
-            'chartFeedKg',
-            'gradeBreakdown',
-            'coopDetails',
-            'feedStocks'
+            'date', 'population', 'eggCount', 'eggKg', 'feedKg', 'feedCost', 'mortality', 'cull', 'hdp', 'fcr',
+            'yesterdayEggs', 'hppPerKg', 'avgPrice', 'priceSource', 'salesToday', 'totalDebt', 'coopCards',
+            'feeds', 'alerts', 'chart', 'gradeMix', 'month', 'hdpWarn', 'logs', 'activeCoops'
         ));
     }
 }

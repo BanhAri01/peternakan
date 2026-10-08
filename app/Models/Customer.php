@@ -21,4 +21,9 @@ class Customer extends Model
     {
         return $this->sales()->sum('debt_amount');
     }
+
+    public function getWaNumberAttribute(): ?string
+    {
+        return \App\Support\Format::waNumber($this->phone);
+    }
 }

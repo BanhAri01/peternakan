@@ -1,167 +1,226 @@
 @extends('layouts.app')
 
+@section('title', 'Catat Panen')
+@section('content-class', 'narrow')
+
+@php
+    $isOwner    = auth()->user()->isOwner();
+    $dateStr    = $date->toDateString();
+    $isToday    = $date->isToday();
+    $populations = $coops->pluck('current_population', 'id');
+
+    $oldGrades = collect(old('grades', []));
+    $gradeInit = $eggGrades->values()->map(fn ($g, $i) => [
+        'trays' => $oldGrades[$i]['trays_count'] ?? '',
+        'extra' => $oldGrades[$i]['extra_eggs'] ?? '',
+        'kg'    => $oldGrades[$i]['weight_kg'] ?? '',
+    ]);
+@endphp
+
 @section('content')
-<div class="container py-4" style="max-width: 860px;">
+<x-page-header
+    title="Catat Panen Harian"
+    :subtitle="'Laporan tanggal ' . \App\Support\Format::dayDate($date) . '. Isi langkah 1 sampai 4, lalu tekan Simpan.'"
+    icon="bi-clipboard2-check-fill">
+    @if($isOwner)
+        <a href="{{ route('daily-logs.index') }}" class="btn btn-light"><i class="bi bi-journal-text"></i> Riwayat Panen</a>
+    @endif
+</x-page-header>
 
-    <!-- Judul Halaman -->
-    <div class="mb-4">
-        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 text-uppercase fw-bold mb-2">
-            <i class="bi bi-clipboard2-check-fill me-1"></i> Formulir Operasional Kandang
-        </span>
-        <h2 class="fw-black text-dark mb-1">Pencatatan Panen, Pakan & Populasi</h2>
-        <p class="text-muted fs-6 mb-0">Masukkan data harian per kandang dengan teliti untuk kalkulasi otomatis HDP dan FCR.</p>
+<x-alerts />
+
+{{-- Status kandang yang sudah / belum dicatat --}}
+<x-panel>
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div>
+            <div class="fw-800 fs-5">
+                {{ count($loggedCoopIds) }} dari {{ $coops->count() }} kandang sudah dicatat
+            </div>
+            <div class="text-muted">{{ $isToday ? 'Hari ini' : \App\Support\Format::dayDate($date) }}</div>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{{ route('daily-logs.create') }}" class="btn {{ $isToday ? 'btn-primary' : 'btn-light' }}">Hari ini</a>
+            <a href="{{ route('daily-logs.create', ['date' => today()->subDay()->toDateString()]) }}" class="btn {{ $date->isYesterday() ? 'btn-primary' : 'btn-light' }}">Kemarin</a>
+            @if($isOwner)
+                <form method="GET" action="{{ route('daily-logs.create') }}">
+                    <input type="date" name="date" value="{{ $dateStr }}" max="{{ today()->toDateString() }}" class="form-control" onchange="this.form.submit()" aria-label="Pilih tanggal lain">
+                </form>
+            @endif
+        </div>
     </div>
-
-    @if(session('success'))
-        <div class="alert alert-success d-flex align-items-center mb-4 rounded-3 p-3 shadow-sm border-0 bg-success-subtle text-success-emphasis" role="alert">
-            <i class="bi bi-check-circle-fill fs-4 me-3"></i>
-            <div class="fw-bold">{{ session('success') }}</div>
-        </div>
-    @endif
-
-    @if($errors->any())
-        <div class="alert alert-danger mb-4 rounded-3 p-3 shadow-sm border-0">
-            <h6 class="fw-bold mb-2"><i class="bi bi-exclamation-triangle-fill me-2"></i>Tolong periksa kembali isian form:</h6>
-            <ul class="mb-0 ps-3">
-                @foreach($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
-
-    <form action="{{ route('daily-logs.store') }}" method="POST">
-        @csrf
-
-        <!-- KARTU 1: Pilih Kandang & Tanggal -->
-        <div class="card shadow-sm border-0 mb-4">
-            <div class="card-body p-4">
-                <div class="row g-3">
-                    <div class="col-md-7">
-                        <label class="form-label text-secondary fs-6 text-uppercase fw-bold">Pilih Kandang</label>
-                        <select name="coop_id" class="form-select form-select-lg fw-bold" required>
-                            @foreach($coops as $coop)
-                                <option value="{{ $coop->id }}" {{ old('coop_id') == $coop->id ? 'selected' : '' }}>
-                                    {{ $coop->name }} (Populasi: {{ number_format($coop->current_population) }} ekor)
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="col-md-5">
-                        <label class="form-label text-secondary fs-6 text-uppercase fw-bold">Tanggal Laporan</label>
-                        <input type="date" name="log_date" value="{{ old('log_date', date('Y-m-d')) }}" class="form-control form-control-lg fw-bold" required>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- KARTU 2: Hasil Telur (Sortir Grade) -->
-        <div class="card shadow-sm border-0 mb-4 border-start border-4 border-warning">
-            <div class="card-header bg-warning-subtle py-3 px-4 d-flex justify-content-between align-items-center border-0">
-                <span class="fw-bold fs-6 text-dark d-flex align-items-center gap-2">
-                    <i class="bi bi-egg-fill text-warning fs-5"></i> 1. Hasil Panen Telur (Sortir Grade)
-                </span>
-                @if(Route::has('grades.index'))
-                    <a href="{{ route('grades.index') }}" class="btn btn-sm btn-outline-dark fw-bold bg-white">
-                        <i class="bi bi-gear-fill me-1"></i> Atur Grade
-                    </a>
+    @if($coops->isNotEmpty())
+        <div class="d-flex flex-wrap gap-2 mt-3">
+            @foreach($coops as $c)
+                @if(in_array($c->id, $loggedCoopIds))
+                    <x-tag tone="success" icon="bi-check-circle-fill">{{ $c->name }}</x-tag>
+                @else
+                    <x-tag tone="neutral" icon="bi-circle">{{ $c->name }}</x-tag>
                 @endif
-            </div>
-            <div class="card-body p-4">
-                <div class="d-flex flex-column gap-3">
-                    @forelse($eggGrades as $index => $grade)
-                        <div class="p-3 rounded-3 border bg-light">
-                            <div class="fw-bold fs-5 text-dark mb-2">
-                                {{ $grade->name }}
-                                <input type="hidden" name="grades[{{ $index }}][egg_grade_id]" value="{{ $grade->id }}">
-                            </div>
-                            <div class="row g-2 align-items-center">
-                                <div class="col-4">
-                                    <label class="form-label text-muted small fw-bold mb-1 text-center d-block">Jumlah Rak (30)</label>
-                                    <input type="number" inputmode="numeric" name="grades[{{ $index }}][trays_count]" value="{{ old("grades.$index.trays_count") }}" placeholder="0" class="form-control form-control-lg text-center fw-bold fs-4 bg-white" min="0">
-                                </div>
-                                <div class="col-4">
-                                    <label class="form-label text-muted small fw-bold mb-1 text-center d-block">+ Butir Lepas</label>
-                                    <input type="number" inputmode="numeric" name="grades[{{ $index }}][extra_eggs]" value="{{ old("grades.$index.extra_eggs") }}" placeholder="0" class="form-control form-control-lg text-center fw-bold fs-4 bg-white" min="0">
-                                </div>
-                                <div class="col-4">
-                                    <label class="form-label text-warning-emphasis small fw-bold mb-1 text-center d-block">Timbangan (KG)</label>
-                                    <input type="number" step="0.1" inputmode="decimal" name="grades[{{ $index }}][weight_kg]" value="{{ old("grades.$index.weight_kg") }}" placeholder="0.0" class="form-control form-control-lg text-center fw-bold fs-4 bg-white border-2 border-warning" min="0">
-                                </div>
-                            </div>
-                        </div>
-                    @empty
-                        <div class="p-4 text-center text-muted bg-light rounded-3">
-                            <i class="bi bi-info-circle fs-3 d-block mb-2 text-secondary"></i>
-                            Belum ada kategori grade telur yang aktif. Silakan tambahkan melalui menu kategori grade.
-                        </div>
-                    @endforelse
-                </div>
-            </div>
+            @endforeach
         </div>
+    @endif
+</x-panel>
 
-        <!-- KARTU 3: Konsumsi Pakan -->
-        <div class="card shadow-sm border-0 mb-4 border-start border-4 border-primary">
-            <div class="card-header bg-primary-subtle py-3 px-4 border-0">
-                <span class="fw-bold fs-6 text-primary-emphasis d-flex align-items-center gap-2">
-                    <i class="bi bi-box-seam-fill text-primary fs-5"></i> 2. Konsumsi Pakan
-                </span>
-            </div>
-            <div class="card-body p-4">
-                <div class="mb-3">
-                    <label class="form-label text-secondary fs-6 fw-bold">Pilih Pakan Yang Dituang</label>
-                    <select name="feed_stock_id" class="form-select form-select-lg fw-bold" required>
-                        @foreach($feedStocks as $feed)
-                            <option value="{{ $feed->id }}" {{ old('feed_stock_id') == $feed->id ? 'selected' : '' }}>
-                                {{ $feed->feed_name }} (Sisa Stok: {{ number_format($feed->stock_kg, 0) }} kg)
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="form-label text-muted small fw-bold mb-1 text-center d-block">Jumlah Karung (@50kg)</label>
-                        <input type="number" inputmode="numeric" name="feed_sacks" value="{{ old('feed_sacks') }}" placeholder="0" class="form-control form-control-lg text-center fw-bold fs-3" min="0">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label text-muted small fw-bold mb-1 text-center d-block">+ Sisa Ember (KG)</label>
-                        <input type="number" step="0.5" inputmode="decimal" name="extra_feed_kg" value="{{ old('extra_feed_kg') }}" placeholder="0" class="form-control form-control-lg text-center fw-bold fs-3" min="0">
-                    </div>
-                </div>
-            </div>
-        </div>
+@if($coops->isEmpty())
+    <x-panel>
+        <x-empty icon="bi-house-heart" title="Belum ada kandang aktif">
+            {{ $isOwner ? 'Tambahkan kandang terlebih dahulu sebelum mencatat panen.' : 'Minta pemilik menambahkan data kandang.' }}
+            @if($isOwner)
+                <x-slot:action><a href="{{ route('coops.create') }}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Tambah Kandang</a></x-slot:action>
+            @endif
+        </x-empty>
+    </x-panel>
+@elseif(count($loggedCoopIds) >= $coops->count())
+    <x-panel>
+        <x-empty icon="bi-check2-all" title="Semua kandang sudah dicatat">
+            Terima kasih! Laporan {{ $isToday ? 'hari ini' : 'tanggal ini' }} sudah lengkap.
+            @if($isOwner)
+                Perubahan bisa dilakukan lewat <a href="{{ route('daily-logs.index') }}">Riwayat Panen</a>.
+            @else
+                Jika ada yang salah, sampaikan ke pemilik untuk diperbaiki.
+            @endif
+        </x-empty>
+    </x-panel>
+@else
+<form action="{{ route('daily-logs.store') }}" method="POST"
+      x-data="panenForm({
+          grades: @js($gradeInit),
+          sacks: @js(old('feed_sacks', '')),
+          extraFeed: @js(old('extra_feed_kg', '')),
+          sackKg: {{ (float) $sackKg }},
+          coopId: @js((string) $suggestedCoop),
+          populations: @js($populations),
+          lastFeed: @js($lastFeedByCoop),
+          feedId: @js((string) old('feed_stock_id', $lastFeedByCoop[$suggestedCoop] ?? ($feedStocks->first()->id ?? ''))),
+      })">
+    @csrf
+    <input type="hidden" name="log_date" value="{{ $dateStr }}">
 
-        <!-- KARTU 4: Penyusutan Populasi -->
-        <div class="card shadow-sm border-0 mb-4 border-start border-4 border-danger">
-            <div class="card-header bg-danger-subtle py-3 px-4 border-0">
-                <span class="fw-bold fs-6 text-danger-emphasis d-flex align-items-center gap-2">
-                    <i class="bi bi-heartbreak-fill text-danger fs-5"></i> 3. Penyusutan Populasi
-                </span>
-            </div>
-            <div class="card-body p-4">
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <div class="p-3 bg-light rounded-3 border">
-                            <label class="form-label text-danger small fw-bold text-center d-block mb-1">Ayam Mati (Ekor)</label>
-                            <input type="number" inputmode="numeric" name="mortality" value="{{ old('mortality', 0) }}" placeholder="0" class="form-control form-control-lg text-center fw-bold fs-3 text-danger" min="0">
-                        </div>
+    {{-- LANGKAH 1: KANDANG --}}
+    <x-panel title="Pilih kandang" step="1" subtitle="Tekan nama kandang yang akan dicatat.">
+        <div class="pick-grid">
+            @foreach($coops as $coop)
+                @php $done = in_array($coop->id, $loggedCoopIds); @endphp
+                <label class="pick" @if($done) style="opacity:.55" @endif>
+                    <input type="radio" name="coop_id" value="{{ $coop->id }}" x-model="coopId" @change="onCoopChange()" @disabled($done) required>
+                    <span>
+                        <b>{{ $coop->name }}</b>
+                        <small>{{ \App\Support\Format::number($coop->current_population) }} ekor &middot; umur {{ $coop->ageInWeeks($date) }} minggu</small>
+                        @if($done)<span class="done"><i class="bi bi-check-circle-fill"></i> Sudah dicatat</span>@endif
+                    </span>
+                </label>
+            @endforeach
+        </div>
+        @error('coop_id')<div class="field-error mt-2"><i class="bi bi-exclamation-circle-fill"></i> {{ $message }}</div>@enderror
+        @error('log_date')<div class="field-error mt-2"><i class="bi bi-exclamation-circle-fill"></i> {{ $message }}</div>@enderror
+    </x-panel>
+
+    {{-- LANGKAH 2: TELUR --}}
+    <x-panel title="Telur yang dikumpulkan" step="2" tone="egg" subtitle="1 rak = 30 butir. Kosongkan jika tidak ada.">
+        @if($isOwner)
+            <x-slot:actions>
+                <a href="{{ route('grades.index') }}" class="btn btn-light btn-sm"><i class="bi bi-gear"></i> Atur jenis telur</a>
+            </x-slot:actions>
+        @endif
+
+        @forelse($eggGrades as $i => $grade)
+            <div class="grade-box" :class="{ 'has-value': gradeEggs({{ $i }}) > 0 || num(grades[{{ $i }}].kg) > 0 }">
+                <div class="grade-name">
+                    <span><i class="bi bi-egg-fill text-egg me-1"></i> {{ $grade->name }}</span>
+                    <span class="grade-total" x-show="gradeEggs({{ $i }}) > 0" x-text="'= ' + angka(gradeEggs({{ $i }}), 0) + ' butir'"></span>
+                </div>
+                <input type="hidden" name="grades[{{ $i }}][egg_grade_id]" value="{{ $grade->id }}">
+                <div class="row g-2">
+                    <div class="col-4">
+                        <label class="mini-label" for="g{{ $i }}t">Jumlah rak</label>
+                        <input id="g{{ $i }}t" type="number" inputmode="numeric" min="0" step="1" placeholder="0"
+                               name="grades[{{ $i }}][trays_count]" x-model="grades[{{ $i }}].trays" class="form-control num-lg">
                     </div>
-                    <div class="col-md-6">
-                        <div class="p-3 bg-light rounded-3 border">
-                            <label class="form-label text-danger small fw-bold text-center d-block mb-1">Afkir Sakit (Ekor)</label>
-                            <input type="number" inputmode="numeric" name="cull" value="{{ old('cull', 0) }}" placeholder="0" class="form-control form-control-lg text-center fw-bold fs-3 text-danger" min="0">
-                        </div>
+                    <div class="col-4">
+                        <label class="mini-label" for="g{{ $i }}e">+ Butir lepas</label>
+                        <input id="g{{ $i }}e" type="number" inputmode="numeric" min="0" step="1" placeholder="0"
+                               name="grades[{{ $i }}][extra_eggs]" x-model="grades[{{ $i }}].extra" class="form-control num-lg">
+                    </div>
+                    <div class="col-4">
+                        <label class="mini-label" for="g{{ $i }}k">Berat (kg)</label>
+                        <input id="g{{ $i }}k" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0"
+                               name="grades[{{ $i }}][weight_kg]" x-model="grades[{{ $i }}].kg" class="form-control num-lg">
                     </div>
                 </div>
             </div>
-        </div>
+        @empty
+            <x-empty icon="bi-egg" title="Belum ada jenis telur aktif">
+                {{ $isOwner ? 'Tambahkan jenis telur (grade) lebih dulu.' : 'Minta pemilik menambahkan jenis telur.' }}
+            </x-empty>
+        @endforelse
+    </x-panel>
 
-        <!-- Tombol Aksi Simpan -->
-        <div class="d-grid gap-2">
-            <button type="submit" class="btn btn-primary btn-lg py-3 fw-bold fs-5 shadow">
-                <i class="bi bi-save2-fill me-2"></i> SIMPAN LAPORAN HARIAN KANDANG
-            </button>
+    {{-- LANGKAH 3: PAKAN --}}
+    <x-panel title="Pakan yang diberikan" step="3" tone="brand" :subtitle="'1 karung = ' . \App\Support\Format::number($sackKg) . ' kg.'">
+        @if($feedStocks->isEmpty())
+            <x-empty icon="bi-box-seam" title="Belum ada data pakan">
+                {{ $isOwner ? 'Tambahkan jenis pakan di menu Stok Pakan.' : 'Minta pemilik menambahkan jenis pakan.' }}
+            </x-empty>
+        @else
+            <x-field label="Jenis pakan" name="feed_stock_id" required>
+                <select name="feed_stock_id" id="feed_stock_id" class="form-select" x-model="feedId" required>
+                    @foreach($feedStocks as $feed)
+                        <option value="{{ $feed->id }}">{{ $feed->feed_name }} — sisa {{ \App\Support\Format::number($feed->stock_kg) }} kg</option>
+                    @endforeach
+                </select>
+            </x-field>
+            <div class="row g-2">
+                <div class="col-6">
+                    <label class="mini-label" for="feed_sacks">Jumlah karung</label>
+                    <input id="feed_sacks" type="number" inputmode="numeric" min="0" step="1" name="feed_sacks" x-model="sacks" placeholder="0" class="form-control num-xl">
+                </div>
+                <div class="col-6">
+                    <label class="mini-label" for="extra_feed_kg">+ Tambahan (kg)</label>
+                    <input id="extra_feed_kg" type="number" inputmode="decimal" min="0" step="0.1" name="extra_feed_kg" x-model="extraFeed" placeholder="0" class="form-control num-xl">
+                </div>
+            </div>
+            <div class="field-hint mt-2" x-show="feedKg() > 0">Total pakan: <b x-text="angka(feedKg()) + ' kg'"></b></div>
+        @endif
+    </x-panel>
+
+    {{-- LANGKAH 4: AYAM MATI / AFKIR --}}
+    <x-panel title="Ayam mati atau diafkir" step="4" tone="danger" subtitle="Isi 0 jika tidak ada. Jumlah ayam di kandang akan berkurang otomatis.">
+        <div class="row g-3">
+            @foreach(['mortality' => 'Ayam mati', 'cull' => 'Ayam afkir (sakit/dikeluarkan)'] as $field => $label)
+                <div class="col-sm-6">
+                    <label class="field-label" for="{{ $field }}">{{ $label }}</label>
+                    <div class="input-group">
+                        <button type="button" class="btn btn-light btn-lg px-3" @click="step('{{ $field }}', -1)" aria-label="Kurangi"><i class="bi bi-dash-lg"></i></button>
+                        <input id="{{ $field }}" type="number" inputmode="numeric" min="0" step="1" name="{{ $field }}" x-ref="{{ $field }}" value="{{ old($field, 0) }}" class="form-control num-xl">
+                        <button type="button" class="btn btn-light btn-lg px-3" @click="step('{{ $field }}', 1)" aria-label="Tambah"><i class="bi bi-plus-lg"></i></button>
+                    </div>
+                    <div class="field-hint">Satuan: ekor</div>
+                </div>
+            @endforeach
         </div>
-    </form>
-</div>
+    </x-panel>
+
+    <x-panel title="Catatan" icon="bi-chat-left-text" subtitle="Boleh dikosongkan. Contoh: ayam lesu, lampu mati, air macet.">
+        <textarea name="notes" rows="2" maxlength="500" class="form-control" placeholder="Tulis catatan jika ada...">{{ old('notes') }}</textarea>
+    </x-panel>
+
+    {{-- RINGKASAN & SIMPAN --}}
+    <div class="sticky-actions">
+        <div class="summary-bar">
+            <div><div class="k">Total telur</div><div class="v" x-text="angka(totalEggs(), 0) + ' butir'"></div></div>
+            <div><div class="k">Dalam rak</div><div class="v" x-text="trayText()"></div></div>
+            <div><div class="k">Berat telur</div><div class="v" x-text="angka(totalKg(), 2) + ' kg'"></div></div>
+            <div><div class="k">Pakan</div><div class="v" x-text="angka(feedKg()) + ' kg'"></div></div>
+            <div><div class="k">Produksi (HDP)</div><div class="v" x-text="hdp()"></div></div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-xl w-100">
+            <i class="bi bi-check2-circle"></i> Simpan Laporan Panen
+        </button>
+    </div>
+</form>
+@endif
 @endsection
+
+@push('scripts')
+    @include('daily_logs._script')
+@endpush
