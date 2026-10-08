@@ -25,6 +25,26 @@
                 <input type="text" id="pin" name="pin" inputmode="numeric" pattern="[0-9]*" minlength="4" maxlength="6" autocomplete="off"
                        class="form-control num-lg" style="max-width:220px; letter-spacing:.3em" placeholder="••••">
             </x-field>
+            <div class="row g-3 mt-1">
+                <div class="col-md-7">
+                    <x-field label="Jenis gaji" name="wage_type" optional>
+                        <select id="wage_type" name="wage_type" class="form-select">
+                            <option value="">— Belum diatur —</option>
+                            @foreach(\App\Services\Payroll::WAGE_TYPES as $key => $label)
+                                <option value="{{ $key }}" @selected(old('wage_type', $user->wage_type) === $key)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </x-field>
+                </div>
+                <div class="col-md-5">
+                    <x-field label="Besaran gaji" name="wage_amount" optional hint="Per hari untuk gaji harian, per bulan untuk gaji bulanan." class="mb-0">
+                        <div class="input-group">
+                            <span class="input-group-text">Rp</span>
+                            <input type="number" id="wage_amount" name="wage_amount" min="0" step="1" inputmode="numeric" value="{{ old('wage_amount', $user->wage_amount !== null ? (int) $user->wage_amount : '') }}" class="form-control" data-rupiah>
+                        </div>
+                    </x-field>
+                </div>
+            </div>
         </div>
 
         <div x-show="role === 'owner'" x-cloak>

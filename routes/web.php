@@ -6,8 +6,10 @@ use App\Http\Controllers\Admin\FarmController as AdminFarmController;
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\OtherIncomeController;
 use App\Http\Controllers\PasswordResetController;
+use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\PwaController;
 use App\Http\Controllers\TrashController;
+use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DeviceController;
 use App\Http\Controllers\RegisterController;
@@ -164,6 +166,11 @@ Route::middleware('auth')->group(function () {
         Route::resource('expenses', ExpenseLedgerController::class)->except('show');
         Route::resource('pendapatan-lain', OtherIncomeController::class)->except('show')->parameters(['pendapatan-lain' => 'otherIncome'])->names('other-incomes');
         Route::resource('users', UserController::class)->except('show');
+
+        Route::get('/absensi', [AttendanceController::class, 'index'])->name('attendance.index');
+        Route::post('/absensi', [AttendanceController::class, 'store'])->name('attendance.store');
+        Route::get('/gaji', [PayrollController::class, 'index'])->name('payroll.index');
+        Route::post('/gaji/bayar', [PayrollController::class, 'pay'])->name('payroll.pay');
 
         // HP kandang: perangkat tempat pekerja masuk dengan nama + PIN
         Route::get('/hp-kandang', [DeviceController::class, 'index'])->name('devices.index');

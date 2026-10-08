@@ -30,6 +30,8 @@ class User extends Authenticatable
         'password',
         'pin',
         'role',
+        'wage_type',
+        'wage_amount',
     ];
 
     protected $hidden = [

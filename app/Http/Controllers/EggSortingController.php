@@ -6,6 +6,7 @@ use App\Http\Controllers\Concerns\AcceptsOfflineEntries;
 use App\Models\Farm;
 use App\Tenancy\FarmContext;
 use App\Tenancy\FarmRule;
+use App\Models\Attendance;
 use App\Models\EggGrade;
 use App\Models\EggSorting;
 use App\Services\EggStock;
@@ -120,6 +121,8 @@ class EggSortingController extends Controller
         if (!$saved) {
             return $this->entrySaved($request, 'Catatan ini sudah diterima sebelumnya.', $redirect);
         }
+
+        Attendance::markPresent($request->user());
 
         $message = 'Sortir tersimpan: ' . Format::number($count) . ' butir (' . Format::number($kg, 1) . ' kg) dipindah dari telur campur ke stok per jenis.';
         $warning = $kg > $stock + 0.01

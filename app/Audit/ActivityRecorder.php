@@ -36,6 +36,7 @@ class ActivityRecorder
         'egg_grade_id'  => [EggGrade::class, 'name'],
         'recorded_by'   => [User::class, 'name'],
         'created_by'    => [User::class, 'name'],
+        'worker_id'     => [User::class, 'name'],
     ];
 
     private static bool $paused = false;

@@ -32,6 +32,8 @@
         ],
         'Pengaturan' => [
             ['route' => 'users.index', 'match' => 'users.*', 'icon' => 'bi-people-fill', 'label' => 'Pengguna'],
+            ['route' => 'attendance.index', 'match' => 'attendance.*', 'icon' => 'bi-calendar-check-fill', 'label' => 'Absensi'],
+            ['route' => 'payroll.index', 'match' => 'payroll.*', 'icon' => 'bi-cash-stack', 'label' => 'Gaji Pekerja'],
             ['route' => 'devices.index', 'match' => 'devices.*', 'icon' => 'bi-phone-fill', 'label' => 'HP Kandang'],
             ['route' => 'settings.edit', 'match' => 'settings.*', 'icon' => 'bi-gear-fill', 'label' => 'Profil Peternakan'],
             ['route' => 'subscription.show', 'match' => 'subscription.*', 'icon' => 'bi-patch-check-fill', 'label' => 'Langganan'],

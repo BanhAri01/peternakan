@@ -29,6 +29,8 @@ class UserController extends Controller
             'email'    => ['nullable', 'required_if:role,owner', 'email', 'max:255', 'unique:users,email'],
             'password' => ['nullable', 'required_if:role,owner', 'min:6'],
             'pin'      => ['nullable', 'required_if:role,worker', 'digits_between:4,6'],
+            'wage_type'   => ['nullable', 'in:harian,bulanan'],
+            'wage_amount' => ['nullable', 'required_with:wage_type', 'numeric', 'min:0', 'max:1000000000'],
         ], [
             'email.required_if'    => 'Email wajib diisi untuk akun Owner.',
             'password.required_if' => 'Kata sandi wajib diisi untuk akun Owner.',
@@ -45,6 +47,8 @@ class UserController extends Controller
         // PIN hanya untuk pekerja (di-hash otomatis oleh cast di model User)
         if ($validated['role'] !== 'worker') {
             $validated['pin'] = null;
+            $validated['wage_type'] = null;
+            $validated['wage_amount'] = null;
         }
 
         $validated['farm_id'] = $request->user()->farm_id;
@@ -66,6 +70,8 @@ class UserController extends Controller
             'email'    => ['nullable', 'required_if:role,owner', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
             'password' => ['nullable', 'min:6'],
             'pin'      => ['nullable', 'digits_between:4,6'],
+            'wage_type'   => ['nullable', 'in:harian,bulanan'],
+            'wage_amount' => ['nullable', 'required_with:wage_type', 'numeric', 'min:0', 'max:1000000000'],
         ], [
             'pin.digits_between' => 'PIN berupa 4–6 angka.',
         ]);
@@ -80,6 +86,8 @@ class UserController extends Controller
         // Perbarui PIN hanya jika diisi; akun owner tidak memakai PIN
         if ($validated['role'] !== 'worker') {
             $validated['pin'] = null;
+            $validated['wage_type'] = null;
+            $validated['wage_amount'] = null;
         } elseif (empty($validated['pin'])) {
             unset($validated['pin']);
         }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\AcceptsOfflineEntries;
 use App\Tenancy\FarmRule;
+use App\Models\Attendance;
 use App\Models\Coop;
 use App\Models\DailyLog;
 use App\Models\EggGrade;
@@ -173,6 +174,8 @@ class DailyLogController extends Controller
         }
 
         [$coop, $calc] = $saved;
+
+        Attendance::markPresent($request->user());
 
         $message = sprintf(
             'Tersimpan! %s: %s telur (%s), %s kg pakan.',

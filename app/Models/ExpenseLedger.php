@@ -13,6 +13,8 @@ class ExpenseLedger extends Model
     use HasFactory, BelongsToFarm, SoftDeletes, RecordsActivity;
 
     protected $fillable = [
+        'worker_id',
+        'payroll_period',
         'transaction_date',
         'expense_type',
         'category',
