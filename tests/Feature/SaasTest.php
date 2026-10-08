@@ -167,10 +167,11 @@ class SaasTest extends TestCase
         $this->actingAs($admin)->get(route('admin.farms.index'))->assertOk()->assertSee('Peternakan Uji')->assertSee('Telur Jaya');
         $this->actingAs($admin)->get(route('admin.farms.edit', $this->otherFarm))->assertOk();
 
+        $trialEnds = $this->otherFarm->fresh()->trial_ends_at;
         $this->actingAs($admin)->post(route('admin.farms.extend', $this->otherFarm), ['months' => 3])->assertSessionHas('success');
         $farm = $this->otherFarm->fresh();
         $this->assertSame('active', $farm->status);
-        $this->assertSame(now()->addMonthsNoOverflow(3)->toDateString(), $farm->active_until->toDateString());
+        $this->assertSame($trialEnds->copy()->addMonthsNoOverflow(3)->toDateString(), $farm->active_until->toDateString());
 
         // Admin tidak bisa membuka halaman data peternakan
         $this->actingAs($admin)->get(route('owner.dashboard'))->assertRedirect(route('admin.farms.index'));
