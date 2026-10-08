@@ -38,12 +38,13 @@ class CoopController extends Controller
             ->orderBy('log_date')
             ->get();
 
-        $chart = ['labels' => [], 'hdp' => [], 'eggs' => [], 'loss' => []];
+        $chart = ['labels' => [], 'hdp' => [], 'standard' => [], 'eggs' => [], 'loss' => []];
         $byDate = $logs->keyBy(fn ($l) => $l->log_date->toDateString());
         for ($d = $start->copy(); $d->lte(Carbon::today()); $d->addDay()) {
             $log = $byDate->get($d->toDateString());
             $chart['labels'][] = $d->translatedFormat('d M');
             $chart['hdp'][]    = $log ? (float) $log->hdp_percentage : null;
+            $chart['standard'][] = $coop->standardHdp($d);
             $chart['eggs'][]   = $log ? (int) $log->eggs_total_count : null;
             $chart['loss'][]   = $log ? $log->mortality + $log->cull : null;
         }
@@ -54,6 +55,7 @@ class CoopController extends Controller
             'eggs'      => (int) $logs->sum('eggs_total_count'),
             'egg_kg'    => $eggKg,
             'avg_hdp'   => round((float) $logs->avg('hdp_percentage'), 1),
+            'avg_std'   => round((float) $logs->avg(fn ($l) => $coop->standardHdp($l->log_date)), 1),
             'best_hdp'  => (float) $logs->max('hdp_percentage'),
             'feed_kg'   => (float) $logs->sum('feed_consumed_kg'),
             'fcr'       => $eggKg > 0 ? round($logs->sum('feed_consumed_kg') / $eggKg, 2) : null,

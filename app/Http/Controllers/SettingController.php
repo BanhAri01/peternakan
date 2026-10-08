@@ -28,6 +28,7 @@ class SettingController extends Controller
             'egg_price_per_kg' => 'required|numeric|min:0|max:1000000',
             'sack_kg'          => 'required|numeric|min:1|max:200',
             'hdp_warning'      => 'required|numeric|min:1|max:100',
+            'hdp_tolerance'    => 'nullable|numeric|min:1|max:30',
             'low_feed_days'    => 'required|integer|min:1|max:60',
             'receipt_paper'    => 'required|in:' . implode(',', array_keys(ExportPdfController::RECEIPT_PAPERS)),
             'receipt_style'    => 'required|in:color,ink',

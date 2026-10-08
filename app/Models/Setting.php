@@ -23,6 +23,7 @@ class Setting extends Model
         'farm_phone'       => '',
         'egg_price_per_kg' => 25000, // harga jual acuan untuk estimasi pendapatan
         'sack_kg'          => 50,    // berat 1 karung pakan
+        'hdp_tolerance'    => 5,
         'hdp_warning'      => 70,    // HDP di bawah angka ini dianggap perlu perhatian
         'low_feed_days'    => 5,     // peringatan jika pakan tinggal sekian hari
         'receipt_paper'    => 'continuous', // ukuran kertas nota

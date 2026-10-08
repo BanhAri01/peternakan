@@ -7,10 +7,10 @@
             </x-field>
         </div>
         <div class="col-md-5">
-            <x-field label="Jenis / strain ayam" name="strain" optional>
+            <x-field label="Jenis / strain ayam" name="strain" optional hint="ISA Brown, Lohmann Brown, dan Hy-Line Brown punya standar produksi sendiri. Strain lain memakai standar umum.">
                 <input type="text" id="strain" name="strain" list="strain_list" value="{{ old('strain', $coop->strain) }}" class="form-control" placeholder="Contoh: Isa Brown">
                 <datalist id="strain_list">
-                    @foreach(['Isa Brown', 'Lohmann Brown', 'Hy-Line Brown', 'Novogen Brown', 'Hisex Brown', 'Dekalb Brown'] as $s)
+                    @foreach(array_merge(\App\Services\StrainStandard::names(), ['Novogen Brown', 'Hisex Brown', 'Dekalb Brown']) as $s)
                         <option value="{{ $s }}">
                     @endforeach
                 </datalist>

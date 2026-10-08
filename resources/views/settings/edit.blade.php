@@ -52,10 +52,18 @@
                 </x-field>
             </div>
             <div class="col-md-6">
-                <x-field label="Batas produksi (HDP) aman" name="hdp_warning" required hint="Di bawah angka ini kandang ditandai merah. Umumnya 70–80%.">
+                <x-field label="Batas produksi (HDP) aman" name="hdp_warning" required hint="Dipakai untuk warna di tabel riwayat. Umumnya 70–80%.">
                     <div class="input-group">
                         <input type="number" id="hdp_warning" name="hdp_warning" step="1" min="1" max="100" value="{{ old('hdp_warning', $settings['hdp_warning']) }}" class="form-control" required>
                         <span class="input-group-text">%</span>
+                    </div>
+                </x-field>
+            </div>
+            <div class="col-md-6">
+                <x-field label="Toleransi di bawah standar strain" name="hdp_tolerance" hint="Beranda memberi peringatan jika produksi lebih rendah dari standar strain sesuai umur ayam, dikurangi angka ini.">
+                    <div class="input-group">
+                        <input type="number" id="hdp_tolerance" name="hdp_tolerance" step="0.5" min="1" max="30" value="{{ old('hdp_tolerance', $settings['hdp_tolerance']) }}" class="form-control">
+                        <span class="input-group-text">poin %</span>
                     </div>
                 </x-field>
             </div>

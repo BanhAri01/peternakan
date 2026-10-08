@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Audit\RecordsActivity;
+use App\Services\StrainStandard;
 use App\Tenancy\BelongsToFarm;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -54,6 +55,32 @@ class Coop extends Model
         $weeks = (int) floor(max(0, $this->chick_in_date->diffInDays($at, false)) / 7);
 
         return (int) $this->initial_age_weeks + $weeks;
+    }
+
+    public function exactAgeInWeeks($date = null): float
+    {
+        if (!$this->chick_in_date) {
+            return (float) $this->initial_age_weeks;
+        }
+
+        $at = $date ? Carbon::parse($date) : Carbon::today();
+
+        return (int) $this->initial_age_weeks + max(0, $this->chick_in_date->diffInDays($at, false)) / 7;
+    }
+
+    public function standardKey(): string
+    {
+        return StrainStandard::keyFor($this->strain);
+    }
+
+    public function standardLabel(): string
+    {
+        return StrainStandard::label($this->standardKey());
+    }
+
+    public function standardHdp($date = null): float
+    {
+        return StrainStandard::hdp($this->standardKey(), $this->exactAgeInWeeks($date));
     }
 
     public function getStatusLabelAttribute(): string

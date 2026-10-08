@@ -219,9 +219,10 @@
                         @if($log)
                             <div class="metric-row mb-3">
                                 <div class="metric"><span class="k">Telur</span><span class="v">{{ Format::number($log->eggs_total_count) }}</span></div>
-                                <div class="metric"><span class="k">Produksi</span><span class="v {{ $log->hdp_percentage < $hdpWarn ? 'text-danger' : 'text-success' }}">{{ Format::number($log->hdp_percentage, 1) }}%</span></div>
+                                <div class="metric"><span class="k">Produksi</span><span class="v {{ $card['status']['tone'] === 'danger' ? 'text-danger' : 'text-success' }}">{{ Format::number($log->hdp_percentage, 1) }}%</span></div>
                                 <div class="metric"><span class="k">Berat</span><span class="v">{{ Format::number($log->eggs_total_kg, 1) }} kg</span></div>
                             </div>
+                            <div class="kv"><span class="k">Standar umur {{ $card['age'] }} minggu</span><span class="v">{{ Format::number($card['standard'], 1) }}% <span class="text-muted fw-normal">({{ $card['coop']->standardLabel() }})</span></span></div>
                             <div class="kv"><span class="k">Dalam rak</span><span class="v">{{ Format::trays($log->eggs_total_count) }}</span></div>
                             <div class="kv"><span class="k">Pakan</span><span class="v">{{ Format::number($log->feed_consumed_kg, 1) }} kg @if($card['gramPerHen'])<span class="text-muted fw-normal">({{ $card['gramPerHen'] }} gr/ekor)</span>@endif</span></div>
                             <div class="kv"><span class="k">Mati / afkir</span><span class="v {{ $log->mortality + $log->cull > 0 ? 'text-danger' : '' }}">{{ $log->mortality }} / {{ $log->cull }} ekor</span></div>
