@@ -14,6 +14,8 @@ use App\Models\ExpenseLedger;
 use App\Models\FeedPurchase;
 use App\Models\FeedStock;
 use App\Models\Invoice;
+use App\Models\Medicine;
+use App\Models\MedicineMovement;
 use App\Models\OtherIncome;
 use App\Models\User;
 use App\Models\Vaccination;
@@ -37,6 +39,7 @@ class ActivityRecorder
         'recorded_by'   => [User::class, 'name'],
         'created_by'    => [User::class, 'name'],
         'worker_id'     => [User::class, 'name'],
+        'medicine_id'   => [Medicine::class, 'name'],
     ];
 
     private static bool $paused = false;
@@ -174,6 +177,7 @@ class ActivityRecorder
             $model instanceof OtherIncome   => $model->item_name ?: $model->category,
             $model instanceof Vaccination   => $model->vaccine_name,
             $model instanceof FeedStock     => $model->feed_name,
+            $model instanceof MedicineMovement => ($model->medicine?->name ?? 'Obat') . ', ' . Format::date($model->movement_date),
             $model instanceof User          => $model->name,
             default                         => $model->name ?? '#' . $model->getKey(),
         };

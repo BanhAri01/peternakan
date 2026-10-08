@@ -58,6 +58,7 @@
                     <tr><td>Beli telur dari luar</td><td class="r">({{ Format::rupiah($summary['egg_bought']) }})</td></tr>
                     <tr><td>Biaya lain</td><td class="r">({{ Format::rupiah($summary['expenses']) }})</td></tr>
                     <tr><td>Vaksinasi</td><td class="r">({{ Format::rupiah($summary['vaccines']) }})</td></tr>
+                    <tr><td>Obat &amp; vitamin dipakai</td><td class="r">({{ Format::rupiah($summary['medicine_used']) }})</td></tr>
                     <tr class="total"><td>{{ $summary['net_profit'] >= 0 ? 'Untung bersih' : 'Rugi' }}</td><td class="r {{ $summary['net_profit'] >= 0 ? 'pos' : 'neg' }}">{{ Format::rupiah($summary['net_profit']) }}</td></tr>
                 </table>
             </td>
@@ -69,6 +70,7 @@
                     <tr><td>Beli pakan</td><td class="r">({{ Format::rupiah($summary['feed_bought']) }})</td></tr>
                     <tr><td>Beli telur</td><td class="r">({{ Format::rupiah($summary['egg_bought']) }})</td></tr>
                     <tr><td>Biaya lain + vaksin</td><td class="r">({{ Format::rupiah($summary['expenses'] + $summary['vaccines']) }})</td></tr>
+                    <tr><td>Beli obat &amp; vitamin</td><td class="r">({{ Format::rupiah($summary['medicine_bought']) }})</td></tr>
                     <tr class="total"><td>Sisa uang kas</td><td class="r {{ $summary['net_cash'] >= 0 ? 'pos' : 'neg' }}">{{ Format::rupiah($summary['net_cash']) }}</td></tr>
                     <tr><td class="muted">Piutang baru bulan ini</td><td class="r muted">{{ Format::rupiah($summary['new_debt']) }}</td></tr>
                 </table>

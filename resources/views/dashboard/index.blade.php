@@ -129,7 +129,7 @@
                 <div class="kv"><span class="k">Pendapatan lain (afkir, kotoran, dll)</span><span class="v text-success">@rupiah($month['other_income'])</span></div>
             @endif
             <div class="kv"><span class="k">Pakan yang dimakan</span><span class="v">@rupiah($month['feed_used'])</span></div>
-            <div class="kv"><span class="k">Biaya lain (gaji, listrik, obat, dll)</span><span class="v">@rupiah($month['expenses'] + $month['vaccines'])</span></div>
+            <div class="kv"><span class="k">Biaya lain (gaji, listrik, obat, dll)</span><span class="v">@rupiah($month['expenses'] + $month['vaccines'] + $month['medicine_used'])</span></div>
             @if($month['egg_bought'] > 0)
                 <div class="kv"><span class="k">Beli telur dari luar</span><span class="v">@rupiah($month['egg_bought'])</span></div>
             @endif

@@ -21,6 +21,7 @@
         'Kandang & Gudang' => [
             ['route' => 'coops.index', 'match' => 'coops.*', 'icon' => 'bi-house-heart-fill', 'label' => 'Kandang'],
             ['route' => 'vaccinations.index', 'match' => 'vaccinations.*', 'icon' => 'bi-shield-plus', 'label' => 'Vaksinasi'],
+            ['route' => 'medicines.index', 'match' => 'medicines.*', 'icon' => 'bi-capsule', 'label' => 'Stok Obat & Vitamin'],
             ['route' => 'feed-stocks.index', 'match' => 'feed-stocks.*', 'icon' => 'bi-box-seam-fill', 'label' => 'Stok Pakan'],
             ['route' => 'procurement.index', 'match' => 'procurement.*|suppliers.*', 'icon' => 'bi-truck', 'label' => 'Belanja Pakan & Telur'],
             ['route' => 'grades.index', 'match' => 'grades.*', 'icon' => 'bi-egg-fill', 'label' => 'Jenis Telur (Grade)'],

@@ -11,6 +11,7 @@ use App\Models\EggSale;
 use App\Models\EggSorting;
 use App\Models\EggSortingItem;
 use App\Models\FeedStock;
+use App\Models\Medicine;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\EggStock;
@@ -163,6 +164,20 @@ class DashboardController extends Controller
             } elseif ($f['days_left'] !== null && $f['days_left'] <= $lowFeedDays) {
                 $alerts[] = ['tone' => 'warning', 'icon' => 'bi-box-seam', 'title' => 'Pakan ' . $f['feed']->feed_name . ' tinggal ±' . $f['days_left'] . ' hari',
                     'text' => 'Sisa ' . Format::number($f['feed']->stock_kg) . ' kg. Segera pesan pakan.', 'url' => route('procurement.index'), 'cta' => 'Catat pembelian'];
+            }
+        }
+
+        foreach (Medicine::withStock()->orderBy('name')->get() as $medicine) {
+            $expiry = $medicine->expiryStatus($date);
+            if ($expiry === 'expired') {
+                $alerts[] = ['tone' => 'danger', 'icon' => 'bi-calendar-x-fill', 'title' => $medicine->name . ' sudah kedaluwarsa',
+                    'text' => 'Sejak ' . Format::date($medicine->expiry_date) . '. Jangan dipakai; catat sebagai dibuang.', 'url' => route('medicines.index'), 'cta' => 'Lihat stok obat'];
+            } elseif ($medicine->isLow()) {
+                $alerts[] = ['tone' => 'warning', 'icon' => 'bi-capsule', 'title' => 'Stok ' . $medicine->name . ' menipis',
+                    'text' => 'Sisa ' . Format::number($medicine->stock, 2) . ' ' . $medicine->unit . '.', 'url' => route('medicines.index'), 'cta' => 'Lihat stok obat'];
+            } elseif ($expiry === 'soon') {
+                $alerts[] = ['tone' => 'info', 'icon' => 'bi-calendar-event', 'title' => $medicine->name . ' segera kedaluwarsa',
+                    'text' => 'Tanggal ' . Format::date($medicine->expiry_date) . '. Pakai lebih dulu.', 'url' => route('medicines.index'), 'cta' => 'Lihat stok obat'];
             }
         }
 

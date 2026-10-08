@@ -7,6 +7,7 @@ use App\Models\DailyLog;
 use App\Models\EggSale;
 use App\Models\Farm;
 use App\Models\FeedStock;
+use App\Models\Medicine;
 use App\Models\NotificationLog;
 use App\Models\Setting;
 use App\Models\Vaccination;
@@ -130,6 +131,17 @@ class FarmReminders
         foreach ($vaccines as $v) {
             $when = $v->vaccination_date->isSameDay($today) ? 'hari ini' : 'besok';
             $lines[] = '💉 Vaksin ' . $v->vaccine_name . ' di ' . ($v->coop->name ?? 'kandang') . ' ' . $when . '.';
+        }
+
+        foreach (Medicine::withStock()->orderBy('name')->get() as $medicine) {
+            $expiry = $medicine->expiryStatus($today);
+            if ($expiry === 'expired') {
+                $lines[] = '💊 ' . $medicine->name . ' sudah kedaluwarsa (' . Format::date($medicine->expiry_date) . ').';
+            } elseif ($medicine->isLow()) {
+                $lines[] = '💊 Stok ' . $medicine->name . ' tinggal ' . Format::number($medicine->stock, 2) . ' ' . $medicine->unit . '.';
+            } elseif ($expiry === 'soon') {
+                $lines[] = '💊 ' . $medicine->name . ' kedaluwarsa ' . Format::date($medicine->expiry_date) . '.';
+            }
         }
 
         return $lines;

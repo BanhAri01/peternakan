@@ -56,6 +56,7 @@
             <div class="kv"><span class="k">Beli telur dari luar</span><span class="v">@rupiah($summary['egg_bought'])</span></div>
             <div class="kv"><span class="k">Biaya lain (Buku Kas)</span><span class="v">@rupiah($summary['expenses'])</span></div>
             <div class="kv"><span class="k">Vaksinasi</span><span class="v">@rupiah($summary['vaccines'])</span></div>
+            <div class="kv"><span class="k">Obat & vitamin dipakai</span><span class="v">@rupiah($summary['medicine_used'])</span></div>
             <div class="kv total">
                 <span class="k">{{ $summary['net_profit'] >= 0 ? 'Untung bersih' : 'Rugi' }}</span>
                 <span class="v {{ $summary['net_profit'] >= 0 ? 'text-success' : 'text-danger' }}">@rupiah($summary['net_profit'])</span>
@@ -71,6 +72,7 @@
             <div class="kv"><span class="k">Beli pakan</span><span class="v">@rupiah($summary['feed_bought'])</span></div>
             <div class="kv"><span class="k">Beli telur</span><span class="v">@rupiah($summary['egg_bought'])</span></div>
             <div class="kv"><span class="k">Biaya lain + vaksin</span><span class="v">@rupiah($summary['expenses'] + $summary['vaccines'])</span></div>
+            <div class="kv"><span class="k">Beli obat & vitamin</span><span class="v">@rupiah($summary['medicine_bought'])</span></div>
             <div class="kv total">
                 <span class="k">Sisa uang kas</span>
                 <span class="v {{ $summary['net_cash'] >= 0 ? 'text-success' : 'text-danger' }}">@rupiah($summary['net_cash'])</span>

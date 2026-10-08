@@ -36,6 +36,8 @@ class ActivityLog extends Model
         'EggPurchase'   => 'Kulakan telur',
         'ExpenseLedger' => 'Pengeluaran',
         'OtherIncome'   => 'Pendapatan lain',
+        'Medicine'      => 'Obat & vitamin',
+        'MedicineMovement' => 'Catatan obat',
         'Vaccination'   => 'Vaksinasi',
         'Customer'      => 'Pelanggan',
         'Supplier'      => 'Pemasok',
@@ -61,7 +63,7 @@ class ActivityLog extends Model
         'age_weeks' => 'Umur (minggu)', 'vaccine_name' => 'Nama vaksin', 'target_disease' => 'Penyakit', 'method' => 'Cara pemberian',
         'dosage' => 'Dosis', 'cost' => 'Biaya', 'phone' => 'No. HP', 'address' => 'Alamat', 'type' => 'Tipe', 'code' => 'Kode',
         'is_active' => 'Aktif', 'is_mixed' => 'Telur campur', 'email' => 'Email', 'role' => 'Peran', 'password' => 'Kata sandi',
-        'pin' => 'PIN', 'worker_id' => 'Pekerja', 'payroll_period' => 'Periode gaji', 'wage_type' => 'Jenis gaji', 'wage_amount' => 'Besaran gaji', 'income_date' => 'Tanggal', 'buyer' => 'Pembeli', 'amount' => 'Jumlah dibayar', 'remaining' => 'Sisa tagihan',
+        'pin' => 'PIN', 'medicine_id' => 'Obat', 'movement_date' => 'Tanggal', 'direction' => 'Kegiatan', 'min_stock' => 'Stok minimum', 'expiry_date' => 'Kedaluwarsa', 'unit_cost' => 'Harga satuan', 'worker_id' => 'Pekerja', 'payroll_period' => 'Periode gaji', 'wage_type' => 'Jenis gaji', 'wage_amount' => 'Besaran gaji', 'income_date' => 'Tanggal', 'buyer' => 'Pembeli', 'amount' => 'Jumlah dibayar', 'remaining' => 'Sisa tagihan',
     ];
 
     protected $fillable = [

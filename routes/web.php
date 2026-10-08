@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\BackupController;
 use App\Http\Controllers\Admin\FarmController as AdminFarmController;
 use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\MedicineController;
 use App\Http\Controllers\OtherIncomeController;
 use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\PayrollController;
@@ -164,6 +165,10 @@ Route::middleware('auth')->group(function () {
         Route::resource('coops', CoopController::class);
         Route::resource('feed-stocks', FeedStockController::class)->except('show');
         Route::resource('vaccinations', VaccinationController::class)->except('show');
+        Route::resource('obat', MedicineController::class)->except('show')->parameters(['obat' => 'medicine'])->names('medicines');
+        Route::get('/obat/{medicine}/catat', [MedicineController::class, 'movement'])->name('medicines.movement');
+        Route::post('/obat/{medicine}/catat', [MedicineController::class, 'storeMovement'])->name('medicines.movement.store');
+        Route::delete('/obat/mutasi/{movement}', [MedicineController::class, 'destroyMovement'])->name('medicines.movement.destroy');
         Route::resource('expenses', ExpenseLedgerController::class)->except('show');
         Route::resource('pendapatan-lain', OtherIncomeController::class)->except('show')->parameters(['pendapatan-lain' => 'otherIncome'])->names('other-incomes');
         Route::resource('users', UserController::class)->except('show');

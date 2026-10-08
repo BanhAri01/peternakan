@@ -8,6 +8,7 @@ use App\Models\EggPurchase;
 use App\Models\EggSale;
 use App\Models\ExpenseLedger;
 use App\Models\FeedPurchase;
+use App\Models\MedicineMovement;
 use App\Models\OtherIncome;
 use App\Models\Vaccination;
 use Carbon\Carbon;
@@ -29,11 +30,13 @@ class FarmFinance
         $expenses     = (float) ExpenseLedger::whereBetween('transaction_date', [$start, $end])->sum('total_amount');
         $vaccines     = (float) Vaccination::whereBetween('vaccination_date', [$start, $end])->sum('cost');
         $otherIncome  = (float) OtherIncome::whereBetween('income_date', [$start, $end])->sum('total_amount');
+        $medicineUsed = (float) MedicineMovement::whereIn('direction', ['pakai', 'buang'])->whereBetween('movement_date', [$start, $end])->sum('total_cost');
+        $medicineBought = (float) MedicineMovement::where('direction', 'masuk')->whereBetween('movement_date', [$start, $end])->sum('total_cost');
 
         // Laba: pakan dihitung dari yang benar-benar dimakan ayam
-        $totalCost = $feedUsed + $eggBought + $expenses + $vaccines;
+        $totalCost = $feedUsed + $eggBought + $expenses + $vaccines + $medicineUsed;
         // Arus kas: pakan dihitung dari uang yang keluar untuk membeli pakan
-        $cashOut   = $feedBought + $eggBought + $expenses + $vaccines;
+        $cashOut   = $feedBought + $eggBought + $expenses + $vaccines + $medicineBought;
 
         return [
             'revenue'     => $revenue,
@@ -46,6 +49,8 @@ class FarmFinance
             'egg_bought'  => $eggBought,
             'expenses'    => $expenses,
             'vaccines'    => $vaccines,
+            'medicine_used'   => $medicineUsed,
+            'medicine_bought' => $medicineBought,
             'total_cost'  => $totalCost,
             'net_profit'  => $revenue + $otherIncome - $totalCost,
             'cash_out'    => $cashOut,
