@@ -9,9 +9,10 @@ class ExampleTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_tamu_diarahkan_ke_halaman_login(): void
+    public function test_tamu_diarahkan_ke_halaman_login_saat_membuka_halaman_peternakan(): void
     {
-        $this->get('/')->assertRedirect(route('login'));
+        $this->get('/dashboard')->assertRedirect(route('login'));
+        $this->get('/panen/input')->assertRedirect(route('login'));
     }
 
     public function test_halaman_login_di_hp_biasa_menjelaskan_cara_daftar_hp_kandang(): void

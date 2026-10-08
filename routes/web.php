@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\BackupController;
 use App\Http\Controllers\Admin\FarmController as AdminFarmController;
 use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\MedicineController;
 use App\Http\Controllers\OtherIncomeController;
@@ -33,6 +34,7 @@ use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VaccinationController;
 
+Route::get('/', HomeController::class)->name('home');
 Route::get('/manifest.webmanifest', [PwaController::class, 'manifest'])->name('pwa.manifest');
 Route::get('/sw.js', [PwaController::class, 'serviceWorker'])->name('pwa.sw');
 Route::get('/pwa/offline.js', [PwaController::class, 'script'])->name('pwa.script');
@@ -71,16 +73,6 @@ Route::middleware('auth')->group(function () {
         ->header('Cache-Control', 'no-store'))->name('session.token');
 
     // Halaman depan sesuai peran
-    Route::get('/', function () {
-        $user = auth()->user();
-
-        return match (true) {
-            $user->isSuperAdmin() => redirect()->route('admin.farms.index'),
-            $user->isOwner()      => redirect()->route('owner.dashboard'),
-            default               => redirect()->route('daily-logs.create'),
-        };
-    });
-
     // Info langganan (tetap bisa dibuka pemilik walau masa langganan habis)
     Route::middleware('role:owner')->group(function () {
         Route::get('/langganan', [SubscriptionController::class, 'show'])->name('subscription.show');
