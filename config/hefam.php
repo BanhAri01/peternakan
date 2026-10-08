@@ -18,7 +18,7 @@ return [
         'driver'        => env('HEFAM_WA_DRIVER', 'log'),
         'fonnte_token'  => env('FONNTE_TOKEN'),
         'fonnte_url'    => env('FONNTE_URL', 'https://api.fonnte.com/send'),
-        'morning_at'    => '06:00',
-        'evening_at'    => '17:00',
+        'morning_at'    => ['06:00', '07:00'],
+        'evening_at'    => ['17:00', '18:00'],
     ],
 ];

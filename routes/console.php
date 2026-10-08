@@ -51,8 +51,11 @@ Artisan::command('hefam:pengingat {waktu : pagi atau sore} {--farm= : id peterna
 
 Schedule::command('hefam:backup')->dailyAt('01:30')->withoutOverlapping();
 Schedule::command('model:prune', ['--model' => [ActivityLog::class]])->dailyAt('02:15');
-Schedule::command('hefam:pengingat pagi')->dailyAt(config('hefam.whatsapp.morning_at'))->withoutOverlapping();
-Schedule::command('hefam:pengingat sore')->dailyAt(config('hefam.whatsapp.evening_at'))->withoutOverlapping();
+foreach (['pagi' => 'morning_at', 'sore' => 'evening_at'] as $kind => $key) {
+    foreach (config('hefam.whatsapp.' . $key) as $time) {
+        Schedule::command('hefam:pengingat ' . $kind)->dailyAt($time)->withoutOverlapping();
+    }
+}
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
