@@ -13,6 +13,8 @@ class Customer extends Model
 
     protected $fillable = ['name', 'phone', 'address'];
 
+    private ?float $debtTotal = null;
+
     public function sales()
     {
         return $this->hasMany(EggSale::class);
@@ -24,9 +26,13 @@ class Customer extends Model
     }
 
     // Total akumulasi hutang bakul ini
-    public function getTotalDebtAttribute()
+    public function getTotalDebtAttribute($value)
     {
-        return $this->sales()->sum('debt_amount');
+        if (array_key_exists('total_debt', $this->attributes)) {
+            return (float) $value;
+        }
+
+        return $this->debtTotal ??= (float) $this->sales()->sum('debt_amount');
     }
 
     public function getWaNumberAttribute(): ?string

@@ -8,6 +8,7 @@ use App\Models\DailyLog;
 use App\Models\DailyLogGrade;
 use App\Models\EggGrade;
 use App\Models\EggSale;
+use App\Models\EggSorting;
 use App\Models\EggSortingItem;
 use App\Models\FeedStock;
 use App\Models\Setting;
@@ -191,9 +192,8 @@ class DashboardController extends Controller
         // ---------------- Komposisi jenis telur ----------------
         // Hasil sortir pada tanggal ini (+ rincian jenis dari laporan panen lama)
         $sortedToday = EggSortingItem::query()
-            ->join('egg_sortings', 'egg_sortings.id', '=', 'egg_sorting_items.egg_sorting_id')
             ->join('egg_grades', 'egg_grades.id', '=', 'egg_sorting_items.egg_grade_id')
-            ->where('egg_sortings.sort_date', $day)
+            ->whereIn('egg_sorting_items.egg_sorting_id', EggSorting::where('sort_date', $day)->select('id'))
             ->selectRaw('egg_grades.name, SUM(egg_sorting_items.total_eggs) as eggs, SUM(egg_sorting_items.weight_kg) as kg')
             ->groupBy('egg_grades.name')
             ->get();

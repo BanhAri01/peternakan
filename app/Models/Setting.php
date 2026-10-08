@@ -47,11 +47,19 @@ class Setting extends Model
         $farmId = app(\App\Tenancy\FarmContext::class)->id();
 
         // Tanpa peternakan aktif (mis. halaman login) atau sebelum migrasi: pakai nilai bawaan
-        if ($farmId === null || !Schema::hasTable('settings')) {
+        if ($farmId === null) {
             return self::DEFAULTS;
         }
 
-        return self::$memo[$farmId] ??= Cache::rememberForever(self::CACHE_KEY . '-' . $farmId, function () {
+        if (isset(self::$memo[$farmId])) {
+            return self::$memo[$farmId];
+        }
+
+        if (!Schema::hasTable('settings')) {
+            return self::DEFAULTS;
+        }
+
+        return self::$memo[$farmId] = Cache::rememberForever(self::CACHE_KEY . '-' . $farmId, function () {
             $saved = static::query()->pluck('value', 'key')->filter(fn ($v) => $v !== null && $v !== '');
 
             return array_merge(self::DEFAULTS, $saved->all());

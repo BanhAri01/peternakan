@@ -15,9 +15,38 @@ use App\Models\EggSortingItem;
  */
 class EggStock
 {
+    private const MEMO_KEYS = ['egg-stock', 'egg-stock-mixed-id', 'egg-stock-sorted'];
+
     public static function flush(): void
     {
-        request()->attributes->remove('egg-stock');
+        foreach (self::MEMO_KEYS as $key) {
+            request()->attributes->remove($key);
+        }
+    }
+
+    private static function remember(string $key, callable $callback): mixed
+    {
+        $attrs = request()->attributes;
+
+        if (!$attrs->has($key)) {
+            $attrs->set($key, $callback());
+        }
+
+        return $attrs->get($key);
+    }
+
+    private static function mixedId(): ?int
+    {
+        return self::remember('egg-stock-mixed-id', fn () => EggGrade::where('is_mixed', true)->value('id'));
+    }
+
+    private static function sortedTotals(): array
+    {
+        return self::remember('egg-stock-sorted', function () {
+            $row = EggSorting::query()->selectRaw('COALESCE(SUM(input_kg), 0) as kg, COALESCE(SUM(input_count), 0) as eggs')->first();
+
+            return ['kg' => (float) $row->kg, 'eggs' => (int) $row->eggs];
+        });
     }
 
     /** @return array<int, float> [egg_grade_id => kg] */
@@ -35,8 +64,8 @@ class EggStock
         $sortOut  = $sum(EggSortingItem::query());
         $bought   = $sum(EggPurchase::query());
         $sold     = $sum(EggSale::query());
-        $sortedIn = (float) EggSorting::sum('input_kg');
-        $mixedId  = EggGrade::where('is_mixed', true)->value('id');
+        $sortedIn = self::sortedTotals()['kg'];
+        $mixedId  = self::mixedId();
 
         $stock = [];
         foreach (EggGrade::pluck('id') as $id) {
@@ -55,13 +84,13 @@ class EggStock
     // Telur campur yang belum disortir (butir), dari panen dikurangi yang sudah disortir
     public static function mixedEggsWaiting(): int
     {
-        $mixedId = EggGrade::where('is_mixed', true)->value('id');
+        $mixedId = self::mixedId();
         if (!$mixedId) {
             return 0;
         }
 
         $harvested = (int) DailyLogGrade::where('egg_grade_id', $mixedId)->sum('total_eggs');
-        $sorted    = (int) EggSorting::sum('input_count');
+        $sorted    = self::sortedTotals()['eggs'];
 
         return max(0, $harvested - $sorted);
     }
