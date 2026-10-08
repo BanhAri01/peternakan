@@ -13,6 +13,8 @@ use Illuminate\Validation\Rules\Password as PasswordRule;
 
 class PasswordResetController extends Controller
 {
+    private const UNAVAILABLE_MESSAGE = 'Email belum bisa dikirim saat ini. Hubungi admin HEFAM lewat WhatsApp untuk dibuatkan kata sandi baru.';
+
     private const SENT_MESSAGE = 'Jika email tersebut terdaftar sebagai pemilik, tautan untuk mengatur ulang kata sandi sudah dikirim. Periksa juga folder Spam.';
 
     public function request()
@@ -25,6 +27,10 @@ class PasswordResetController extends Controller
         $data  = $request->validate(['email' => 'required|email|max:255']);
         $email = Str::lower(trim($data['email']));
 
+        if (app()->isProduction() && in_array(config('mail.default'), ['log', 'array'], true)) {
+            return back()->withInput()->with('error', self::UNAVAILABLE_MESSAGE);
+        }
+
         $user = User::whereRaw('LOWER(email) = ?', [$email])->whereIn('role', ['owner', 'superadmin'])->first();
 
         if ($user) {
@@ -33,7 +39,7 @@ class PasswordResetController extends Controller
             } catch (\Throwable $e) {
                 Log::error('Gagal mengirim email atur ulang sandi: ' . $e->getMessage());
 
-                return back()->withInput()->with('error', 'Email belum bisa dikirim saat ini. Hubungi admin HEFAM lewat WhatsApp untuk dibuatkan kata sandi baru.');
+                return back()->withInput()->with('error', self::UNAVAILABLE_MESSAGE);
             }
         }
 

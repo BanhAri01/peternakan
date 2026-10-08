@@ -45,6 +45,18 @@ class PasswordResetTest extends TestCase
         Notification::assertNothingSent();
     }
 
+    public function test_di_production_tanpa_email_disetel_pengguna_diarahkan_ke_admin(): void
+    {
+        Notification::fake();
+        $this->app['env'] = 'production';
+        $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class);
+        config(['mail.default' => 'log']);
+
+        $this->post(route('password.email'), ['email' => 'owner@farm.test'])->assertSessionHas('error', fn ($m) => str_contains($m, 'WhatsApp'));
+
+        Notification::assertNothingSent();
+    }
+
     public function test_pemilik_bisa_mengganti_sandi_dengan_tautan(): void
     {
         $token = Password::createToken($this->owner);
