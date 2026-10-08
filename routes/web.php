@@ -103,6 +103,7 @@ Route::middleware('auth')->group(function () {
         // Pengaturan peternakan
         Route::get('/pengaturan', [SettingController::class, 'edit'])->name('settings.edit');
         Route::put('/pengaturan', [SettingController::class, 'update'])->name('settings.update');
+        Route::get('/pengaturan/contoh-nota', [ExportPdfController::class, 'previewReceipt'])->name('settings.receipt-preview');
 
         Route::resource('coops', CoopController::class);
         Route::resource('feed-stocks', FeedStockController::class)->except('show');

@@ -40,6 +40,9 @@ class DemoFarmSeeder extends Seeder
             'farm_owner'   => 'Bapak Ketut',
             'farm_address' => 'Banjar Dinas Kawan, Bangli, Bali',
             'farm_phone'   => '081234567890',
+            'farm_tagline' => 'Telur segar setiap pagi, langsung dari kandang kami',
+            'farm_instagram' => 'sinarabadifarm',
+            'receipt_promo' => 'Terima pesanan untuk warung, toko & hajatan. Gratis antar minimal 10 rak di wilayah Bangli.',
         ]);
 
         $owner = User::create(['name' => 'Bapak Ketut', 'role' => 'owner', 'email' => 'demo@hefam.id', 'password' => 'password']);

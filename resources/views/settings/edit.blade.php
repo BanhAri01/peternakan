@@ -8,7 +8,7 @@
 
 <x-alerts />
 
-<form action="{{ route('settings.update') }}" method="POST">
+<form action="{{ route('settings.update') }}" method="POST" enctype="multipart/form-data">
     @csrf
     @method('PUT')
 
@@ -70,7 +70,83 @@
         </div>
     </x-panel>
 
-    <x-panel title="Nota penjualan" icon="bi-printer-fill">
+    <x-panel title="Tampilan nota & promosi" icon="bi-stars" subtitle="Nota yang cantik membuat usaha Anda mudah diingat pembeli.">
+        <x-slot:actions>
+            <a href="{{ route('settings.receipt-preview') }}" target="_blank" class="btn btn-light btn-sm"><i class="bi bi-eye"></i> Lihat contoh nota</a>
+        </x-slot:actions>
+
+        <div class="row g-3 align-items-center mb-3">
+            <div class="col-auto">
+                @if($settings['farm_logo'])
+                    <img src="{{ $settings['farm_logo'] }}" alt="Logo peternakan" style="width:88px;height:88px;object-fit:contain;border:1px solid var(--line);border-radius:12px;background:#fff">
+                @else
+                    <div style="width:88px;height:88px;border-radius:50%;border:3px solid var(--brand);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.6rem;color:var(--brand);background:var(--brand-soft)">
+                        {{ collect(preg_split('/\s+/', trim($settings['farm_name'])))->take(2)->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))->join('') }}
+                    </div>
+                @endif
+            </div>
+            <div class="col">
+                <x-field label="Logo peternakan" name="logo" optional hint="PNG atau JPG, maksimal 2 MB. Jika kosong, nota memakai huruf depan nama peternakan." class="mb-1">
+                    <input type="file" id="logo" name="logo" accept="image/png,image/jpeg,image/webp" class="form-control">
+                </x-field>
+                @if($settings['farm_logo'])
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="remove_logo" value="1" id="remove_logo">
+                        <label class="form-check-label" for="remove_logo">Hapus logo</label>
+                    </div>
+                @endif
+            </div>
+        </div>
+
+        <x-field label="Slogan" name="farm_tagline" optional hint="Contoh: Telur segar setiap pagi, langsung dari kandang kami.">
+            <input type="text" id="farm_tagline" name="farm_tagline" maxlength="120" value="{{ old('farm_tagline', $settings['farm_tagline']) }}" class="form-control">
+        </x-field>
+
+        <div class="row g-3">
+            <div class="col-md-6">
+                <x-field label="Instagram" name="farm_instagram" optional>
+                    <div class="input-group">
+                        <span class="input-group-text">@</span>
+                        <input type="text" id="farm_instagram" name="farm_instagram" value="{{ old('farm_instagram', $settings['farm_instagram']) }}" class="form-control" placeholder="sinarabadifarm">
+                    </div>
+                </x-field>
+            </div>
+            <div class="col-md-6">
+                <x-field label="Facebook" name="farm_facebook" optional>
+                    <input type="text" id="farm_facebook" name="farm_facebook" value="{{ old('farm_facebook', $settings['farm_facebook']) }}" class="form-control" placeholder="Sinar Abadi Farm">
+                </x-field>
+            </div>
+        </div>
+
+        <x-field label="Pesan promosi di nota" name="receipt_promo" optional hint="Contoh: Terima pesanan untuk hajatan & warung. Gratis antar minimal 10 rak.">
+            <textarea id="receipt_promo" name="receipt_promo" rows="2" maxlength="250" class="form-control">{{ old('receipt_promo', $settings['receipt_promo']) }}</textarea>
+        </x-field>
+
+        <div class="field">
+            <span class="field-label">Gaya nota</span>
+            <div class="choices">
+                <label class="choice"><input type="radio" name="receipt_style" value="color" @checked(old('receipt_style', $settings['receipt_style']) === 'color')><span><i class="bi bi-palette-fill"></i>Berwarna<small>untuk printer tinta / laser</small></span></label>
+                <label class="choice"><input type="radio" name="receipt_style" value="ink" @checked(old('receipt_style', $settings['receipt_style']) === 'ink')><span><i class="bi bi-printer"></i>Hemat tinta<small>hitam putih, untuk dot-matrix</small></span></label>
+            </div>
+        </div>
+
+        <div class="row g-3 align-items-end">
+            <div class="col-sm-5">
+                <x-field label="Warna utama nota" name="receipt_color" class="mb-0">
+                    <input type="color" id="receipt_color" name="receipt_color" value="{{ old('receipt_color', $settings['receipt_color']) }}" class="form-control form-control-color w-100" style="min-height:52px">
+                </x-field>
+            </div>
+            <div class="col-sm-7">
+                <div class="form-check mb-2">
+                    <input type="hidden" name="receipt_show_qr" value="0">
+                    <input class="form-check-input" type="checkbox" name="receipt_show_qr" value="1" id="receipt_show_qr" @checked(old('receipt_show_qr', $settings['receipt_show_qr']) === '1')>
+                    <label class="form-check-label" for="receipt_show_qr">Tampilkan QR WhatsApp agar pembeli bisa pesan ulang <span class="text-muted">(perlu nomor HP di atas)</span></label>
+                </div>
+            </div>
+        </div>
+    </x-panel>
+
+    <x-panel title="Kertas nota" icon="bi-printer-fill">
         <div class="field">
             <span class="field-label">Ukuran kertas nota</span>
             <div class="choices" style="grid-template-columns: 1fr">

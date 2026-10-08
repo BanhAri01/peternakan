@@ -94,12 +94,29 @@ class PagesTest extends TestCase
             'farm_name' => 'Sinar Abadi Farm', 'farm_owner' => 'Pak Ketut', 'farm_address' => 'Bangli', 'farm_phone' => '0812',
             'egg_price_per_kg' => 27000, 'sack_kg' => 40, 'hdp_warning' => 75, 'low_feed_days' => 4,
             'receipt_paper' => 'continuous', 'receipt_footer' => 'Terima kasih',
+            'receipt_style' => 'color', 'receipt_color' => '#1f5f8b', 'receipt_show_qr' => '1',
+            'farm_tagline' => 'Telur segar tiap pagi', 'farm_instagram' => 'sinarabadi',
         ])->assertRedirect(route('settings.edit'));
 
         $this->assertSame('Sinar Abadi Farm', Setting::get('farm_name'));
         $this->assertEquals(40, Setting::num('sack_kg'));
 
         $this->actingAs($this->owner)->get(route('owner.dashboard'))->assertSee('Sinar Abadi Farm');
+
+        $preview = $this->actingAs($this->owner)->get(route('settings.receipt-preview'));
+        $preview->assertOk();
+        $this->assertStringStartsWith('%PDF', $preview->getContent());
+    }
+
+    public function test_logo_peternakan_bisa_diunggah(): void
+    {
+        $this->actingAs($this->owner)->put(route('settings.update'), [
+            'farm_name' => 'Sinar Abadi Farm', 'egg_price_per_kg' => 27000, 'sack_kg' => 50, 'hdp_warning' => 75, 'low_feed_days' => 4,
+            'receipt_paper' => 'continuous', 'receipt_style' => 'ink', 'receipt_color' => '#3f5a26',
+            'logo' => \Illuminate\Http\UploadedFile::fake()->image('logo.png', 800, 600),
+        ])->assertSessionHasNoErrors();
+
+        $this->assertStringStartsWith('data:image/png;base64,', Setting::get('farm_logo'));
     }
 
     public function test_pembelian_pakan_menambah_stok_dan_harga_rata_rata(): void

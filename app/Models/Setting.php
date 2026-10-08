@@ -24,6 +24,16 @@ class Setting extends Model
         'low_feed_days'    => 5,     // peringatan jika pakan tinggal sekian hari
         'receipt_paper'    => 'continuous', // ukuran kertas nota
         'receipt_footer'   => 'Barang yang sudah dibeli tidak dapat dikembalikan. Terima kasih.',
+
+        // Tampilan nota (sekaligus media promosi)
+        'receipt_style'    => 'color',   // color = berwarna, ink = hemat tinta (dot-matrix)
+        'receipt_color'    => '#3f5a26', // warna utama nota berwarna
+        'receipt_show_qr'  => '1',       // tampilkan QR WhatsApp untuk pesan ulang
+        'receipt_promo'    => '',        // pesan promosi di nota
+        'farm_tagline'     => '',        // slogan peternakan
+        'farm_instagram'   => '',
+        'farm_facebook'    => '',
+        'farm_logo'        => '',        // logo dalam bentuk data URI (disimpan di database)
     ];
 
     private static ?array $memo = null;
