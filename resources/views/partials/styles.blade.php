@@ -579,6 +579,8 @@
     .tag-success { background: var(--success-soft); color: var(--success); border-color: #bcd8bb; }
     .tag-warning { background: var(--warning-soft); color: var(--warning); border-color: #ecd09a; }
     .tag-danger  { background: var(--danger-soft); color: var(--danger); border-color: #efbdb7; }
+    .tbl tr.row-danger > td { background: var(--danger-soft); }
+    .tbl tr.row-danger { box-shadow: inset 5px 0 0 var(--danger); }
     .tag-info    { background: var(--info-soft); color: var(--info); border-color: #b9d4e8; }
     .tag-neutral { background: var(--neutral-soft); color: var(--neutral); border-color: #d6dad2; }
     .tag-egg     { background: var(--egg-soft); color: var(--egg-ink); border-color: #edd29c; }

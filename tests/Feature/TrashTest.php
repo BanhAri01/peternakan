@@ -53,7 +53,7 @@ class TrashTest extends TestCase
         $this->assertSoftDeleted($log);
         $this->assertSame(0, DailyLogGrade::count());
         $this->assertSame(1000, $this->coop->fresh()->current_population);
-        $this->assertEquals(1000, $this->feed->fresh()->stock_kg);
+        $this->assertEquals(890, $this->feed->fresh()->stock_kg);
 
         $this->actingAs($this->owner)->get(route('trash.index', ['jenis' => 'panen']))->assertOk()->assertSee('Kandang A')->assertSee('Pulihkan');
 
@@ -91,7 +91,7 @@ class TrashTest extends TestCase
 
         $this->assertSoftDeleted($log);
         $this->assertSame(3, $this->coop->fresh()->current_population);
-        $this->assertEquals(1000, $this->feed->fresh()->stock_kg);
+        $this->assertEquals(890, $this->feed->fresh()->stock_kg);
     }
 
     public function test_nota_dihapus_lalu_dipulihkan_beserta_piutangnya(): void

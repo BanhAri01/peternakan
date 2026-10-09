@@ -26,6 +26,8 @@ class Setting extends Model
         'hdp_tolerance'    => 5,
         'wa_reminder_enabled' => '0',
         'wa_reminder_phone'   => '',
+        'feed_sessions'       => '',
+        'feed_count_tolerance_kg' => 2,
         'wa_notify_feed'      => '1',
         'wa_notify_debt'      => '1',
         'wa_notify_vaccine'   => '1',

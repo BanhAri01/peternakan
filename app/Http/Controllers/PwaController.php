@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 class PwaController extends Controller
 {
-    public const OFFLINE_PAGES = ['/panen/input', '/sortir'];
+    public const OFFLINE_PAGES = ['/panen/input', '/sortir', '/pakan/beri'];
 
     private const ICONS = ['icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'apple-touch-icon.png'];
 
@@ -36,6 +36,7 @@ class PwaController extends Controller
                 ['src' => route('pwa.icon', 'icon-maskable-512.png', false), 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'maskable'],
             ],
             'shortcuts'        => [
+                ['name' => 'Beri Pakan', 'url' => '/pakan/beri'],
                 ['name' => 'Catat Panen', 'url' => '/panen/input'],
                 ['name' => 'Sortir Telur', 'url' => '/sortir'],
             ],

@@ -116,7 +116,7 @@ class DashboardController extends Controller
 
         // ---------------- Stok pakan ----------------
         // Pemakaian per jenis pakan 7 hari terakhir
-        $usageByFeed = \App\Models\DailyLogFeed::dailyUsageByFeed($date->copy()->subDays(6)->toDateString(), $day);
+        $usageByFeed = \App\Models\FeedingItem::dailyUsageByFeed($date->copy()->subDays(6)->toDateString(), $day);
 
         $feeds = FeedStock::orderBy('feed_name')->get()->map(function ($feed) use ($usageByFeed) {
             $perDay = (float) ($usageByFeed[$feed->id] ?? 0);
@@ -166,6 +166,13 @@ class DashboardController extends Controller
                 $alerts[] = ['tone' => 'warning', 'icon' => 'bi-box-seam', 'title' => 'Pakan ' . $f['feed']->feed_name . ' tinggal ±' . $f['days_left'] . ' hari',
                     'text' => 'Sisa ' . Format::number($f['feed']->stock_kg) . ' kg. Segera pesan pakan.', 'url' => route('procurement.index'), 'cta' => 'Catat pembelian'];
             }
+        }
+
+        $offDates = \App\Models\FeedCount::whereBetween('count_date', [$date->copy()->subDays(6)->toDateString(), $day])->get()
+            ->reject->isBalanced()->map(fn ($c) => $c->count_date->toDateString())->unique();
+        if ($offDates->isNotEmpty()) {
+            $alerts[] = ['tone' => 'danger', 'icon' => 'bi-calendar-x-fill', 'title' => 'Stok pakan gudang tidak cocok di ' . $offDates->count() . ' tanggal',
+                'text' => 'Hasil hitung gudang berbeda dengan catatan aplikasi. Cek tanggal yang merah.', 'url' => route('feed-counts.index'), 'cta' => 'Cek stok'];
         }
 
         foreach (Medicine::withStock()->orderBy('name')->get() as $medicine) {

@@ -36,6 +36,8 @@ class ActivityLog extends Model
         'Coop'          => 'Kandang',
         'FeedStock'     => 'Jenis pakan',
         'FeedPurchase'  => 'Pembelian pakan',
+        'Feeding'       => 'Pemberian pakan',
+        'FeedCount'     => 'Hitung stok pakan',
         'EggPurchase'   => 'Kulakan telur',
         'ExpenseLedger' => 'Pengeluaran',
         'OtherIncome'   => 'Pendapatan lain',

@@ -1,8 +1,11 @@
 <script>
     function panenForm(init) {
         var seq = 0;
+        init.feedIds = init.feedIds || [];
+        init.lastFeed = init.lastFeed || {};
+        init.grades = init.grades || [];
         init.feeds = (init.feeds || []).map(function (f) { return { key: ++seq, id: String(f.id || ''), sacks: f.sacks ?? '', extra: f.extra ?? '' }; });
-        if (!init.feeds.length) init.feeds = [{ key: ++seq, id: String(init.feedIds[0] || ''), sacks: '', extra: '' }];
+        if (!init.feeds.length && init.feedIds.length) init.feeds = [{ key: ++seq, id: String(init.feedIds[0]), sacks: '', extra: '' }];
         return Object.assign({
             num(v) { return Number(v) || 0; },
             gradeEggs(i) { var g = this.grades[i]; return this.num(g.trays) * 30 + this.num(g.extra); },

@@ -37,8 +37,6 @@
 <form action="{{ route('daily-logs.update', $dailyLog) }}" method="POST"
       x-data="panenForm({
           grades: @js($gradeInit),
-          feeds: @js(old('feeds') ? collect(old('feeds'))->map(fn ($f) => ['id' => $f['feed_stock_id'] ?? '', 'sacks' => $f['sacks'] ?? '', 'extra' => $f['extra_kg'] ?? ''])->values() : $feedLines),
-          feedIds: @js($feedStocks->pluck('id')->map(fn ($id) => (string) $id)->values()),
           sackKg: {{ (float) $sackKg }},
           coopId: @js((string) old('coop_id', $dailyLog->coop_id)),
           populations: @js($populations),
@@ -93,8 +91,22 @@
         @endforeach
     </x-panel>
 
-    <x-panel title="Pakan yang diberikan" step="3" tone="brand" :subtitle="'1 karung = ' . \App\Support\Format::number($sackKg) . ' kg.'">
-        @include('daily_logs._feeds')
+    <x-panel title="Pakan yang diberikan" step="3" tone="brand" subtitle="Dicatat per sesi lewat menu Beri Pakan. Tekan Ubah jika ada yang salah.">
+        @forelse($feedings as $f)
+            <div class="kv">
+                <span class="k">
+                    <b>{{ $f->sessionName() }}</b>
+                    <span class="d-block small">{{ $f->items->map(fn ($i) => ($i->feedStock->feed_name ?? '-') . ' ' . \App\Support\Format::number($i->feed_kg) . ' kg')->implode(' + ') }}</span>
+                    @if($f->recorder)<span class="d-block small text-muted">oleh {{ $f->recorder->name }}</span>@endif
+                </span>
+                <span class="v d-flex gap-1 flex-wrap justify-content-end">
+                    <a href="{{ route('feedings.edit', $f) }}" class="btn btn-light btn-sm"><i class="bi bi-pencil"></i> Ubah</a>
+                </span>
+            </div>
+        @empty
+            <x-empty icon="bi-basket2" title="Belum ada pakan dicatat untuk kandang & tanggal ini" />
+        @endforelse
+        <a href="{{ route('feedings.create', ['date' => $dailyLog->log_date->toDateString(), 'coop' => $dailyLog->coop_id]) }}" class="btn btn-light w-100 mt-2"><i class="bi bi-plus-lg"></i> Tambah pemberian pakan</a>
     </x-panel>
 
     <x-panel title="Ayam mati atau diafkir" step="4" tone="danger">
@@ -121,7 +133,6 @@
             <div><div class="k">Total telur</div><div class="v" x-text="angka(totalEggs(), 0) + ' butir'"></div></div>
             <div><div class="k">Dalam rak</div><div class="v" x-text="trayText()"></div></div>
             <div><div class="k">Berat telur</div><div class="v" x-text="angka(totalKg(), 2) + ' kg'"></div></div>
-            <div><div class="k">Pakan</div><div class="v" x-text="angka(feedKg()) + ' kg'"></div></div>
             <div><div class="k">Produksi (HDP)</div><div class="v" x-text="hdp()"></div></div>
         </div>
         <div class="d-flex gap-2 flex-wrap">

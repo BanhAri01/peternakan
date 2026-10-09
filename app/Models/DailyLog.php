@@ -49,27 +49,6 @@ class DailyLog extends Model
         return $this->belongsTo(FeedStock::class);
     }
 
-    public function feeds()
-    {
-        return $this->hasMany(DailyLogFeed::class);
-    }
-
-    public function adjustFeedStock(int $direction): void
-    {
-        foreach ($this->feeds()->get() as $line) {
-            if ((float) $line->feed_kg > 0) {
-                FeedStock::whereKey($line->feed_stock_id)->increment('stock_kg', $direction * (float) $line->feed_kg);
-            }
-        }
-    }
-
-    public function replaceFeeds(array $lines): void
-    {
-        $this->feeds()->delete();
-        $this->feeds()->createMany($lines);
-        $this->adjustFeedStock(-1);
-    }
-
     public function grades()
     {
         return $this->hasMany(DailyLogGrade::class);

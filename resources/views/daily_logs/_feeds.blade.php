@@ -24,7 +24,7 @@
 @if($errors->has('feeds') || $errors->has('feeds.*'))
     <div class="field-error mt-2"><i class="bi bi-exclamation-circle-fill"></i> {{ $errors->first('feeds') ?: collect($errors->get('feeds.*'))->flatten()->first() }}</div>
 @endif
-<div x-show="feeds.length < {{ \App\Services\DailyLogCalculator::MAX_FEEDS }} && feeds.length < {{ $feedStocks->count() }}">
+<div x-show="feeds.length < {{ \App\Services\FeedingService::MAX_FEEDS }} && feeds.length < {{ $feedStocks->count() }}">
     <button type="button" class="btn btn-light btn-lg w-100 mt-1" @click="addFeed()"><i class="bi bi-plus-lg"></i> Tambah jenis pakan lain</button>
 </div>
 <div class="field-hint mt-2" x-show="feedKg() > 0">Total pakan: <b x-text="angka(feedKg()) + ' kg'"></b><span x-show="feeds.length > 1" x-text="' dari ' + feeds.length + ' jenis'"></span></div>

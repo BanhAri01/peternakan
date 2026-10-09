@@ -47,6 +47,22 @@ class SettingController extends Controller
         ]);
 
         $data['receipt_show_qr'] = $request->boolean('receipt_show_qr') ? '1' : '0';
+        $feedData = $request->validate([
+            'feed_sessions'          => 'sometimes|array|min:1|max:' . \App\Services\FeedingService::MAX_SESSIONS,
+            'feed_sessions.*.name'   => 'required|string|max:20',
+            'feed_sessions.*.time'   => ['required', 'regex:/^([01]\d|2[0-3]):[0-5]\d$/'],
+            'feed_count_tolerance_kg' => 'sometimes|numeric|min:0|max:500',
+        ], [
+            'feed_sessions.*.name.required' => 'Nama sesi pakan wajib diisi (mis. Pagi).',
+            'feed_sessions.*.time.regex'    => 'Jam sesi tidak valid. Contoh: 06:00.',
+        ]);
+        if (isset($feedData['feed_sessions'])) {
+            $data['feed_sessions'] = collect($feedData['feed_sessions'])->map(fn ($s) => ['name' => trim($s['name']), 'time' => $s['time']])->sortBy('time')->values()->toJson();
+        }
+        if (isset($feedData['feed_count_tolerance_kg'])) {
+            $data['feed_count_tolerance_kg'] = $feedData['feed_count_tolerance_kg'];
+        }
+
         $data['wa_reminder_enabled'] = $request->boolean('wa_reminder_enabled') ? '1' : '0';
         foreach (array_keys(FarmReminders::TOPICS) as $topic) {
             $data[$topic] = $request->boolean($topic) ? '1' : '0';

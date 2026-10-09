@@ -44,6 +44,9 @@
                                     @case('pengeluaran')
                                         <div><b>{{ $item->item_name }}</b><div class="text-muted small">{{ $item->category }}</div></div>
                                         @break
+                                    @case('beri-pakan')
+                                        <div><b>{{ $item->coop->name ?? '-' }} · {{ $item->sessionName() }}</b><div class="text-muted small">{{ $item->items->map(fn ($i) => ($i->feedStock->feed_name ?? '-'))->implode(', ') }}</div></div>
+                                        @break
                                     @case('pakan-masuk')
                                         <div><b>{{ $item->feedStock->feed_name ?? '-' }}</b><div class="text-muted small">{{ $item->supplier->name ?? '-' }}</div></div>
                                         @break
@@ -72,6 +75,9 @@
                                         @break
                                     @case('pengeluaran')
                                         {{ Format::date($item->transaction_date) }} · <b>@rupiah($item->total_amount)</b>
+                                        @break
+                                    @case('beri-pakan')
+                                        {{ Format::date($item->feed_date) }} · {{ Format::number($item->totalKg()) }} kg
                                         @break
                                     @case('pakan-masuk')
                                         {{ Format::date($item->purchase_date) }} · {{ Format::number($item->quantity_kg) }} kg · <b>@rupiah($item->total_cost)</b>

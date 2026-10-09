@@ -166,7 +166,7 @@ class FarmReminders
         $lines = [];
         $lowDays = (int) (Setting::num('low_feed_days') ?: 5);
 
-        $usage = \App\Models\DailyLogFeed::dailyUsageByFeed($today->copy()->subDays(7)->toDateString(), $today->copy()->subDay()->toDateString());
+        $usage = \App\Models\FeedingItem::dailyUsageByFeed($today->copy()->subDays(7)->toDateString(), $today->copy()->subDay()->toDateString());
 
         foreach (FeedStock::orderBy('feed_name')->get() as $feed) {
             $perDay = (float) ($usage[$feed->id] ?? 0);

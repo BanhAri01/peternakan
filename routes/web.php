@@ -4,6 +4,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\BackupController;
 use App\Http\Controllers\Admin\FarmController as AdminFarmController;
 use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\FeedCountController;
+use App\Http\Controllers\FeedingController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\MedicineController;
@@ -110,6 +112,12 @@ Route::middleware('auth')->group(function () {
         Route::get('/panen/input', [DailyLogController::class, 'create'])->name('daily-logs.create');
         Route::post('/panen/simpan', [DailyLogController::class, 'store'])->name('daily-logs.store');
 
+        // Pemberian pakan per sesi & hitung stok gudang
+        Route::get('/pakan/beri', [FeedingController::class, 'create'])->name('feedings.create');
+        Route::post('/pakan/beri', [FeedingController::class, 'store'])->name('feedings.store');
+        Route::get('/stok-pakan/hitung', [FeedCountController::class, 'create'])->name('feed-counts.create');
+        Route::post('/stok-pakan/hitung', [FeedCountController::class, 'store'])->name('feed-counts.store');
+
         // Sortir telur campur menjadi per jenis
         Route::get('/sortir', [EggSortingController::class, 'create'])->name('sortings.create');
         Route::post('/sortir', [EggSortingController::class, 'store'])->name('sortings.store');
@@ -121,6 +129,11 @@ Route::middleware('auth')->group(function () {
     Route::middleware(['farm', 'role:owner'])->group(function () {
 
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('owner.dashboard');
+
+        Route::get('/pakan/{feeding}/ubah', [FeedingController::class, 'edit'])->name('feedings.edit');
+        Route::put('/pakan/{feeding}', [FeedingController::class, 'update'])->name('feedings.update');
+        Route::delete('/pakan/{feeding}', [FeedingController::class, 'destroy'])->name('feedings.destroy');
+        Route::get('/stok-pakan/cek', [FeedCountController::class, 'index'])->name('feed-counts.index');
 
         // Riwayat panen
         Route::get('/panen', [DailyLogController::class, 'index'])->name('daily-logs.index');

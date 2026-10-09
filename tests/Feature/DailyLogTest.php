@@ -93,7 +93,8 @@ class DailyLogTest extends TestCase
             ->assertRedirect(route('daily-logs.index'));
 
         $this->assertSame(999, $this->coop->fresh()->current_population);
-        $this->assertEquals(950, $this->feed->fresh()->stock_kg);
+        $this->assertEquals(890, $this->feed->fresh()->stock_kg);
+        $this->assertEquals(110, $log->fresh()->feed_consumed_kg);
         $this->assertEquals(90, $log->fresh()->hdp_percentage);
     }
 
@@ -106,7 +107,8 @@ class DailyLogTest extends TestCase
 
         $this->assertSame(0, DailyLog::count());
         $this->assertSame(1000, $this->coop->fresh()->current_population);
-        $this->assertEquals(1000, $this->feed->fresh()->stock_kg);
+        $this->assertEquals(890, $this->feed->fresh()->stock_kg);
+        $this->assertSame(1, \App\Models\Feeding::count());
     }
 
     public function test_pekerja_tidak_bisa_mengubah_atau_menghapus_panen(): void

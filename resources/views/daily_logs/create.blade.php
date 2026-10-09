@@ -20,7 +20,7 @@
 @section('content')
 <x-page-header
     title="Catat Panen Harian"
-    :subtitle="'Laporan tanggal ' . \App\Support\Format::dayDate($date) . '. Isi langkah 1 sampai 4, lalu tekan Simpan.'"
+    :subtitle="'Laporan tanggal ' . \App\Support\Format::dayDate($date) . '. Isi langkah 1 sampai 3, lalu tekan Simpan.'"
     icon="bi-clipboard2-check-fill">
     @if($isOwner)
         <a href="{{ route('daily-logs.index') }}" class="btn btn-light"><i class="bi bi-journal-text"></i> Riwayat Panen</a>
@@ -85,8 +85,6 @@
 <form action="{{ route('daily-logs.store') }}" method="POST" data-offline="panen"
       x-data="panenForm({
           grades: @js($gradeInit),
-          feeds: @js(collect(old('feeds', [['feed_stock_id' => $lastFeedByCoop[$suggestedCoop] ?? ($feedStocks->first()->id ?? '')]]))->map(fn ($f) => ['id' => $f['feed_stock_id'] ?? '', 'sacks' => $f['sacks'] ?? '', 'extra' => $f['extra_kg'] ?? ''])->values()),
-          feedIds: @js($feedStocks->pluck('id')->map(fn ($id) => (string) $id)->values()),
           sackKg: {{ (float) $sackKg }},
           coopId: @js((string) $suggestedCoop),
           populations: @js($populations),
@@ -148,19 +146,13 @@
         </div>
     </x-panel>
 
-    {{-- LANGKAH 3: PAKAN --}}
-    <x-panel title="Pakan yang diberikan" step="3" tone="brand" :subtitle="'1 karung = ' . \App\Support\Format::number($sackKg) . ' kg.'">
-        @if($feedStocks->isEmpty())
-            <x-empty icon="bi-box-seam" title="Belum ada data pakan">
-                {{ $isOwner ? 'Tambahkan jenis pakan di menu Stok Pakan.' : 'Minta pemilik menambahkan jenis pakan.' }}
-            </x-empty>
-        @else
-            @include('daily_logs._feeds')
-        @endif
-    </x-panel>
+    <div class="help-tip mb-3">
+        <i class="bi bi-info-circle-fill"></i>
+        <span>Pakan dicatat setiap selesai memberi makan lewat menu <a href="{{ route('feedings.create', ['date' => $dateStr]) }}" class="fw-bold">Beri Pakan</a>. Di sini cukup telur dan ayam mati.</span>
+    </div>
 
-    {{-- LANGKAH 4: AYAM MATI / AFKIR --}}
-    <x-panel title="Ayam mati atau diafkir" step="4" tone="danger" subtitle="Isi 0 jika tidak ada. Jumlah ayam di kandang akan berkurang otomatis.">
+    {{-- LANGKAH 3: AYAM MATI / AFKIR --}}
+    <x-panel title="Ayam mati atau diafkir" step="3" tone="danger" subtitle="Isi 0 jika tidak ada. Jumlah ayam di kandang akan berkurang otomatis.">
         <div class="row g-3">
             @foreach(['mortality' => 'Ayam mati', 'cull' => 'Ayam afkir (sakit/dikeluarkan)'] as $field => $label)
                 <div class="col-sm-6">
@@ -186,7 +178,6 @@
             <div><div class="k">Total telur</div><div class="v" x-text="angka(totalEggs(), 0) + ' butir'"></div></div>
             <div><div class="k">Dalam rak</div><div class="v" x-text="trayText()"></div></div>
             <div><div class="k">Berat telur</div><div class="v" x-text="angka(totalKg(), 2) + ' kg'"></div></div>
-            <div><div class="k">Pakan</div><div class="v" x-text="angka(feedKg()) + ' kg'"></div></div>
             <div><div class="k">Produksi (HDP)</div><div class="v" x-text="hdp()"></div></div>
         </div>
         <button type="submit" class="btn btn-primary btn-xl w-100">

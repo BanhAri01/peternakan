@@ -14,7 +14,7 @@ class FeedStockController extends Controller
     {
         $feedStocks = FeedStock::orderBy('feed_name')->get();
 
-        $usage = \App\Models\DailyLogFeed::dailyUsageByFeed(Carbon::today()->subDays(6)->toDateString(), Carbon::today()->toDateString());
+        $usage = \App\Models\FeedingItem::dailyUsageByFeed(Carbon::today()->subDays(6)->toDateString(), Carbon::today()->toDateString());
 
         $totalStockKg    = (float) $feedStocks->sum(fn ($f) => max(0, $f->stock_kg));
         $totalStockValue = (float) $feedStocks->sum(fn ($f) => max(0, $f->stock_kg) * $f->cost_per_kg);

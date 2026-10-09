@@ -118,9 +118,17 @@
             return found ? found[1] : '';
         };
         var kind = form.getAttribute('data-offline');
-        var date = get('log_date') || get('sort_date');
-        var label = kind === 'panen' ? 'Panen' : 'Sortir telur';
+        var date = get('log_date') || get('sort_date') || get('feed_date');
+        var label = kind === 'panen' ? 'Panen' : (kind === 'pakan' ? 'Pakan' : 'Sortir telur');
         var meta = { date: date };
+
+        if (kind === 'pakan') {
+            var sesi = form.querySelector('input[name="session"]:checked');
+            var kandang = form.querySelector('input[name="coop_id"]:checked');
+            label += (sesi && sesi.parentElement.querySelector('b') ? ' ' + sesi.parentElement.querySelector('b').textContent : '') + (kandang && kandang.dataset.name ? ' ' + kandang.dataset.name : '');
+            meta.coop = get('coop_id');
+            meta.session = get('session');
+        }
 
         if (kind === 'panen') {
             var radio = form.querySelector('input[name="coop_id"]:checked');

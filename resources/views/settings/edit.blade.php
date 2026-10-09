@@ -168,6 +168,33 @@
         </x-field>
     </x-panel>
 
+    <x-panel title="Pemberian pakan" icon="bi-basket2" subtitle="Berapa kali anak kandang memberi makan setiap hari. Setiap sesi dicatat lewat menu Beri Pakan."
+             x-data="{ sessions: @js(collect(old('feed_sessions', \App\Services\FeedingService::sessions()))->values()) }">
+        <template x-for="(s, i) in sessions" :key="i">
+            <div class="row g-2 align-items-end mb-2">
+                <div class="col-6">
+                    <label class="mini-label" :for="'fs' + i + 'n'" x-text="'Nama sesi ' + (i + 1)"></label>
+                    <input :id="'fs' + i + 'n'" type="text" maxlength="20" :name="'feed_sessions[' + i + '][name]'" x-model="s.name" class="form-control" placeholder="Pagi" required>
+                </div>
+                <div class="col-4">
+                    <label class="mini-label" :for="'fs' + i + 't'">Jam</label>
+                    <input :id="'fs' + i + 't'" type="time" :name="'feed_sessions[' + i + '][time]'" x-model="s.time" class="form-control" required>
+                </div>
+                <div class="col-2">
+                    <span x-show="sessions.length > 1"><button type="button" class="btn btn-light w-100" @click="sessions.splice(i, 1)" aria-label="Hapus sesi"><i class="bi bi-x-lg"></i></button></span>
+                </div>
+            </div>
+        </template>
+        <span x-show="sessions.length < {{ \App\Services\FeedingService::MAX_SESSIONS }}"><button type="button" class="btn btn-light mb-3" @click="sessions.push({ name: '', time: '12:00' })"><i class="bi bi-plus-lg"></i> Tambah sesi</button></span>
+        @error('feed_sessions.*')<div class="field-error mb-2"><i class="bi bi-exclamation-circle-fill"></i> {{ $message }}</div>@enderror
+        <x-field label="Selisih stok gudang yang masih dianggap cocok" name="feed_count_tolerance_kg" hint="Saat Hitung Stok Gudang, selisih sampai angka ini tetap hijau. Lebih dari itu, tanggalnya merah." class="mb-0">
+            <div class="input-group" style="max-width:220px">
+                <input type="number" id="feed_count_tolerance_kg" name="feed_count_tolerance_kg" min="0" max="500" step="0.1" value="{{ old('feed_count_tolerance_kg', $settings['feed_count_tolerance_kg'] ?? 2) }}" class="form-control">
+                <span class="input-group-text">kg</span>
+            </div>
+        </x-field>
+    </x-panel>
+
     <x-panel title="Pengingat WhatsApp" icon="bi-whatsapp" subtitle="Pesan otomatis ke HP pemilik: pagi pukul 06.00 (pakan menipis, tagihan jatuh tempo, jadwal vaksin) dan sore pukul 17.00 (kandang belum dicatat, telur belum disortir).">
         @if($waQuota['limit'] === 0)
             <div class="notice notice-info mb-3">

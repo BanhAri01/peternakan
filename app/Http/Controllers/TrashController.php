@@ -11,6 +11,7 @@ use App\Models\EggSorting;
 use App\Models\EggSortingItem;
 use App\Models\ExpenseLedger;
 use App\Models\FeedPurchase;
+use App\Models\Feeding;
 use App\Models\FeedStock;
 use App\Models\Invoice;
 use App\Models\MedicineMovement;
@@ -33,6 +34,7 @@ class TrashController extends Controller
         'pendapatan'  => ['model' => OtherIncome::class, 'label' => 'Pendapatan lain', 'icon' => 'bi-cash-coin'],
         'obat'        => ['model' => MedicineMovement::class, 'label' => 'Catatan obat', 'icon' => 'bi-capsule'],
         'pakan-masuk' => ['model' => FeedPurchase::class, 'label' => 'Pakan datang', 'icon' => 'bi-truck'],
+        'beri-pakan'  => ['model' => Feeding::class, 'label' => 'Pemberian pakan', 'icon' => 'bi-basket2'],
     ];
 
     public function index(Request $request)
@@ -80,6 +82,7 @@ class TrashController extends Controller
             'panen'  => $this->restoreDailyLog($id),
             'nota'   => $this->restoreInvoice($id),
             'sortir' => $this->restoreSorting($id),
+            'beri-pakan' => $this->restoreFeeding($id),
             default  => $this->restoreSimple(self::TYPES[$type]['model'], $id),
         });
 
@@ -103,7 +106,6 @@ class TrashController extends Controller
         if ($loss > 0) {
             Coop::whereKey($coop->id)->decrement('current_population', $loss);
         }
-        $log->adjustFeedStock(-1);
 
         DailyLogGrade::onlyTrashed()->where('daily_log_id', $log->id)->restore();
         $log->restore();
@@ -131,6 +133,14 @@ class TrashController extends Controller
         return 'Catatan sortir tanggal ' . Format::date($sorting->sort_date) . ' dipulihkan.';
     }
 
+    private function restoreFeeding(int $id): string
+    {
+        $feeding = Feeding::onlyTrashed()->with('coop')->findOrFail($id);
+        app(\App\Services\FeedingService::class)->restore($feeding);
+
+        return 'Pemberian pakan ' . $feeding->sessionName() . ' ' . ($feeding->coop->name ?? '') . ' tanggal ' . Format::date($feeding->feed_date) . ' dipulihkan. Stok pakan dipotong lagi.';
+    }
+
     private function restoreSimple(string $model, int $id): string
     {
         $record = $model::onlyTrashed()->findOrFail($id);
@@ -148,6 +158,7 @@ class TrashController extends Controller
             'pendapatan' => ['coop'],
             'obat'       => ['medicine', 'coop'],
             'pakan-masuk' => ['feedStock', 'supplier'],
+            'beri-pakan'  => ['coop', 'items.feedStock'],
             default  => [],
         };
     }
