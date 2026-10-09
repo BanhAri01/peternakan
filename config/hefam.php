@@ -7,10 +7,10 @@ return [
 
     'business' => [
         'brand'   => 'HEFAM',
-        'name'    => env('HEFAM_BUSINESS_NAME', 'HEFAM (Hermes Works)'),
+        'name'    => env('HEFAM_BUSINESS_NAME', 'Sinar Abadi Farm'),
         'owner'   => env('HEFAM_OWNER_NAME', ''),
-        'address' => env('HEFAM_ADDRESS', ''),
-        'email'   => env('HEFAM_CONTACT_EMAIL', ''),
+        'address' => env('HEFAM_ADDRESS', 'Jl. Yudistira, Peninjoan, Kec. Tembuku, Kabupaten Bangli, Bali 80671'),
+        'email'   => env('HEFAM_CONTACT_EMAIL', 'idewamadearisantika@gmail.com'),
         'hours'   => env('HEFAM_SUPPORT_HOURS', 'Senin - Sabtu, 08.00 - 20.00 WITA'),
         'updated' => '9 Oktober 2026',
     ],

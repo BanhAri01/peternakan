@@ -57,6 +57,20 @@ class LegalPagesTest extends TestCase
         $this->get(route('register'))->assertOk()->assertSee(route('legal.terms'))->assertSee(route('legal.privacy'));
     }
 
+    public function test_langganan_dinyatakan_tidak_dapat_dikembalikan(): void
+    {
+        $this->get(route('legal.refund'))->assertOk()->assertSee('tidak dapat dikembalikan (non-refundable)', false);
+    }
+
+    public function test_identitas_usaha_bawaan_terisi(): void
+    {
+        $business = (require config_path('hefam.php'))['business'];
+
+        $this->assertSame('Sinar Abadi Farm', $business['name']);
+        $this->assertStringContainsString('Bangli', $business['address']);
+        $this->assertSame('idewamadearisantika@gmail.com', $business['email']);
+    }
+
     public function test_kontak_kosong_tidak_menampilkan_baris_kosong(): void
     {
         config(['hefam.business.address' => '', 'hefam.business.email' => '', 'hefam.business.owner' => '']);

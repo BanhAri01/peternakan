@@ -8,15 +8,16 @@
     <h2>1. Produk yang dibeli</h2>
     <p>Yang Anda bayar adalah <strong>langganan akses aplikasi (layanan digital)</strong> yang langsung aktif setelah pembayaran berhasil. Tidak ada pengiriman barang fisik.</p>
 
-    <h2>2. Kapan dana dapat dikembalikan</h2>
+    <h2>2. Langganan tidak dapat dikembalikan</h2>
+    <p>Semua pembayaran langganan {{ $biz['brand'] }} (paket dan lama langganan apa pun) bersifat <strong>final dan tidak dapat dikembalikan (non-refundable)</strong>, baik sebagian maupun seluruhnya, termasuk bila berhenti di tengah masa langganan. Akun tetap aktif sampai masa langganan berakhir.</p>
+    <p>Pengembalian dana hanya dilakukan untuk <strong>kesalahan pembayaran</strong> berikut:</p>
     <table>
-        <thead><tr><th>Keadaan</th><th>Pengembalian</th></tr></thead>
+        <thead><tr><th>Keadaan</th><th>Penyelesaian</th></tr></thead>
         <tbody>
-            <tr><td>Pembayaran terpotong dua kali / dobel untuk tagihan yang sama</td><td>Dikembalikan penuh untuk pembayaran kelebihan</td></tr>
+            <tr><td>Pembayaran terpotong dua kali / dobel untuk tagihan yang sama</td><td>Kelebihan bayar dikembalikan penuh</td></tr>
             <tr><td>Sudah membayar tetapi langganan tidak aktif dan tidak dapat kami aktifkan dalam 2 x 24 jam</td><td>Dikembalikan penuh</td></tr>
-            <tr><td>Salah memilih paket atau lama langganan, dilaporkan paling lambat 3 hari setelah membayar</td><td>Ditukar ke paket yang benar, atau dikembalikan penuh jika belum dipakai</td></tr>
-            <tr><td>Layanan tidak dapat dipakai lebih dari 7 hari berturut-turut karena gangguan dari pihak kami</td><td>Dikembalikan sebanding sisa masa langganan, atau masa langganan diperpanjang (pilihan Anda)</td></tr>
-            <tr><td>Berhenti di tengah masa langganan karena alasan pribadi</td><td>Tidak dikembalikan; akun tetap aktif sampai masa langganan berakhir</td></tr>
+            <tr><td>Salah memilih paket atau lama langganan, dilaporkan paling lambat 3 hari setelah membayar</td><td>Ditukar ke paket senilai sisa pembayaran (tidak dalam bentuk uang)</td></tr>
+            <tr><td>Layanan tidak dapat dipakai lebih dari 7 hari berturut-turut karena gangguan dari pihak kami</td><td>Masa langganan diperpanjang sesuai lama gangguan</td></tr>
         </tbody>
     </table>
 

@@ -44,7 +44,7 @@
     <p>{{ $biz['brand'] }} adalah alat bantu pencatatan. Keputusan usaha tetap menjadi tanggung jawab Anda. Kami tidak bertanggung jawab atas kerugian akibat data yang salah dimasukkan, kelalaian menjaga kata sandi, atau gangguan di luar kendali kami (misalnya gangguan internet atau bencana).</p>
 
     <h2>9. Berhenti berlangganan</h2>
-    <p>Anda dapat berhenti kapan saja dengan tidak memperpanjang langganan. Data tetap tersimpan dan dapat dipakai lagi saat berlangganan kembali. Ketentuan pengembalian dana ada di <a href="{{ route('legal.refund') }}">Kebijakan Pengembalian Dana</a>.</p>
+    <p>Anda dapat berhenti kapan saja dengan tidak memperpanjang langganan. Data tetap tersimpan dan dapat dipakai lagi saat berlangganan kembali. Pembayaran langganan tidak dapat dikembalikan, kecuali kesalahan pembayaran seperti diatur di <a href="{{ route('legal.refund') }}">Kebijakan Pengembalian Dana</a>.</p>
 
     <h2>10. Hukum yang berlaku</h2>
     <p>Syarat & Ketentuan ini tunduk pada hukum Republik Indonesia. Perselisihan diselesaikan secara musyawarah terlebih dahulu.</p>
