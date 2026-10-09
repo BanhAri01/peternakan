@@ -181,6 +181,19 @@
             <input class="form-check-input" type="checkbox" role="switch" id="wa_reminder_enabled" name="wa_reminder_enabled" value="1" @checked(old('wa_reminder_enabled', $settings['wa_reminder_enabled']) === '1')>
             <label class="form-check-label fw-bold" for="wa_reminder_enabled">Kirim pengingat ke WhatsApp</label>
         </div>
+        @foreach(['pagi' => 'Pengingat pagi (06.00)', 'sore' => 'Pengingat sore (17.00)'] as $kind => $kindLabel)
+            <p class="fw-bold mb-2">{{ $kindLabel }}, pilih isinya:</p>
+            <div class="mb-3">
+                @foreach(\App\Services\FarmReminders::TOPICS as $topic => [$topicKind, $topicLabel])
+                    @continue($topicKind !== $kind)
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" role="switch" id="{{ $topic }}" name="{{ $topic }}" value="1" @checked(old($topic, $settings[$topic] ?? '1') === '1')>
+                        <label class="form-check-label" for="{{ $topic }}">{{ $topicLabel }}</label>
+                    </div>
+                @endforeach
+            </div>
+        @endforeach
+        <p class="text-muted small mb-3">Pesan hanya dikirim kalau ada yang perlu diingatkan. Matikan yang tidak perlu supaya kuota WhatsApp lebih hemat.</p>
         <x-field label="Nomor WhatsApp tujuan" name="wa_reminder_phone" optional hint="Kosongkan untuk memakai nomor HP peternakan di atas." class="mb-0">
             <input type="text" id="wa_reminder_phone" name="wa_reminder_phone" inputmode="tel" maxlength="30" value="{{ old('wa_reminder_phone', $settings['wa_reminder_phone']) }}" class="form-control" placeholder="Contoh: 0812 3456 7890">
         </x-field>

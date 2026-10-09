@@ -57,6 +57,45 @@ class WhatsAppReminderTest extends TestCase
         $this->assertStringContainsString('Vaksin ND-IB di Kandang A besok', $message);
     }
 
+    public function test_isi_pengingat_bisa_dipilih_pemilik(): void
+    {
+        $this->seedMorningProblems();
+        Setting::put(['wa_notify_debt' => '0']);
+
+        $message = app(FarmReminders::class)->build('pagi', Carbon::today());
+        $this->assertStringNotContainsString('Bu Sari', $message);
+        $this->assertStringContainsString('Vaksin ND-IB', $message);
+
+        Setting::put(['wa_notify_vaccine' => '0']);
+        $this->assertNull(app(FarmReminders::class)->build('pagi', Carbon::today()));
+
+        Setting::put(['wa_notify_harvest' => '0']);
+        $this->assertNull(app(FarmReminders::class)->build('sore', Carbon::today()));
+    }
+
+    public function test_pilihan_pengingat_tersimpan_dari_halaman_pengaturan(): void
+    {
+        $this->actingAs($this->owner)->put(route('settings.update'), [
+            'farm_name' => 'Sinar Uji', 'egg_price_per_kg' => 27000, 'sack_kg' => 50, 'hdp_warning' => 75, 'low_feed_days' => 4,
+            'receipt_paper' => 'continuous', 'receipt_style' => 'ink', 'receipt_color' => '#3f5a26',
+            'wa_reminder_enabled' => '1', 'wa_notify_feed' => '1', 'wa_notify_sort' => '1',
+        ])->assertRedirect(route('settings.edit'));
+
+        $this->assertSame('1', Setting::get('wa_notify_feed'));
+        $this->assertSame('0', Setting::get('wa_notify_debt'));
+        $this->assertSame('0', Setting::get('wa_notify_harvest'));
+        $this->assertSame('1', Setting::get('wa_notify_sort'));
+
+        $this->actingAs($this->owner)->get(route('settings.edit'))->assertOk()->assertSee('Telur campur yang belum disortir');
+    }
+
+    public function test_peternakan_lama_tetap_menerima_semua_isi_pengingat(): void
+    {
+        foreach (array_keys(FarmReminders::TOPICS) as $topic) {
+            $this->assertSame('1', Setting::get($topic));
+        }
+    }
+
     public function test_pesan_sore_berisi_kandang_belum_dicatat(): void
     {
         $message = app(FarmReminders::class)->build('sore', Carbon::today());

@@ -48,6 +48,9 @@ class SettingController extends Controller
 
         $data['receipt_show_qr'] = $request->boolean('receipt_show_qr') ? '1' : '0';
         $data['wa_reminder_enabled'] = $request->boolean('wa_reminder_enabled') ? '1' : '0';
+        foreach (array_keys(FarmReminders::TOPICS) as $topic) {
+            $data[$topic] = $request->boolean($topic) ? '1' : '0';
+        }
 
         if ($request->hasFile('logo')) {
             $data['farm_logo'] = $this->logoDataUri($request->file('logo'));

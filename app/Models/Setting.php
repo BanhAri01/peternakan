@@ -26,6 +26,12 @@ class Setting extends Model
         'hdp_tolerance'    => 5,
         'wa_reminder_enabled' => '0',
         'wa_reminder_phone'   => '',
+        'wa_notify_feed'      => '1',
+        'wa_notify_debt'      => '1',
+        'wa_notify_vaccine'   => '1',
+        'wa_notify_medicine'  => '1',
+        'wa_notify_harvest'   => '1',
+        'wa_notify_sort'      => '1',
         'hdp_warning'      => 70,    // HDP di bawah angka ini dianggap perlu perhatian
         'low_feed_days'    => 5,     // peringatan jika pakan tinggal sekian hari
         'receipt_paper'    => 'continuous', // ukuran kertas nota

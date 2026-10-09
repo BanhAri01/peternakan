@@ -21,6 +21,15 @@ class FarmReminders
 {
     public const KINDS = ['pagi', 'sore'];
 
+    public const TOPICS = [
+        'wa_notify_feed'     => ['pagi', 'Pakan hampir habis'],
+        'wa_notify_debt'     => ['pagi', 'Tagihan pembeli jatuh tempo'],
+        'wa_notify_vaccine'  => ['pagi', 'Jadwal vaksin hari ini & besok'],
+        'wa_notify_medicine' => ['pagi', 'Obat kedaluwarsa atau menipis'],
+        'wa_notify_harvest'  => ['sore', 'Kandang yang panennya belum dicatat'],
+        'wa_notify_sort'     => ['sore', 'Telur campur yang belum disortir'],
+    ];
+
     public function __construct(private WhatsApp $whatsApp) {}
 
     public function build(string $kind, Carbon $today): ?string
@@ -130,6 +139,31 @@ class FarmReminders
     private function morningLines(Carbon $today): array
     {
         $lines = [];
+
+        if ($this->on('wa_notify_feed')) {
+            $lines = [...$lines, ...$this->feedLines($today)];
+        }
+        if ($this->on('wa_notify_debt')) {
+            $lines = [...$lines, ...$this->debtLines($today)];
+        }
+        if ($this->on('wa_notify_vaccine')) {
+            $lines = [...$lines, ...$this->vaccineLines($today)];
+        }
+        if ($this->on('wa_notify_medicine')) {
+            $lines = [...$lines, ...$this->medicineLines($today)];
+        }
+
+        return $lines;
+    }
+
+    private function on(string $topic): bool
+    {
+        return Setting::get($topic) !== '0';
+    }
+
+    private function feedLines(Carbon $today): array
+    {
+        $lines = [];
         $lowDays = (int) (Setting::num('low_feed_days') ?: 5);
 
         $usage = DailyLog::whereBetween('log_date', [$today->copy()->subDays(7)->toDateString(), $today->copy()->subDay()->toDateString()])
@@ -146,6 +180,12 @@ class FarmReminders
             }
         }
 
+        return $lines;
+    }
+
+    private function debtLines(Carbon $today): array
+    {
+        $lines = [];
         $due = EggSale::with('customer')->where('debt_amount', '>', 0)->whereNotNull('due_date')->where('due_date', '<=', $today->toDateString())->get();
         if ($due->isNotEmpty()) {
             $byCustomer = $due->groupBy('customer_id')->map(fn ($rows) => ['name' => $rows->first()->customer->name ?? '-', 'total' => $rows->sum('debt_amount')])->sortByDesc('total');
@@ -154,12 +194,24 @@ class FarmReminders
             $lines[] = '💰 Tagihan jatuh tempo ' . Format::rupiah($due->sum('debt_amount')) . ":\n" . $list . $more;
         }
 
+        return $lines;
+    }
+
+    private function vaccineLines(Carbon $today): array
+    {
+        $lines = [];
         $vaccines = Vaccination::with('coop')->whereBetween('vaccination_date', [$today->toDateString(), $today->copy()->addDay()->toDateString()])->orderBy('vaccination_date')->get();
         foreach ($vaccines as $v) {
             $when = $v->vaccination_date->isSameDay($today) ? 'hari ini' : 'besok';
             $lines[] = '💉 Vaksin ' . $v->vaccine_name . ' di ' . ($v->coop->name ?? 'kandang') . ' ' . $when . '.';
         }
 
+        return $lines;
+    }
+
+    private function medicineLines(Carbon $today): array
+    {
+        $lines = [];
         foreach (Medicine::withStock()->orderBy('name')->get() as $medicine) {
             $expiry = $medicine->expiryStatus($today);
             if ($expiry === 'expired') {
@@ -178,13 +230,15 @@ class FarmReminders
     {
         $lines = [];
 
-        $logged  = DailyLog::where('log_date', $today->toDateString())->pluck('coop_id')->all();
-        $missing = Coop::where('status', 'active')->whereNotIn('id', $logged)->orderBy('name')->pluck('name');
-        if ($missing->isNotEmpty()) {
-            $lines[] = '📝 Panen hari ini belum dicatat: ' . $missing->implode(', ') . '.';
+        if ($this->on('wa_notify_harvest')) {
+            $logged  = DailyLog::where('log_date', $today->toDateString())->pluck('coop_id')->all();
+            $missing = Coop::where('status', 'active')->whereNotIn('id', $logged)->orderBy('name')->pluck('name');
+            if ($missing->isNotEmpty()) {
+                $lines[] = '📝 Panen hari ini belum dicatat: ' . $missing->implode(', ') . '.';
+            }
         }
 
-        $waiting = EggStock::mixedEggsWaiting();
+        $waiting = $this->on('wa_notify_sort') ? EggStock::mixedEggsWaiting() : 0;
         if ($waiting > 0) {
             $lines[] = '🥚 ' . Format::number($waiting) . ' butir telur campur belum disortir (' . Format::trays($waiting) . ').';
         }
