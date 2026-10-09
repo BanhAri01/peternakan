@@ -27,6 +27,41 @@ class FeedStock extends Model
         return $this->hasMany(FeedPurchase::class);
     }
 
+    public static function receive(int $feedId, float $kg, float $price): void
+    {
+        $feed = static::lockForUpdate()->find($feedId);
+        if (!$feed) {
+            return;
+        }
+
+        $stock = (float) $feed->stock_kg;
+        $total = $stock + $kg;
+        if ($total > 0) {
+            $feed->cost_per_kg = round((($stock * (float) $feed->cost_per_kg) + ($kg * $price)) / $total, 2);
+        }
+        $feed->stock_kg = $total;
+        $feed->save();
+    }
+
+    public static function unreceive(int $feedId, float $kg, float $price): void
+    {
+        $feed = static::lockForUpdate()->find($feedId);
+        if (!$feed) {
+            return;
+        }
+
+        $stock     = (float) $feed->stock_kg;
+        $remaining = $stock - $kg;
+        if ($remaining > 0) {
+            $avg = (($stock * (float) $feed->cost_per_kg) - ($kg * $price)) / $remaining;
+            if ($avg > 0) {
+                $feed->cost_per_kg = round($avg, 2);
+            }
+        }
+        $feed->stock_kg = $remaining;
+        $feed->save();
+    }
+
     public function usages()
     {
         return $this->hasMany(DailyLogFeed::class);

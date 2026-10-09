@@ -151,6 +151,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/pengadaan', [ProcurementController::class, 'index'])->name('procurement.index');
         Route::post('/pengadaan/kulakan-telur', [ProcurementController::class, 'storeEggPurchase'])->name('procurement.egg-purchase.store');
         Route::post('/pengadaan/restock-pakan', [ProcurementController::class, 'storeFeedPurchase'])->name('procurement.feed-purchase.store');
+        Route::get('/pengadaan/pakan/{feedPurchase}/ubah', [ProcurementController::class, 'editFeedPurchase'])->name('procurement.feed-purchase.edit');
+        Route::put('/pengadaan/pakan/{feedPurchase}', [ProcurementController::class, 'updateFeedPurchase'])->name('procurement.feed-purchase.update');
+        Route::delete('/pengadaan/pakan/{feedPurchase}', [ProcurementController::class, 'destroyFeedPurchase'])->name('procurement.feed-purchase.destroy');
 
         Route::resource('pemasok', SupplierController::class)
             ->only(['index', 'edit', 'update'])

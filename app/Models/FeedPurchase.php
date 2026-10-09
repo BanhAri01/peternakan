@@ -6,11 +6,12 @@ use App\Audit\RecordsActivity;
 use App\Tenancy\BelongsToFarm;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
 
 class FeedPurchase extends Model
 {
-    use HasFactory, BelongsToFarm, RecordsActivity;
+    use HasFactory, BelongsToFarm, RecordsActivity, SoftDeletes;
 
     protected $fillable = [
         'supplier_id',
@@ -28,28 +29,31 @@ class FeedPurchase extends Model
 
     protected static function booted()
     {
-        static::creating(function ($purchase) {
+        static::saving(function ($purchase) {
             $purchase->total_cost = round($purchase->quantity_kg * $purchase->cost_per_kg, 2);
         });
 
         static::created(function ($purchase) {
-            $feed = FeedStock::find($purchase->feed_stock_id);
-            if ($feed) {
-                // Perbarui modal per kg rata-rata tertimbang
-                $currentStock = $feed->stock_kg;
-                $currentPrice = $feed->cost_per_kg;
-                $newStock = $purchase->quantity_kg;
-                $newPrice = $purchase->cost_per_kg;
+            FeedStock::receive($purchase->feed_stock_id, (float) $purchase->quantity_kg, (float) $purchase->cost_per_kg);
+        });
 
-                $totalQty = $currentStock + $newStock;
-                if ($totalQty > 0) {
-                    $avgCost = (($currentStock * $currentPrice) + ($newStock * $newPrice)) / $totalQty;
-                    $feed->cost_per_kg = round($avgCost, 2);
-                }
-                
-                $feed->stock_kg += $newStock;
-                $feed->save();
+        static::updated(function ($purchase) {
+            if (!$purchase->wasChanged(['feed_stock_id', 'quantity_kg', 'cost_per_kg'])) {
+                return;
             }
+
+            FeedStock::unreceive((int) $purchase->getOriginal('feed_stock_id'), (float) $purchase->getOriginal('quantity_kg'), (float) $purchase->getOriginal('cost_per_kg'));
+            FeedStock::receive($purchase->feed_stock_id, (float) $purchase->quantity_kg, (float) $purchase->cost_per_kg);
+        });
+
+        static::deleted(function ($purchase) {
+            if (!$purchase->isForceDeleting()) {
+                FeedStock::unreceive($purchase->feed_stock_id, (float) $purchase->quantity_kg, (float) $purchase->cost_per_kg);
+            }
+        });
+
+        static::restored(function ($purchase) {
+            FeedStock::receive($purchase->feed_stock_id, (float) $purchase->quantity_kg, (float) $purchase->cost_per_kg);
         });
     }
 

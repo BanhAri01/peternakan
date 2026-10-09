@@ -11,6 +11,7 @@ use App\Models\Setting;
 use App\Models\Supplier;
 use App\Support\Format;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ProcurementController extends Controller
 {
@@ -85,7 +86,77 @@ class ProcurementController extends Controller
     // Pembelian pakan: menambah stok & memperbarui harga modal rata-rata
     public function storeFeedPurchase(Request $request)
     {
-        $data = $request->validate([
+        $data = $request->validate(self::feedPurchaseRules());
+
+        $totalKg = (($data['sacks_count'] ?? 0) * Setting::num('sack_kg')) + ($data['extra_kg'] ?? 0);
+        if ($totalKg <= 0) {
+            return back()->withInput()->withErrors(['sacks_count' => 'Isi jumlah karung atau kg pakan yang dibeli.']);
+        }
+
+        $purchase = DB::transaction(fn () => FeedPurchase::create([
+            'supplier_id'   => $this->supplierId($data['supplier_name'], 'feed'),
+            'feed_stock_id' => $data['feed_stock_id'],
+            'purchase_date' => $data['purchase_date'],
+            'quantity_kg'   => $totalKg,
+            'cost_per_kg'   => $data['cost_per_kg'],
+            'notes'         => $data['notes'] ?? null,
+        ]));
+
+        $feed = $purchase->feedStock->fresh();
+
+        return redirect()->route('procurement.index')
+            ->with('success', Format::number($totalKg) . ' kg ' . $feed->feed_name . ' masuk gudang. Stok sekarang ' . Format::number($feed->stock_kg) . ' kg, harga modal rata-rata ' . Format::rupiah($feed->cost_per_kg) . '/kg.');
+    }
+
+    public function editFeedPurchase(FeedPurchase $feedPurchase)
+    {
+        $feedPurchase->load('supplier');
+        $feedStocks = FeedStock::orderBy('feed_name')->get();
+        $suppliers  = Supplier::orderBy('name')->get();
+        $sackKg     = Setting::num('sack_kg') ?: 50;
+        $sacks      = (int) floor((float) $feedPurchase->quantity_kg / $sackKg);
+        $extraKg    = round((float) $feedPurchase->quantity_kg - $sacks * $sackKg, 2);
+
+        return view('procurement.edit-feed', compact('feedPurchase', 'feedStocks', 'suppliers', 'sackKg', 'sacks', 'extraKg'));
+    }
+
+    public function updateFeedPurchase(Request $request, FeedPurchase $feedPurchase)
+    {
+        $data = $request->validate(self::feedPurchaseRules());
+
+        $totalKg = (($data['sacks_count'] ?? 0) * Setting::num('sack_kg')) + ($data['extra_kg'] ?? 0);
+        if ($totalKg <= 0) {
+            return back()->withInput()->withErrors(['sacks_count' => 'Isi jumlah karung atau kg pakan yang dibeli.']);
+        }
+
+        DB::transaction(fn () => $feedPurchase->update([
+            'supplier_id'   => $this->supplierId($data['supplier_name'], 'feed'),
+            'feed_stock_id' => $data['feed_stock_id'],
+            'purchase_date' => $data['purchase_date'],
+            'quantity_kg'   => $totalKg,
+            'cost_per_kg'   => $data['cost_per_kg'],
+            'notes'         => $data['notes'] ?? null,
+        ]));
+
+        $feed = $feedPurchase->feedStock->fresh();
+
+        return redirect()->route('procurement.index')
+            ->with('success', 'Catatan pakan datang diperbarui. Stok ' . $feed->feed_name . ' sekarang ' . Format::number($feed->stock_kg) . ' kg, harga modal rata-rata ' . Format::rupiah($feed->cost_per_kg) . '/kg.');
+    }
+
+    public function destroyFeedPurchase(FeedPurchase $feedPurchase)
+    {
+        DB::transaction(fn () => $feedPurchase->delete());
+
+        $feed = $feedPurchase->feedStock->fresh();
+
+        return redirect()->route('procurement.index')
+            ->with('success', 'Catatan pakan datang dipindah ke Sampah. Stok ' . $feed->feed_name . ' dikurangi ' . Format::number($feedPurchase->quantity_kg) . ' kg menjadi ' . Format::number($feed->stock_kg) . ' kg.');
+    }
+
+    private static function feedPurchaseRules(): array
+    {
+        return [
             'supplier_name' => 'required|string|max:255',
             'feed_stock_id' => ['required', FarmRule::exists('feed_stocks')],
             'purchase_date' => 'required|date|before_or_equal:today',
@@ -93,26 +164,7 @@ class ProcurementController extends Controller
             'extra_kg'      => 'nullable|numeric|min:0',
             'cost_per_kg'   => 'required|numeric|min:1',
             'notes'         => 'nullable|string|max:500',
-        ]);
-
-        $totalKg = (($data['sacks_count'] ?? 0) * Setting::num('sack_kg')) + ($data['extra_kg'] ?? 0);
-        if ($totalKg <= 0) {
-            return back()->withInput()->withErrors(['sacks_count' => 'Isi jumlah karung atau kg pakan yang dibeli.']);
-        }
-
-        $purchase = FeedPurchase::create([
-            'supplier_id'   => $this->supplierId($data['supplier_name'], 'feed'),
-            'feed_stock_id' => $data['feed_stock_id'],
-            'purchase_date' => $data['purchase_date'],
-            'quantity_kg'   => $totalKg,
-            'cost_per_kg'   => $data['cost_per_kg'],
-            'notes'         => $data['notes'] ?? null,
-        ]);
-
-        $feed = $purchase->feedStock->fresh();
-
-        return redirect()->route('procurement.index')
-            ->with('success', Format::number($totalKg) . ' kg ' . $feed->feed_name . ' masuk gudang. Stok sekarang ' . Format::number($feed->stock_kg) . ' kg, harga modal rata-rata ' . Format::rupiah($feed->cost_per_kg) . '/kg.');
+        ];
     }
 
     private function supplierId(string $name, string $type): int

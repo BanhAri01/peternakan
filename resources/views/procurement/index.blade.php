@@ -139,7 +139,7 @@
                 @else
                     <div class="table-wrap">
                         <table class="tbl stack">
-                            <thead><tr><th>Tanggal</th><th>Pakan</th><th class="num">Jumlah</th><th class="num">Harga/kg</th><th class="num">Total</th></tr></thead>
+                            <thead><tr><th>Tanggal</th><th>Pakan</th><th class="num">Jumlah</th><th class="num">Harga/kg</th><th class="num">Total</th><th></th></tr></thead>
                             <tbody>
                                 @foreach($feedPurchases as $p)
                                     <tr>
@@ -148,6 +148,11 @@
                                         <td data-label="Jumlah" class="num">{{ Format::number($p->quantity_kg) }} kg</td>
                                         <td data-label="Harga/kg" class="num">@rupiah($p->cost_per_kg)</td>
                                         <td data-label="Total" class="num"><b>@rupiah($p->total_cost)</b></td>
+                                        <td class="actions">
+                                            <a href="{{ route('procurement.feed-purchase.edit', $p) }}" class="btn btn-light btn-sm"><i class="bi bi-pencil"></i> Ubah</a>
+                                            <x-delete-button :action="route('procurement.feed-purchase.destroy', $p)" title="Hapus catatan pakan ini?"
+                                                :message="Format::number($p->quantity_kg) . ' kg ' . ($p->feedStock->feed_name ?? 'pakan') . ' tanggal ' . Format::date($p->purchase_date) . ' akan dipindah ke Sampah. Stok pakan dikurangi lagi dan bisa dipulihkan dari menu Sampah.'" />
+                                        </td>
                                     </tr>
                                 @endforeach
                             </tbody>
