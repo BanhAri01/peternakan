@@ -116,9 +116,7 @@ class DashboardController extends Controller
 
         // ---------------- Stok pakan ----------------
         // Pemakaian per jenis pakan 7 hari terakhir
-        $usageByFeed = DailyLog::whereBetween('log_date', [$date->copy()->subDays(6)->toDateString(), $day])
-            ->selectRaw('feed_stock_id, SUM(feed_consumed_kg) / 7 as per_day')
-            ->groupBy('feed_stock_id')->pluck('per_day', 'feed_stock_id');
+        $usageByFeed = \App\Models\DailyLogFeed::dailyUsageByFeed($date->copy()->subDays(6)->toDateString(), $day);
 
         $feeds = FeedStock::orderBy('feed_name')->get()->map(function ($feed) use ($usageByFeed) {
             $perDay = (float) ($usageByFeed[$feed->id] ?? 0);

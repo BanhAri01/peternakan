@@ -85,13 +85,12 @@
 <form action="{{ route('daily-logs.store') }}" method="POST" data-offline="panen"
       x-data="panenForm({
           grades: @js($gradeInit),
-          sacks: @js(old('feed_sacks', '')),
-          extraFeed: @js(old('extra_feed_kg', '')),
+          feeds: @js(collect(old('feeds', [['feed_stock_id' => $lastFeedByCoop[$suggestedCoop] ?? ($feedStocks->first()->id ?? '')]]))->map(fn ($f) => ['id' => $f['feed_stock_id'] ?? '', 'sacks' => $f['sacks'] ?? '', 'extra' => $f['extra_kg'] ?? ''])->values()),
+          feedIds: @js($feedStocks->pluck('id')->map(fn ($id) => (string) $id)->values()),
           sackKg: {{ (float) $sackKg }},
           coopId: @js((string) $suggestedCoop),
           populations: @js($populations),
           lastFeed: @js($lastFeedByCoop),
-          feedId: @js((string) old('feed_stock_id', $lastFeedByCoop[$suggestedCoop] ?? ($feedStocks->first()->id ?? ''))),
       })">
     @csrf
     <input type="hidden" name="log_date" value="{{ $dateStr }}">
@@ -156,24 +155,7 @@
                 {{ $isOwner ? 'Tambahkan jenis pakan di menu Stok Pakan.' : 'Minta pemilik menambahkan jenis pakan.' }}
             </x-empty>
         @else
-            <x-field label="Jenis pakan" name="feed_stock_id" required>
-                <select name="feed_stock_id" id="feed_stock_id" class="form-select" x-model="feedId" required>
-                    @foreach($feedStocks as $feed)
-                        <option value="{{ $feed->id }}">{{ $feed->feed_name }} — sisa {{ \App\Support\Format::number($feed->stock_kg) }} kg</option>
-                    @endforeach
-                </select>
-            </x-field>
-            <div class="row g-2">
-                <div class="col-6">
-                    <label class="mini-label" for="feed_sacks">Jumlah karung</label>
-                    <input id="feed_sacks" type="number" inputmode="numeric" min="0" step="1" name="feed_sacks" x-model="sacks" placeholder="0" class="form-control num-xl">
-                </div>
-                <div class="col-6">
-                    <label class="mini-label" for="extra_feed_kg">+ Tambahan (kg)</label>
-                    <input id="extra_feed_kg" type="number" inputmode="decimal" min="0" step="0.1" name="extra_feed_kg" x-model="extraFeed" placeholder="0" class="form-control num-xl">
-                </div>
-            </div>
-            <div class="field-hint mt-2" x-show="feedKg() > 0">Total pakan: <b x-text="angka(feedKg()) + ' kg'"></b></div>
+            @include('daily_logs._feeds')
         @endif
     </x-panel>
 

@@ -14,10 +14,7 @@ class FeedStockController extends Controller
     {
         $feedStocks = FeedStock::orderBy('feed_name')->get();
 
-        $usage = DailyLog::where('log_date', '>=', Carbon::today()->subDays(6)->toDateString())
-            ->selectRaw('feed_stock_id, SUM(feed_consumed_kg) / 7 as per_day')
-            ->groupBy('feed_stock_id')
-            ->pluck('per_day', 'feed_stock_id');
+        $usage = \App\Models\DailyLogFeed::dailyUsageByFeed(Carbon::today()->subDays(6)->toDateString(), Carbon::today()->toDateString());
 
         $totalStockKg    = (float) $feedStocks->sum(fn ($f) => max(0, $f->stock_kg));
         $totalStockValue = (float) $feedStocks->sum(fn ($f) => max(0, $f->stock_kg) * $f->cost_per_kg);
@@ -58,7 +55,7 @@ class FeedStockController extends Controller
     public function destroy(FeedStock $feedStock)
     {
         // Pakan yang sudah dipakai/dibeli tidak dihapus agar riwayat biaya tetap benar
-        if ($feedStock->dailyLogs()->withTrashed()->exists() || $feedStock->purchases()->exists()) {
+        if ($feedStock->dailyLogs()->withTrashed()->exists() || $feedStock->usages()->exists() || $feedStock->purchases()->exists()) {
             return back()->with('error', 'Pakan "' . $feedStock->feed_name . '" sudah punya riwayat pemakaian/pembelian sehingga tidak bisa dihapus.');
         }
 

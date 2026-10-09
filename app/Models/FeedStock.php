@@ -27,6 +27,11 @@ class FeedStock extends Model
         return $this->hasMany(FeedPurchase::class);
     }
 
+    public function usages()
+    {
+        return $this->hasMany(DailyLogFeed::class);
+    }
+
     public function dailyLogs()
     {
         return $this->hasMany(DailyLog::class);

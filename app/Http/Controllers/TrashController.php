@@ -101,9 +101,7 @@ class TrashController extends Controller
         if ($loss > 0) {
             Coop::whereKey($coop->id)->decrement('current_population', $loss);
         }
-        if ($log->feed_consumed_kg > 0 && $log->feed_stock_id) {
-            FeedStock::whereKey($log->feed_stock_id)->decrement('stock_kg', $log->feed_consumed_kg);
-        }
+        $log->adjustFeedStock(-1);
 
         DailyLogGrade::onlyTrashed()->where('daily_log_id', $log->id)->restore();
         $log->restore();

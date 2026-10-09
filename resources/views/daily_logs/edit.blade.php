@@ -37,13 +37,12 @@
 <form action="{{ route('daily-logs.update', $dailyLog) }}" method="POST"
       x-data="panenForm({
           grades: @js($gradeInit),
-          sacks: @js(old('feed_sacks', $feedSacks)),
-          extraFeed: @js(old('extra_feed_kg', $extraFeedKg)),
+          feeds: @js(old('feeds') ? collect(old('feeds'))->map(fn ($f) => ['id' => $f['feed_stock_id'] ?? '', 'sacks' => $f['sacks'] ?? '', 'extra' => $f['extra_kg'] ?? ''])->values() : $feedLines),
+          feedIds: @js($feedStocks->pluck('id')->map(fn ($id) => (string) $id)->values()),
           sackKg: {{ (float) $sackKg }},
           coopId: @js((string) old('coop_id', $dailyLog->coop_id)),
           populations: @js($populations),
           lastFeed: {},
-          feedId: @js((string) old('feed_stock_id', $dailyLog->feed_stock_id)),
       })">
     @csrf
     @method('PUT')
@@ -95,24 +94,7 @@
     </x-panel>
 
     <x-panel title="Pakan yang diberikan" step="3" tone="brand" :subtitle="'1 karung = ' . \App\Support\Format::number($sackKg) . ' kg.'">
-        <x-field label="Jenis pakan" name="feed_stock_id" required>
-            <select name="feed_stock_id" id="feed_stock_id" class="form-select" x-model="feedId" required>
-                @foreach($feedStocks as $feed)
-                    <option value="{{ $feed->id }}">{{ $feed->feed_name }} — @rupiah($feed->cost_per_kg)/kg</option>
-                @endforeach
-            </select>
-        </x-field>
-        <div class="row g-2">
-            <div class="col-6">
-                <label class="mini-label" for="feed_sacks">Jumlah karung</label>
-                <input id="feed_sacks" type="number" inputmode="numeric" min="0" step="1" name="feed_sacks" x-model="sacks" class="form-control num-xl">
-            </div>
-            <div class="col-6">
-                <label class="mini-label" for="extra_feed_kg">+ Tambahan (kg)</label>
-                <input id="extra_feed_kg" type="number" inputmode="decimal" min="0" step="0.1" name="extra_feed_kg" x-model="extraFeed" class="form-control num-xl">
-            </div>
-        </div>
-        <div class="field-hint mt-2">Total pakan: <b x-text="angka(feedKg()) + ' kg'"></b></div>
+        @include('daily_logs._feeds')
     </x-panel>
 
     <x-panel title="Ayam mati atau diafkir" step="4" tone="danger">
