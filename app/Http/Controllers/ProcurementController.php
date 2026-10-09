@@ -18,12 +18,30 @@ class ProcurementController extends Controller
     {
         $tab = $request->get('tab') === 'telur' ? 'telur' : 'pakan';
 
+        $filter = $request->validate([
+            'dari'  => 'nullable|date',
+            'sampai' => 'nullable|date|after_or_equal:dari',
+            'pakan' => ['nullable', FarmRule::exists('feed_stocks')],
+        ], [
+            'sampai.after_or_equal' => 'Tanggal "sampai" tidak boleh sebelum tanggal "dari".',
+        ]);
+
         $feedStocks = FeedStock::orderBy('feed_name')->get();
         $eggGrades  = EggGrade::where('is_active', true)->orderBy('id')->get();
         $suppliers  = Supplier::orderBy('name')->get();
         $sackKg     = Setting::num('sack_kg');
 
-        $feedPurchases = FeedPurchase::with(['supplier', 'feedStock'])->latest('purchase_date')->latest('id')->paginate(10, ['*'], 'feed_page')->withQueryString();
+        $feedQuery = FeedPurchase::query()
+            ->when($filter['dari'] ?? null, fn ($q, $d) => $q->where('purchase_date', '>=', $d))
+            ->when($filter['sampai'] ?? null, fn ($q, $d) => $q->where('purchase_date', '<=', $d))
+            ->when($filter['pakan'] ?? null, fn ($q, $id) => $q->where('feed_stock_id', $id));
+
+        $feedFiltered = array_filter($filter) !== [];
+        $feedSummary  = $feedFiltered
+            ? (clone $feedQuery)->toBase()->selectRaw('COUNT(*) as times, COALESCE(SUM(quantity_kg), 0) as kg, COALESCE(SUM(total_cost), 0) as cost')->first()
+            : null;
+
+        $feedPurchases = $feedQuery->with(['supplier', 'feedStock'])->latest('purchase_date')->latest('id')->paginate(10, ['*'], 'feed_page')->withQueryString();
         $eggPurchases  = EggPurchase::with(['supplier', 'grade'])->latest('purchase_date')->latest('id')->paginate(10, ['*'], 'egg_page')->withQueryString();
 
         $monthStart = now()->startOfMonth()->toDateString();
@@ -31,7 +49,7 @@ class ProcurementController extends Controller
         $monthEgg   = (float) EggPurchase::where('purchase_date', '>=', $monthStart)->sum('total_cost');
 
         return view('procurement.index', compact(
-            'tab', 'feedStocks', 'eggGrades', 'suppliers', 'sackKg', 'feedPurchases', 'eggPurchases', 'monthFeed', 'monthEgg'
+            'tab', 'feedStocks', 'eggGrades', 'suppliers', 'sackKg', 'feedPurchases', 'eggPurchases', 'monthFeed', 'monthEgg', 'filter', 'feedFiltered', 'feedSummary'
         ));
     }
 

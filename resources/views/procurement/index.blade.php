@@ -96,8 +96,46 @@
         </div>
         <div class="col-xl-7">
             <x-panel title="Riwayat pakan datang" icon="bi-clock-history" flush>
+                @php
+                    $thisMonth = [now()->startOfMonth()->toDateString(), now()->toDateString()];
+                    $lastMonth = [now()->subMonthNoOverflow()->startOfMonth()->toDateString(), now()->subMonthNoOverflow()->endOfMonth()->toDateString()];
+                @endphp
+                <form method="GET" action="{{ route('procurement.index') }}" class="filter-bar p-3 border-bottom">
+                    <input type="hidden" name="tab" value="pakan">
+                    <x-field label="Dari tanggal" for="dari">
+                        <input type="date" id="dari" name="dari" value="{{ $filter['dari'] ?? '' }}" max="{{ now()->toDateString() }}" class="form-control">
+                    </x-field>
+                    <x-field label="Sampai tanggal" for="sampai">
+                        <input type="date" id="sampai" name="sampai" value="{{ $filter['sampai'] ?? '' }}" max="{{ now()->toDateString() }}" class="form-control">
+                    </x-field>
+                    <x-field label="Jenis pakan" for="pakan">
+                        <select id="pakan" name="pakan" class="form-select">
+                            <option value="">Semua pakan</option>
+                            @foreach($feedStocks as $f)
+                                <option value="{{ $f->id }}" @selected(($filter['pakan'] ?? null) == $f->id)>{{ $f->feed_name }}</option>
+                            @endforeach
+                        </select>
+                    </x-field>
+                    <div class="btns flex-wrap">
+                        <button type="submit" class="btn btn-primary" data-no-lock><i class="bi bi-search"></i> Tampilkan</button>
+                        <a href="{{ route('procurement.index', ['tab' => 'pakan', 'dari' => $thisMonth[0], 'sampai' => $thisMonth[1]]) }}" class="btn btn-light">Bulan ini</a>
+                        <a href="{{ route('procurement.index', ['tab' => 'pakan', 'dari' => $lastMonth[0], 'sampai' => $lastMonth[1]]) }}" class="btn btn-light">Bulan lalu</a>
+                        @if($feedFiltered)
+                            <a href="{{ route('procurement.index', ['tab' => 'pakan']) }}" class="btn btn-light"><i class="bi bi-x-lg"></i> Hapus filter</a>
+                        @endif
+                    </div>
+                </form>
+                @if($feedFiltered)
+                    <div class="kv p-3 border-bottom">
+                        <span class="k">
+                            {{ isset($filter['dari']) ? Format::date($filter['dari']) : 'Awal' }} – {{ isset($filter['sampai']) ? Format::date($filter['sampai']) : 'hari ini' }}
+                            · {{ (int) $feedSummary->times }} kali datang
+                        </span>
+                        <span class="v">{{ Format::number($feedSummary->kg) }} kg · <b>@rupiah($feedSummary->cost)</b></span>
+                    </div>
+                @endif
                 @if($feedPurchases->isEmpty())
-                    <x-empty icon="bi-truck" title="Belum ada pembelian pakan" />
+                    <x-empty icon="bi-truck" :title="$feedFiltered ? 'Tidak ada pakan datang di tanggal ini' : 'Belum ada pembelian pakan'" />
                 @else
                     <div class="table-wrap">
                         <table class="tbl stack">
