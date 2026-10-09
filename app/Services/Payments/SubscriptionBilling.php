@@ -98,7 +98,7 @@ class SubscriptionBilling
                 return $payment;
             }
 
-            if ($result->status === 'paid' && $result->amount !== null && $result->amount !== (int) $payment->amount) {
+            if ($result->status === 'paid' && ($result->amount === null || $result->amount !== (int) $payment->amount)) {
                 Log::error('Nominal pembayaran tidak cocok untuk ' . $payment->reference . ': ' . $result->amount . ' vs ' . $payment->amount);
                 $payment->save();
 

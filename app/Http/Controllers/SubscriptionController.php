@@ -66,6 +66,8 @@ class SubscriptionController extends Controller
 
     public function webhook(Request $request)
     {
+        abort_if(app()->isProduction() && $this->billing->gateway()->name() === 'fake', 404);
+
         $result = $this->billing->gateway()->parseNotification($request->all());
 
         if (!$result) {

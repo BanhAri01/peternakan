@@ -66,6 +66,20 @@ class User extends Authenticatable
         return static::ofCurrentFarm()->where($field ?? $this->getRouteKeyName(), $value)->firstOrFail();
     }
 
+    public static function pinDailyKey(int $userId): string
+    {
+        return 'login-worker-day|' . $userId;
+    }
+
+    protected static function booted(): void
+    {
+        static::saved(function (User $user) {
+            if ($user->wasChanged('pin')) {
+                \Illuminate\Support\Facades\RateLimiter::clear(self::pinDailyKey($user->id));
+            }
+        });
+    }
+
     public function hasPin(): bool
     {
         return !empty($this->pin);

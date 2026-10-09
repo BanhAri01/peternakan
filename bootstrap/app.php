@@ -11,6 +11,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        $middleware->prepend(\App\Http\Middleware\SecureResponse::class);
+
         // Pengguna yang sudah masuk diarahkan ke halaman depan sesuai perannya
         $middleware->redirectUsersTo('/');
 

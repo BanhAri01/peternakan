@@ -18,6 +18,8 @@ class AuthController extends Controller
     private const MAX_ATTEMPTS  = 5;
     private const DECAY_SECONDS = 60;
 
+    public const DAILY_PIN_ATTEMPTS = 20;
+
     public function __construct(private DeviceService $devices) {}
 
     public function showLogin(Request $request)
@@ -91,6 +93,11 @@ class AuthController extends Controller
         }
 
         $key = 'login-worker|' . $device->id . '|' . $data['worker_id'];
+        $dailyKey = User::pinDailyKey((int) $data['worker_id']);
+
+        if (RateLimiter::tooManyAttempts($dailyKey, self::DAILY_PIN_ATTEMPTS)) {
+            return back()->withErrors(['pin' => 'PIN Anda dikunci karena terlalu sering salah. Minta pemilik mengganti PIN Anda di menu Pengguna.'])->withInput($request->only('worker_id'));
+        }
 
         if (RateLimiter::tooManyAttempts($key, self::MAX_ATTEMPTS)) {
             return back()->withErrors(['pin' => $this->lockoutMessage($key)])->withInput($request->only('worker_id'));
@@ -106,10 +113,15 @@ class AuthController extends Controller
         if (!$worker || !Hash::check($data['pin'], $worker->pin)) {
             RateLimiter::hit($key, self::DECAY_SECONDS);
 
+            if ($worker && RateLimiter::hit($dailyKey, 86400) === self::DAILY_PIN_ATTEMPTS) {
+                $this->warnOwner($worker);
+            }
+
             return back()->withErrors(['pin' => 'PIN salah. Coba lagi.'])->withInput($request->only('worker_id'));
         }
 
         RateLimiter::clear($key);
+        RateLimiter::clear($dailyKey);
         Auth::login($worker, true);
         $request->session()->regenerate();
         $this->devices->touch($device);
@@ -117,6 +129,27 @@ class AuthController extends Controller
         ActivityRecorder::custom($worker, 'login', $worker->name . ' masuk di ' . $device->name);
 
         return redirect()->route('daily-logs.create')->with('success', 'Selamat bekerja, ' . $worker->name . '!');
+    }
+
+    private function warnOwner(User $worker): void
+    {
+        $farm = $worker->farm;
+        if (!$farm) {
+            return;
+        }
+
+        app(\App\Tenancy\FarmContext::class)->runAs($farm, function () use ($farm, $worker) {
+            $target = app(\App\Services\FarmReminders::class)->target($farm);
+            if (!$target) {
+                return;
+            }
+
+            try {
+                app(\App\Services\WhatsApp::class)->send($target, '*Peringatan keamanan ' . $farm->name . "*\n\nPIN pekerja *" . $worker->name . '* salah ' . self::DAILY_PIN_ATTEMPTS . " kali hari ini, jadi akunnya dikunci 24 jam.\n\nKalau itu bukan pekerja Anda yang lupa PIN, ganti PIN-nya di menu Pengguna. Mengganti PIN juga membuka kuncinya.");
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        });
     }
 
     public function logout(Request $request)
