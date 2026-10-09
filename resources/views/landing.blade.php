@@ -155,6 +155,7 @@
             <a href="#perbandingan">Kenapa HEFAM</a>
             <a href="#harga">Harga</a>
             <a href="#tanya">Tanya Jawab</a>
+            <a href="{{ route('legal.about') }}">Tentang Kami</a>
         </nav>
         <div class="nav-cta">
             <a href="{{ route('login') }}" class="btn btn-light">Masuk</a>
@@ -376,12 +377,12 @@
     </section>
 </main>
 
-<footer>
-    <div class="wrap foot">
-        <span>© {{ date('Y') }} HEFAM · Powered by HERMES</span>
-        <span><a href="{{ route('login') }}">Masuk</a> · <a href="{{ route('register') }}">Daftar</a></span>
-    </div>
-</footer>
+<style>
+    footer .cols { display: grid; gap: 18px; padding: 8px 0 20px; color: var(--muted); font-size: .95rem; line-height: 1.7; }
+    @media (min-width: 760px) { footer .cols { grid-template-columns: 1.3fr 1fr; } }
+    footer .links a { display: inline-block; margin: 0 .9rem .4rem 0; color: var(--muted); }
+</style>
+@include('legal.footer', ['biz' => config('hefam.business'), 'adminWa' => $adminWa])
 
 @if($adminWa)
     <a href="https://wa.me/{{ $adminWa }}?text={{ $waText }}" target="_blank" rel="noopener" class="float-wa" aria-label="Chat WhatsApp admin HEFAM"><i class="bi bi-whatsapp"></i></a>

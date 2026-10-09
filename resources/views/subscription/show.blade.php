@@ -158,6 +158,9 @@
                 </tbody>
             </table>
         </div>
+        @if($canPay)
+            <p class="text-muted small mt-3 mb-0">Dengan membayar, Anda menyetujui <a href="{{ route('legal.terms') }}" target="_blank">Syarat & Ketentuan</a> dan <a href="{{ route('legal.refund') }}" target="_blank">Kebijakan Pengembalian Dana</a>. Pembayaran diproses aman oleh Midtrans. Tidak ada tagihan otomatis.</p>
+        @endif
     </x-panel>
 @endif
 

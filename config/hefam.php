@@ -5,6 +5,16 @@ return [
     // Nomor WhatsApp admin HEFAM untuk pertanyaan langganan (format 62xxxxxxxxxx)
     'admin_whatsapp' => env('HEFAM_ADMIN_WA', ''),
 
+    'business' => [
+        'brand'   => 'HEFAM',
+        'name'    => env('HEFAM_BUSINESS_NAME', 'HEFAM (Hermes Works)'),
+        'owner'   => env('HEFAM_OWNER_NAME', ''),
+        'address' => env('HEFAM_ADDRESS', ''),
+        'email'   => env('HEFAM_CONTACT_EMAIL', ''),
+        'hours'   => env('HEFAM_SUPPORT_HOURS', 'Senin - Sabtu, 08.00 - 20.00 WITA'),
+        'updated' => '9 Oktober 2026',
+    ],
+
     'backup' => [
         'path'        => env('HEFAM_BACKUP_PATH', storage_path('app/backups')),
         'keep_days'   => (int) env('HEFAM_BACKUP_KEEP_DAYS', 30),

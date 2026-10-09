@@ -50,7 +50,7 @@
 
         <div class="form-check mb-3">
             <input class="form-check-input" type="checkbox" name="agree" value="1" id="agree" @checked(old('agree')) required>
-            <label class="form-check-label" for="agree">Saya setuju data peternakan saya disimpan di HEFAM untuk keperluan pencatatan.</label>
+            <label class="form-check-label" for="agree">Saya setuju dengan <a href="{{ route('legal.terms') }}" target="_blank">Syarat & Ketentuan</a> dan <a href="{{ route('legal.privacy') }}" target="_blank">Kebijakan Privasi</a> HEFAM, termasuk penyimpanan data peternakan saya untuk keperluan pencatatan.</label>
         </div>
 
         <button type="submit" class="btn btn-primary btn-xl w-100"><i class="bi bi-rocket-takeoff"></i> Daftar & Mulai Gratis</button>

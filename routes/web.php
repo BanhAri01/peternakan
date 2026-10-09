@@ -28,6 +28,7 @@ use App\Http\Controllers\ExpenseLedgerController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\ExportPdfController;
 use App\Http\Controllers\FeedStockController;
+use App\Http\Controllers\LegalController;
 use App\Http\Controllers\ProcurementController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SettingController;
@@ -36,6 +37,10 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\VaccinationController;
 
 Route::get('/', HomeController::class)->name('home');
+Route::get('/tentang-kami', [LegalController::class, 'about'])->name('legal.about');
+Route::get('/syarat-ketentuan', [LegalController::class, 'terms'])->name('legal.terms');
+Route::get('/kebijakan-privasi', [LegalController::class, 'privacy'])->name('legal.privacy');
+Route::get('/kebijakan-pengembalian-dana', [LegalController::class, 'refund'])->name('legal.refund');
 Route::get('/manifest.webmanifest', [PwaController::class, 'manifest'])->name('pwa.manifest');
 Route::get('/sw.js', [PwaController::class, 'serviceWorker'])->name('pwa.sw');
 Route::get('/pwa/offline.js', [PwaController::class, 'script'])->name('pwa.script');
