@@ -39,6 +39,18 @@ class OfflineTest extends TestCase
             ->assertSee(route('pwa.manifest'));
     }
 
+    public function test_menu_profil_punya_tombol_pasang_ke_layar_utama(): void
+    {
+        foreach ([[$this->worker, 'daily-logs.create'], [$this->owner, 'owner.dashboard']] as [$user, $page]) {
+            $this->actingAs($user)->get(route($page))
+                ->assertOk()
+                ->assertSee('data-install-app', false)
+                ->assertSee('Pasang ke Layar Utama')
+                ->assertSee('id="installModal"', false)
+                ->assertSee('beforeinstallprompt', false);
+        }
+    }
+
     public function test_token_sesi_hanya_untuk_yang_sudah_masuk(): void
     {
         $this->getJson(route('session.token'))->assertUnauthorized();

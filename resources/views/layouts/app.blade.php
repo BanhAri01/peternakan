@@ -76,6 +76,9 @@
     <link rel="apple-touch-icon" href="{{ route('pwa.icon', 'apple-touch-icon.png') }}">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
+    <script>
+        window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); window.hefamInstall = e; });
+    </script>
     @auth
         <meta name="hefam-user" content="{{ auth()->id() }}">
         <meta name="hefam-user-name" content="{{ auth()->user()->name }}">
@@ -193,6 +196,11 @@
                                     <button type="button" class="flex-fill" data-size-btn="xl" style="font-size:1.25em">A</button>
                                 </div>
                             </div>
+                            <div class="px-2 pb-2" data-install-box hidden>
+                                <button type="button" class="btn btn-install w-100" data-install-app>
+                                    <i class="bi bi-phone-fill"></i> Pasang ke Layar Utama
+                                </button>
+                            </div>
                             <form action="{{ route('logout') }}" method="POST">
                                 @csrf
                                 <button type="submit" class="btn btn-ghost-danger w-100" data-no-lock>
@@ -253,6 +261,7 @@
 <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js" defer></script>
 @include('partials.scripts')
 @auth
+    @include('partials.install-app')
     <script src="{{ route('pwa.script', ['v' => \App\Http\Controllers\PwaController::version()]) }}" defer></script>
 @endauth
 @stack('scripts')

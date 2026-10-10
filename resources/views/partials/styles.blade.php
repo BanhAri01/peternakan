@@ -626,6 +626,10 @@
 
     .btn-ghost-danger { background: transparent; border: 1px solid #e3b4ae; color: var(--danger); }
     .btn-ghost-danger:hover { background: var(--danger-soft); color: var(--danger); border-color: var(--danger); }
+    .btn-install { background: var(--brand-soft); border: 1px solid var(--brand); color: var(--brand-ink); font-weight: 700; min-height: 48px; }
+    .btn-install:hover { background: var(--brand); color: #fff; }
+    .install-steps { padding-left: 1.4rem; margin: 1rem 0; }
+    .install-steps li { margin-bottom: .6rem; line-height: 1.5; }
 
     .btn-wa { background: #1f8f4e; border-color: #1f8f4e; color: #fff; }
     .btn-wa:hover { background: #18773f; border-color: #18773f; color: #fff; }
