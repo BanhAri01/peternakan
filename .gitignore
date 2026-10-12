@@ -28,3 +28,4 @@ Thumbs.db
 .env.ujibeban
 .env.ujiprod2
 .env.ujiprod3
+*.docx

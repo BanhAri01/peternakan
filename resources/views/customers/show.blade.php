@@ -4,21 +4,36 @@
 
 @php
     use App\Support\Format;
-    $farm   = \App\Models\Setting::get('farm_name');
-    $lines  = $unpaid->map(fn ($s) => '- ' . Format::date($s->sale_date) . ': ' . Format::rupiah($s->debt_amount))->join("\n");
-    $waText = "Halo {$customer->name}, kami dari {$farm}.\nBerikut tagihan telur yang belum dibayar:\n{$lines}\nTotal: " . Format::rupiah($stats['total_debt']) . "\nTerima kasih.";
+    $waText = $customer->buildDebtSummaryWaMessage();
     $contact = collect([$customer->phone ? 'HP ' . $customer->phone : null, $customer->address])->filter()->join(' · ');
 @endphp
 
 @section('content')
 <x-page-header :title="$customer->name" :subtitle="$contact ?: 'Data kontak belum diisi.'" icon="bi-person-circle" :back="route('customers.index')" back-label="Semua pelanggan">
-    @if($stats['total_debt'] > 0 && $customer->wa_number)
-        <a href="https://wa.me/{{ $customer->wa_number }}?text={{ rawurlencode($waText) }}" target="_blank" rel="noopener" class="btn btn-wa"><i class="bi bi-whatsapp"></i> Kirim tagihan WA</a>
+    @if($stats['total_debt'] > 0 && $customer->phone)
+        <form action="{{ route('customers.send-wa', $customer) }}" method="POST" class="d-inline" onsubmit="return confirm('Kirim rincian tagihan ke {{ $customer->phone }} via WhatsApp (Fonnte)?')">
+            @csrf
+            <button type="submit" class="btn btn-success"><i class="bi bi-whatsapp"></i> Kirim Tagihan (Fonnte)</button>
+        </form>
+        @if($customer->wa_number)
+            <a href="https://wa.me/{{ $customer->wa_number }}?text={{ rawurlencode($waText) }}" target="_blank" rel="noopener" class="btn btn-outline-success"><i class="bi bi-whatsapp"></i> Buka WA</a>
+        @endif
     @endif
+    <a href="{{ $customer->portalUrl() }}" target="_blank" rel="noopener" class="btn btn-outline-primary" title="Lihat tampilan tagihan yang dilihat pelanggan"><i class="bi bi-globe2"></i> Portal Pelanggan</a>
     <a href="{{ route('customers.edit', $customer) }}" class="btn btn-light"><i class="bi bi-pencil"></i> Ubah data</a>
 </x-page-header>
 
 <x-alerts />
+
+@if($customer->deposit_balance > 0)
+    <div class="notice notice-success mb-3">
+        <i class="bi bi-wallet2 fs-4"></i>
+        <div>
+            <strong>Titip Uang / Saldo Deposit: {{ Format::rupiah($customer->deposit_balance) }}</strong>
+            <div class="small">Pelanggan ini memiliki kelebihan uang pembayaran yang tersimpan di peternakan dan dapat digunakan untuk transaksi selanjutnya.</div>
+        </div>
+    </div>
+@endif
 
 @if($stats['total_debt'] > 0 && !$customer->wa_number)
     <div class="notice notice-info"><i class="bi bi-info-circle-fill"></i><div>Isi nomor HP pelanggan ini agar bisa mengirim tagihan lewat WhatsApp. <a href="{{ route('customers.edit', $customer) }}">Isi sekarang</a></div></div>
@@ -28,7 +43,7 @@
     <div class="col-sm-6 col-lg-3"><x-stat label="Total belanja" :value="Format::rupiah($stats['total_bought'])" icon="bi-bag-check-fill" tone="info" /></div>
     <div class="col-sm-6 col-lg-3"><x-stat label="Sudah dibayar" :value="Format::rupiah($stats['total_paid'])" icon="bi-cash-coin" tone="success" /></div>
     <div class="col-sm-6 col-lg-3"><x-stat label="Belum dibayar" :value="Format::rupiah($stats['total_debt'])" icon="bi-hourglass-split" :tone="$stats['total_debt'] > 0 ? 'danger' : 'success'" :alert="$stats['total_debt'] > 0" /></div>
-    <div class="col-sm-6 col-lg-3"><x-stat label="Total telur dibeli" :value="Format::number($stats['total_kg'], 1)" unit="kg" icon="bi-egg-fill" tone="egg" /></div>
+    <div class="col-sm-6 col-lg-3"><x-stat label="Titip uang (Deposit)" :value="Format::rupiah($customer->deposit_balance)" icon="bi-wallet2" :tone="$customer->deposit_balance > 0 ? 'success' : 'neutral'" /></div>
 </div>
 
 @if($unpaid->isNotEmpty())
@@ -93,6 +108,44 @@
         <x-slot:footer>{{ $invoices->links() }}</x-slot:footer>
     @endif
 </x-panel>
+
+@if(isset($deposits) && $deposits->isNotEmpty())
+    <x-panel title="Riwayat Titip Uang / Saldo Deposit" icon="bi-wallet2" tone="success" flush>
+        <div class="table-wrap">
+            <table class="tbl stack">
+                <thead>
+                    <tr>
+                        <th>Waktu</th>
+                        <th>Keterangan / Dari Nota</th>
+                        <th class="num">Nominal</th>
+                        <th class="num">Saldo Akhir</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($deposits as $dep)
+                        <tr>
+                            <td class="title-cell">
+                                <span class="small">{{ Format::date($dep->created_at, 'd M Y, H:i') }}</span>
+                            </td>
+                            <td>
+                                <div>{{ $dep->notes ?: 'Titip uang' }}</div>
+                                @if($dep->invoice)
+                                    <div class="text-muted small">Nota: {{ $dep->invoice->number }}</div>
+                                @endif
+                            </td>
+                            <td data-label="Nominal" class="num">
+                                <b class="text-success">+@rupiah($dep->amount)</b>
+                            </td>
+                            <td data-label="Saldo Akhir" class="num">
+                                <b>@rupiah($dep->balance_after)</b>
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    </x-panel>
+@endif
 
 @include('sales._pay-modal')
 @endsection

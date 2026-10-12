@@ -77,4 +77,13 @@ class LegalPagesTest extends TestCase
 
         $this->get(route('legal.about'))->assertOk()->assertDontSee('Alamat</dt>', false)->assertDontSee('mailto:', false);
     }
+
+    public function test_sitemap_xml_dapat_diakses_oleh_mesin_pencari(): void
+    {
+        $this->get('/sitemap.xml')
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/xml; charset=utf-8')
+            ->assertSee('<urlset', false)
+            ->assertSee('<loc>', false);
+    }
 }

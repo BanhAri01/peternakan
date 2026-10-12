@@ -1,2 +1,18 @@
 User-agent: *
-Disallow:
+Allow: /
+Allow: /daftar
+Allow: /tentang-kami
+Allow: /syarat-ketentuan
+Allow: /kebijakan-privasi
+Allow: /kebijakan-pengembalian-dana
+Disallow: /admin/
+Disallow: /tagihan/
+Disallow: /kandang/
+Disallow: /harian/
+Disallow: /penjualan/
+Disallow: /pakan/
+Disallow: /kas/
+Disallow: /gaji/
+Disallow: /langganan/
+
+Sitemap: http://localhost/sitemap.xml

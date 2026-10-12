@@ -32,6 +32,42 @@ return [
         'evening_at'    => ['17:00', '18:00'],
     ],
 
+    'assistant' => [
+        'api_key'        => env('ANTHROPIC_API_KEY'),
+        'timeout'        => (float) env('HEFAM_AI_TIMEOUT', 60),
+        'webhook_secret' => env('HEFAM_AI_WEBHOOK_SECRET'),
+        'wa_device'      => env('HEFAM_AI_WA_DEVICE'),
+        'usd_rate'       => (float) env('HEFAM_AI_USD_RATE', 16500),
+        'budget'         => (int) env('HEFAM_AI_BUDGET', 25000),
+        'trial_budget'   => (int) env('HEFAM_AI_TRIAL_BUDGET', 5000),
+        'daily_share'    => 0.2,
+        'topup_amount'   => (int) env('HEFAM_AI_TOPUP', 20000),
+        'max_rounds'     => 6,
+        'history'        => 6,
+        'history_hours'  => 3,
+        'question_max'   => 500,
+        'question_estimate' => 40,
+        'modes' => [
+            'quick' => [
+                'model'      => env('HEFAM_AI_QUICK_MODEL', 'claude-haiku-5-5'),
+                'effort'     => 'low',
+                'max_tokens' => 4000,
+                'reserve'    => 200,
+            ],
+            'deep' => [
+                'model'      => env('HEFAM_AI_DEEP_MODEL', 'claude-haiku-5-5'),
+                'effort'     => env('HEFAM_AI_DEEP_EFFORT', 'high'),
+                'max_tokens' => 12000,
+                'reserve'    => 2500,
+            ],
+        ],
+        'prices' => [
+            'claude-haiku-5-5'  => ['input' => 0.10, 'output' => 0.50, 'cache_read' => 0.01, 'cache_write' => 0.125],
+            'claude-sonnet-5-5' => ['input' => 2.00, 'output' => 10.00, 'cache_read' => 0.20, 'cache_write' => 2.50],
+            'claude-opus-5-5'   => ['input' => 4.00, 'output' => 20.00, 'cache_read' => 0.40, 'cache_write' => 5.00],
+        ],
+    ],
+
     'default_plan' => 'entrepreneur',
 
     'durations' => [
@@ -61,7 +97,7 @@ return [
             'tagline'  => 'Untuk usaha peternakan yang terus berkembang',
             'price'    => (int) env('HEFAM_PRICE_ENTREPRENEUR', 349000),
             'limits'   => ['coops' => null, 'workers' => null, 'devices' => null, 'wa_monthly' => 300],
-            'features' => ['payroll', 'medicines', 'other_income', 'strain', 'export', 'priority_support'],
+            'features' => ['payroll', 'medicines', 'other_income', 'strain', 'export', 'priority_support', 'assistant'],
         ],
     ],
 
@@ -72,5 +108,6 @@ return [
         'strain'           => 'Standar produksi strain',
         'export'           => 'Ekspor Excel',
         'priority_support' => 'Prioritas bantuan admin',
+        'assistant'        => 'Asisten Kandang (tanya lewat aplikasi & WhatsApp)',
     ],
 ];

@@ -23,10 +23,11 @@ class SalesTest extends TestCase
     private function sale(array $overrides = [], ?array $lines = null): array
     {
         return array_merge([
-            'customer_name' => 'Bakul Bu Sari',
-            'sale_date'     => now()->toDateString(),
-            'payment_mode'  => 'lunas',
-            'lines'         => $lines ?? [
+            'customer_name'  => 'Bakul Bu Sari',
+            'customer_phone' => '081234567890',
+            'sale_date'      => now()->toDateString(),
+            'payment_mode'   => 'lunas',
+            'lines'          => $lines ?? [
                 ['egg_grade_id' => $this->grade->id, 'unit_type' => 'kg', 'quantity_unit' => 10, 'price_per_unit' => 26000],
             ],
         ], $overrides);
@@ -106,20 +107,27 @@ class SalesTest extends TestCase
         $this->assertSame(2, Customer::first()->invoices()->count());
     }
 
-    public function test_pelunasan_nota_dan_tidak_bisa_bayar_lebih(): void
+    public function test_pelunasan_nota_dan_kelebihan_bayar_masuk_ke_saldo_deposit(): void
     {
         $this->actingAs($this->owner)->post(route('sales.store'), $this->sale(['payment_mode' => 'tempo']));
-        $invoice = Invoice::first();
+        $invoice  = Invoice::first();
+        $customer = Customer::first();
+        $this->assertEquals(260000, $invoice->debt);
 
+        // Pelanggan utang 260.000, tapi membayar 500.000 (kelebihan 240.000)
         $this->actingAs($this->owner)
             ->post(route('sales.pay-debt', $invoice), ['payment_add' => 500000])
-            ->assertSessionHasErrors('payment_add');
+            ->assertSessionHasNoErrors()
+            ->assertSessionHas('success');
 
-        $this->actingAs($this->owner)->post(route('sales.pay-debt', $invoice), ['payment_add' => 60000]);
-        $this->assertEquals(200000, $invoice->fresh()->debt);
-
-        $this->actingAs($this->owner)->post(route('sales.pay-debt', $invoice), ['payment_add' => 200000]);
         $this->assertEquals(0, $invoice->fresh()->debt);
+        $this->assertEquals(240000, $customer->fresh()->deposit_balance);
+        $this->assertDatabaseHas('customer_deposits', [
+            'customer_id'   => $customer->id,
+            'invoice_id'    => $invoice->id,
+            'amount'        => 240000,
+            'balance_after' => 240000,
+        ]);
     }
 
     public function test_hapus_nota_menghapus_semua_barisnya(): void
@@ -144,10 +152,118 @@ class SalesTest extends TestCase
         }
     }
 
-    public function test_terbilang(): void
+    public function test_nomor_hp_wajib_diisi_jika_belum_lunas(): void
     {
-        $this->assertSame('Satu juta dua ratus lima puluh ribu rupiah', Format::terbilang(1250000));
-        $this->assertSame('Sebelas ribu lima ratus rupiah', Format::terbilang(11500));
-        $this->assertSame('Seratus sebelas rupiah', Format::terbilang(111));
+        $payload = $this->sale(['payment_mode' => 'tempo', 'customer_phone' => null]);
+        $this->actingAs($this->owner)->post(route('sales.store'), $payload)
+            ->assertSessionHasErrors(['customer_phone']);
+
+        $payloadPartial = $this->sale(['payment_mode' => 'sebagian', 'paid_amount' => 100000, 'customer_phone' => '']);
+        $this->actingAs($this->owner)->post(route('sales.store'), $payloadPartial)
+            ->assertSessionHasErrors(['customer_phone']);
+
+        // Jika lunas, nomor HP boleh kosong
+        $payloadLunas = $this->sale(['payment_mode' => 'lunas', 'customer_phone' => null]);
+        $this->actingAs($this->owner)->post(route('sales.store'), $payloadLunas)
+            ->assertSessionHasNoErrors();
+    }
+
+    public function test_kirim_nota_lewat_wa(): void
+    {
+        $this->actingAs($this->owner)->post(route('sales.store'), $this->sale());
+        $invoice = Invoice::first();
+
+        $response = $this->actingAs($this->owner)->post(route('sales.send-wa', $invoice));
+        $response->assertRedirect();
+        $response->assertSessionHas('success');
+    }
+
+    public function test_pesan_wa_menyertakan_link_portal_pelanggan(): void
+    {
+        $this->actingAs($this->owner)->post(route('sales.store'), $this->sale(['payment_mode' => 'tempo']));
+        $invoice  = Invoice::first();
+        $customer = Customer::first();
+
+        $message = $customer->buildDebtSummaryWaMessage($invoice);
+
+        $this->assertStringContainsString('/tagihan/' . $customer->id . '/' . $customer->portalToken(), $message);
+    }
+
+    public function test_pelanggan_bisa_membuka_halaman_portal_tagihan_tanpa_login(): void
+    {
+        $this->actingAs($this->owner)->post(route('sales.store'), $this->sale(['payment_mode' => 'tempo']));
+        $invoice  = Invoice::first();
+        $customer = Customer::first();
+
+        // Tamu (tanpa login) membuka link portal
+        auth()->logout();
+
+        $response = $this->get(route('portal.customer', [
+            'customer' => $customer->id,
+            'token'    => $customer->portalToken(),
+            'nota'     => $invoice->id,
+        ]));
+
+        $response->assertOk();
+        $response->assertSee('Bakul Bu Sari');
+        $response->assertSee('Portal Resmi Pelanggan');
+        $response->assertSee($invoice->number);
+    }
+
+    public function test_portal_token_tidak_valid_ditolak_403(): void
+    {
+        $customer = Customer::create(['name' => 'Pak Budi', 'phone' => '0811111111']);
+
+        $response = $this->get(route('portal.customer', [
+            'customer' => $customer->id,
+            'token'    => 'token-palsu-12345678',
+        ]));
+
+        $response->assertForbidden();
+    }
+
+    public function test_pelanggan_bisa_unduh_nota_pdf_dari_portal(): void
+    {
+        $this->actingAs($this->owner)->post(route('sales.store'), $this->sale());
+        $invoice  = Invoice::first();
+        $customer = Customer::first();
+
+        auth()->logout();
+
+        $response = $this->get(route('portal.receipt', [
+            'customer' => $customer->id,
+            'token'    => $customer->portalToken(),
+            'invoice'  => $invoice->id,
+        ]));
+
+        $response->assertOk();
+        $this->assertStringStartsWith('%PDF', $response->getContent());
+    }
+
+    public function test_bisa_memotong_saldo_deposit_untuk_pelunasan_nota(): void
+    {
+        $this->actingAs($this->owner)->post(route('sales.store'), $this->sale(['payment_mode' => 'tempo']));
+        $invoice  = Invoice::first();
+        $customer = Customer::first();
+
+        // Berikan saldo deposit awal 100.000 ke pelanggan
+        $customer->update(['deposit_balance' => 100000]);
+
+        // Bayar nota menggunakan saldo deposit
+        $this->actingAs($this->owner)
+            ->post(route('sales.pay-debt', $invoice), ['use_deposit' => true])
+            ->assertSessionHas('success');
+
+        $invoice->refresh();
+        $customer->refresh();
+
+        // Tagihan nota 260.000 terpotong 100.000 -> sisa 160.000
+        $this->assertSame(160000.0, (float) $invoice->debt);
+        $this->assertSame(0.0, (float) $customer->deposit_balance);
+        $this->assertDatabaseHas('customer_deposits', [
+            'customer_id' => $customer->id,
+            'type'        => 'out',
+            'amount'      => 100000,
+        ]);
     }
 }

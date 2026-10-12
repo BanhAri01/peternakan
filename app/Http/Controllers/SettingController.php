@@ -64,6 +64,7 @@ class SettingController extends Controller
         }
 
         $data['wa_reminder_enabled'] = $request->boolean('wa_reminder_enabled') ? '1' : '0';
+        $data['wa_auto_customer_debt'] = $request->boolean('wa_auto_customer_debt') ? '1' : '0';
         foreach (array_keys(FarmReminders::TOPICS) as $topic) {
             $data[$topic] = $request->boolean($topic) ? '1' : '0';
         }

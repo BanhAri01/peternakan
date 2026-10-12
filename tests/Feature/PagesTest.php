@@ -21,7 +21,10 @@ class PagesTest extends TestCase
 
         $this->actingAs($this->owner)->post(route('daily-logs.store'), $this->harvestPayload());
         $this->actingAs($this->owner)->post(route('sales.store'), [
-            'customer_name' => 'Toko Berkah', 'sale_date' => now()->toDateString(), 'payment_mode' => 'tempo',
+            'customer_name'  => 'Toko Berkah',
+            'customer_phone' => '081234567890',
+            'sale_date'      => now()->toDateString(),
+            'payment_mode'   => 'tempo',
             'lines' => [['egg_grade_id' => $this->grade->id, 'unit_type' => 'kg', 'quantity_unit' => 10, 'price_per_unit' => 25000]],
         ]);
     }

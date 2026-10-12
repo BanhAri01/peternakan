@@ -3,10 +3,12 @@
 namespace App\Services;
 
 use App\Models\Coop;
+use App\Models\Customer;
 use App\Models\DailyLog;
 use App\Models\EggSale;
 use App\Models\Farm;
 use App\Models\FeedStock;
+use App\Models\Invoice;
 use App\Models\Medicine;
 use App\Models\NotificationLog;
 use App\Models\Setting;
@@ -20,6 +22,10 @@ use Illuminate\Support\Facades\Log;
 class FarmReminders
 {
     public const KINDS = ['pagi', 'sore'];
+
+    public const CUSTOMER_BILL_HOURS = [7, 19]; // Jam 07:00 pagi sampai 19:00 (7 malam)
+
+    public const CUSTOMER_REPEAT_DAYS = 7;
 
     public const TOPICS = [
         'wa_notify_feed'     => ['pagi', 'Pakan hampir habis'],
@@ -60,6 +66,108 @@ class FarmReminders
         }
 
         return $results;
+    }
+
+    /**
+     * Kirim tagihan otomatis ke WhatsApp pembeli saat nota penjualan telur jatuh tempo.
+     * Hanya dikirim antara pukul 07:00 s.d 19:00 (7 pagi - 7 malam) untuk menjaga kenyamanan pembeli.
+     */
+    public function sendAllCustomerDueBills(?int $farmId = null, bool $force = false): array
+    {
+        $today   = Carbon::today();
+        $results = [];
+
+        $farms = Farm::query()->when($farmId, fn ($q) => $q->whereKey($farmId))->get()->filter->isAccessible();
+
+        foreach ($farms as $farm) {
+            $results[$farm->id] = app(FarmContext::class)->runAs($farm, fn () => $this->sendCustomerDueBills($farm, $today, $force));
+        }
+
+        return $results;
+    }
+
+    public function sendCustomerDueBills(Farm $farm, Carbon $today, bool $force = false): array
+    {
+        $nowHour = Carbon::now()->hour;
+        if (! $force && ($nowHour < self::CUSTOMER_BILL_HOURS[0] || $nowHour >= self::CUSTOMER_BILL_HOURS[1])) {
+            return ['status' => 'di luar jam kirim pembeli (07:00 - 19:00)', 'sent' => 0];
+        }
+
+        if (Setting::get('wa_reminder_enabled') !== '1') {
+            return ['status' => 'nonaktif', 'sent' => 0];
+        }
+
+        if (Setting::get('wa_auto_customer_debt') === '0') {
+            return ['status' => 'tagih pembeli dinonaktifkan', 'sent' => 0];
+        }
+
+        $quota = $this->quota($farm);
+        if ($quota['limit'] === 0) {
+            return ['status' => 'paket tanpa WhatsApp', 'sent' => 0];
+        }
+
+        $customers = Customer::query()->whereNotNull('phone')->where('phone', '!=', '')->get();
+        $sentCount = 0;
+
+        foreach ($customers as $customer) {
+            if (! Format::waNumber($customer->phone)) {
+                continue;
+            }
+
+            if ($quota['limit'] !== null && ($quota['used'] + $sentCount) >= $quota['limit']) {
+                break;
+            }
+
+            // Nota belum lunas yang sudah jatuh tempo (due_date <= hari ini)
+            $overdueInvoices = $customer->invoices()->withTotals()->with('lines.grade')
+                ->whereHas('lines', fn ($q) => $q->where('debt_amount', '>', 0))
+                ->whereNotNull('due_date')
+                ->where('due_date', '<=', $today->toDateString())
+                ->get();
+
+            if ($overdueInvoices->isEmpty()) {
+                continue;
+            }
+
+            // Cek apakah ada nota yang belum diingatkan atau sudah lewat 7 hari
+            $repeatCutoff = Carbon::now()->subDays(self::CUSTOMER_REPEAT_DAYS);
+            $needsReminder = $overdueInvoices->filter(fn ($inv) =>
+                $force || ! $inv->last_reminded_at || Carbon::parse($inv->last_reminded_at)->lte($repeatCutoff)
+            );
+
+            if ($needsReminder->isEmpty()) {
+                continue;
+            }
+
+            // Bangun pesan lengkap berisi rincian nota & portal tagihan resmi
+            $message = $customer->buildDebtSummaryWaMessage();
+
+            try {
+                $this->whatsApp->send($customer->phone, $message);
+                $now = Carbon::now();
+
+                // Tandai last_reminded_at pada nota dan baris penjualannya
+                foreach ($overdueInvoices as $inv) {
+                    $inv->update(['last_reminded_at' => $now]);
+                    $inv->lines()->where('debt_amount', '>', 0)->update(['last_reminded_at' => $now]);
+                }
+
+                NotificationLog::withoutGlobalScope(FarmScope::class)->updateOrCreate(
+                    ['farm_id' => $farm->id, 'kind' => 'tagih_' . $customer->id, 'sent_on' => $today->toDateString()],
+                    ['target' => $customer->phone, 'status' => 'terkirim', 'message' => $message, 'error' => null]
+                );
+
+                $sentCount++;
+            } catch (\Throwable $e) {
+                Log::warning("Gagal tagih WA ke {$customer->name} ({$customer->phone}): " . $e->getMessage());
+                NotificationLog::withoutGlobalScope(FarmScope::class)->updateOrCreate(
+                    ['farm_id' => $farm->id, 'kind' => 'tagih_' . $customer->id, 'sent_on' => $today->toDateString()],
+                    ['target' => $customer->phone, 'status' => 'gagal', 'message' => $message ?? '', 'error' => mb_substr($e->getMessage(), 0, 250)]
+                );
+            }
+        }
+
+        return ['status' => $sentCount > 0 ? 'terkirim' : 'tidak ada yang perlu ditagih', 'sent' => $sentCount];
     }
 
     public function quota(Farm $farm): array

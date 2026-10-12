@@ -48,10 +48,11 @@ class ActivityLogTest extends TestCase
     public function test_nota_dan_pembayaran_tercatat_dengan_jumlah_uang(): void
     {
         $this->actingAs($this->owner)->post(route('sales.store'), [
-            'customer_name' => 'Bu Sari',
-            'sale_date'     => now()->toDateString(),
-            'payment_mode'  => 'tempo',
-            'lines'         => [['egg_grade_id' => $this->grade->id, 'unit_type' => 'kg', 'quantity_unit' => 10, 'price_per_unit' => 26000]],
+            'customer_name'  => 'Bu Sari',
+            'customer_phone' => '081234567890',
+            'sale_date'      => now()->toDateString(),
+            'payment_mode'   => 'tempo',
+            'lines'          => [['egg_grade_id' => $this->grade->id, 'unit_type' => 'kg', 'quantity_unit' => 10, 'price_per_unit' => 26000]],
         ]);
         $this->actAsFarm($this->farm);
         $invoice = Invoice::firstOrFail();

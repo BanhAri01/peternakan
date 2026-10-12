@@ -220,6 +220,17 @@
                 @endforeach
             </div>
         @endforeach
+        <div class="card bg-light border-0 p-3 mb-3">
+            <div class="form-check form-switch mb-1">
+                <input class="form-check-input" type="checkbox" role="switch" id="wa_auto_customer_debt" name="wa_auto_customer_debt" value="1" @checked(old('wa_auto_customer_debt', $settings['wa_auto_customer_debt'] ?? '1') === '1')>
+                <label class="form-check-label fw-bold" for="wa_auto_customer_debt">
+                    <i class="bi bi-person-check-fill text-success me-1"></i> Tagih pembeli otomatis via WhatsApp saat tanggal jatuh tempo
+                </label>
+            </div>
+            <div class="text-muted small ps-4">
+                Pesan tagihan dikirim langsung ke WhatsApp pembeli/tengkulak pada <b>pukul 07.00 – 19.00</b> saat nota jatuh tempo, lengkap dengan rincian nota dan tautan portal tagihan online tanpa login.
+            </div>
+        </div>
         <p class="text-muted small mb-3">Pesan hanya dikirim kalau ada yang perlu diingatkan. Matikan yang tidak perlu supaya kuota WhatsApp lebih hemat.</p>
         <x-field label="Nomor WhatsApp tujuan" name="wa_reminder_phone" optional hint="Kosongkan untuk memakai nomor HP peternakan di atas." class="mb-0">
             <input type="text" id="wa_reminder_phone" name="wa_reminder_phone" inputmode="tel" maxlength="30" value="{{ old('wa_reminder_phone', $settings['wa_reminder_phone']) }}" class="form-control" placeholder="Contoh: 0812 3456 7890">

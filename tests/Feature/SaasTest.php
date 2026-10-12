@@ -96,6 +96,29 @@ class SaasTest extends TestCase
         $this->get(route('owner.dashboard'))->assertOk()->assertSee('Langkah awal');
     }
 
+    public function test_pendaftaran_dengan_dropdown_lokasi_bertingkat_menyimpan_alamat_lengkap(): void
+    {
+        $this->post(route('register.store'), [
+            'farm_name'      => 'Ayam Sejahtera Farm',
+            'owner_name'     => 'I Made Agus',
+            'phone'          => '081999888777',
+            'country'        => 'Indonesia',
+            'island'         => 'Bali & Nusa Tenggara',
+            'province'       => 'Bali',
+            'city'           => 'Kab. Gianyar',
+            'district'       => 'Sukawati',
+            'detail_address' => 'Banjar Tegal No. 12',
+            'email'          => 'agus@sejahtera.test',
+            'password'       => 'rahasia123',
+            'password_confirmation' => 'rahasia123',
+            'agree'          => '1',
+        ])->assertRedirect(route('owner.dashboard'));
+
+        $owner = User::where('email', 'agus@sejahtera.test')->first();
+        $this->assertNotNull($owner);
+        $this->assertSame('Banjar Tegal No. 12, Kec. Sukawati, Kab. Gianyar, Bali', $owner->farm->city);
+    }
+
     public function test_email_yang_sudah_terdaftar_ditolak(): void
     {
         $this->post(route('register.store'), [

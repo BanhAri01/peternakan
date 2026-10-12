@@ -32,9 +32,10 @@ class TrashTest extends TestCase
     private function sell(): Invoice
     {
         $this->actingAs($this->owner)->post(route('sales.store'), [
-            'customer_name' => 'Bu Sari',
-            'sale_date'     => now()->toDateString(),
-            'payment_mode'  => 'tempo',
+            'customer_name'  => 'Bu Sari',
+            'customer_phone' => '081234567890',
+            'sale_date'      => now()->toDateString(),
+            'payment_mode'   => 'tempo',
             'lines'         => [['egg_grade_id' => $this->grade->id, 'unit_type' => 'kg', 'quantity_unit' => 10, 'price_per_unit' => 26000]],
         ])->assertSessionHasNoErrors();
         $this->actAsFarm($this->farm);

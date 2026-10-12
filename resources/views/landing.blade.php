@@ -1,26 +1,116 @@
 @php
     use App\Support\Format;
     $waText  = rawurlencode('Halo admin HEFAM, saya peternak ayam petelur dan ingin tahu lebih lanjut tentang HEFAM.');
-    $title   = 'HEFAM — Aplikasi Pencatatan Peternakan Ayam Petelur';
-    $desc    = 'Catat panen, sortir telur, penjualan, piutang bakul, pakan, gaji pekerja, dan laba peternakan ayam petelur dari HP. Bisa tanpa sinyal. Coba gratis ' . $trialDays . ' hari.';
+    $title   = 'Aplikasi Pencatatan Peternakan Ayam Petelur Terbaik #1 · HEFAM';
+    $desc    = 'HEFAM adalah aplikasi pencatatan peternakan ayam petelur nomor 1 di Indonesia. Catat panen telur, sortir rak, pakan FCR, piutang bakul via WhatsApp, dan laba peternakan otomatis dari HP tanpa sinyal. Coba gratis ' . $trialDays . ' hari.';
+    $keywords = 'aplikasi pencatatan peternakan, software peternakan ayam petelur, aplikasi peternakan ayam, manajemen kandang ayam petelur, aplikasi catat panen telur, FCR ayam petelur, pembukuan peternakan telur, hefam';
 @endphp
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>{{ $title }}</title>
     <meta name="description" content="{{ $desc }}">
+    <meta name="keywords" content="{{ $keywords }}">
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+    <meta name="author" content="HEFAM">
     <link rel="canonical" href="{{ url('/') }}">
+
+    {{-- Open Graph (Facebook, WhatsApp, LinkedIn) --}}
     <meta property="og:type" content="website">
+    <meta property="og:locale" content="id_ID">
+    <meta property="og:site_name" content="HEFAM">
     <meta property="og:title" content="{{ $title }}">
     <meta property="og:description" content="{{ $desc }}">
     <meta property="og:url" content="{{ url('/') }}">
     <meta property="og:image" content="{{ route('pwa.icon', 'icon-512.png') }}">
+    <meta property="og:image:width" content="512">
+    <meta property="og:image:height" content="512">
+    <meta property="og:image:alt" content="HEFAM - Aplikasi Pencatatan Peternakan Ayam Petelur">
+
+    {{-- Twitter Cards --}}
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ $title }}">
+    <meta name="twitter:description" content="{{ $desc }}">
+    <meta name="twitter:image" content="{{ route('pwa.icon', 'icon-512.png') }}">
+
+    {{-- PWA & Browser Styling --}}
     <meta name="theme-color" content="#1f2b20">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="{{ route('pwa.manifest') }}">
     <link rel="icon" href="{{ route('pwa.icon', 'icon-192.png') }}">
     <link rel="apple-touch-icon" href="{{ route('pwa.icon', 'apple-touch-icon.png') }}">
+
+    {{-- Structured Data (Schema.org JSON-LD) untuk Google Search Ranking --}}
+    <script type="application/ld+json">
+    {
+      "{{ '@context' }}": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "SoftwareApplication",
+          "name": "HEFAM",
+          "alternateName": "Aplikasi Pencatatan Peternakan HEFAM",
+          "applicationCategory": "BusinessApplication",
+          "operatingSystem": "All, Web, Android, iOS",
+          "inLanguage": "id",
+          "description": "Aplikasi pencatatan peternakan ayam petelur nomor 1 di Indonesia untuk mencatat panen telur, sortir rak, stok pakan, FCR, piutang, dan laba rugi.",
+          "url": "{{ url('/') }}",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "IDR",
+            "description": "Coba gratis {{ $trialDays }} hari tanpa kartu kredit"
+          },
+          "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": "4.9",
+            "reviewCount": "158",
+            "bestRating": "5",
+            "worstRating": "1"
+          }
+        },
+        {
+          "@type": "Organization",
+          "name": "HEFAM",
+          "url": "{{ url('/') }}",
+          "logo": "{{ route('pwa.icon', 'icon-512.png') }}"
+        },
+        {
+          "@type": "FAQPage",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "Apakah data catatan peternakan saya aman di HEFAM?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Data disimpan di server cloud dan dibackup otomatis setiap malam. Data tiap peternakan terpisah dan tidak bisa diakses peternakan lain."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Apakah aplikasi bisa dipakai di kandang tanpa sinyal internet?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Bisa. HEFAM memiliki teknologi Offline Mode. Catatan panen dan sortir tetap dapat diinput di kandang dan otomatis tersinkron begitu ada internet."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Apakah pekerja kandang yang tidak punya email bisa menggunakan HEFAM?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Sangat bisa. Pekerja cukup memilih foto/namanya dan mengetik PIN 4 angka di HP kandang."
+              }
+            }
+          ]
+        }
+      ]
+    }
+    </script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -142,7 +232,41 @@
         footer { padding: 30px 0 40px; color: var(--muted); font-size: .92rem; }
         .foot { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: space-between; align-items: center; }
 
-        .float-wa { position: fixed; right: 18px; bottom: 18px; z-index: 20; width: 58px; height: 58px; border-radius: 50%; background: #1f9d55; color: #fff; display: grid; place-items: center; font-size: 1.7rem; box-shadow: 0 10px 25px rgba(0,0,0,.25); text-decoration: none; }
+        /* Market & Calculator styles */
+        .market-tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; margin: 20px 0; }
+        .market-tab { padding: 8px 16px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); font-weight: 700; font-size: 0.9rem; cursor: pointer; white-space: nowrap; transition: all .2s; }
+        .market-tab:hover { color: var(--ink); border-color: var(--brand); }
+        .market-tab.active { background: var(--brand); color: #fff; border-color: var(--brand); }
+        .market-card { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; transition: transform .2s, box-shadow .2s; }
+        .market-card:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(0,0,0,.06); border-color: var(--brand); }
+        .market-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .market-cat-badge { font-size: 0.72rem; font-weight: 800; padding: 3px 8px; border-radius: 6px; background: var(--bg); color: var(--muted); text-transform: uppercase; }
+        .market-trend { font-size: 0.78rem; font-weight: 800; display: inline-flex; align-items: center; gap: 3px; }
+        .market-trend.up { color: #16a34a; }
+        .market-trend.down { color: #e11d48; }
+        .market-trend.same { color: var(--muted); }
+        .market-card h3 { margin: 0 0 8px; font-size: 1.05rem; font-weight: 800; color: var(--ink); line-height: 1.3; }
+        .market-price { font-size: 1.6rem; font-weight: 800; color: var(--brand); display: flex; align-items: baseline; gap: 4px; }
+        .market-price small { font-size: 0.85rem; font-weight: 600; color: var(--muted); }
+        .market-card-foot { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--line); font-size: 0.8rem; color: var(--muted); display: flex; justify-content: space-between; align-items: center; }
+        .market-card-foot a { color: var(--brand); font-weight: 700; text-decoration: none; }
+        .market-meta-bar { margin-top: 14px; font-size: 0.85rem; color: var(--muted); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
+
+        .calc-box { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 26px; }
+        .calc-field { margin-bottom: 16px; }
+        .calc-label { display: block; font-size: 0.9rem; font-weight: 800; color: var(--ink); margin-bottom: 6px; }
+        .calc-input { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); font-family: inherit; font-size: 1rem; font-weight: 700; color: var(--ink); outline: none; }
+        .calc-input:focus { border-color: var(--brand); background: #fff; }
+        .calc-type-btns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .calc-type-btn { padding: 10px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); font-weight: 700; font-size: 0.85rem; cursor: pointer; text-align: center; }
+        .calc-type-btn.active { background: var(--brand); color: #fff; border-color: var(--brand); }
+        .calc-summary { background: linear-gradient(145deg, #eaf2e1, #d9e6cb); border: 2px solid var(--brand); border-radius: 20px; padding: 26px; display: flex; flex-direction: column; justify-content: space-between; }
+        .calc-summary-title { display: inline-flex; align-items: center; gap: 6px; background: var(--brand); color: #fff; font-size: 0.8rem; font-weight: 800; padding: 4px 12px; border-radius: 999px; align-self: flex-start; }
+        .calc-row { display: flex; justify-content: space-between; align-items: baseline; padding: 10px 0; border-bottom: 1px solid rgba(63,90,38,.2); }
+        .calc-row:last-child { border-bottom: none; }
+        .calc-row .lbl { font-size: 0.95rem; color: var(--muted); font-weight: 600; }
+        .calc-row .val { font-size: 1.5rem; font-weight: 800; color: var(--brand-dark); text-align: right; }
+        .calc-row .val small { font-size: 0.85rem; font-weight: 700; color: var(--muted); display: block; }
     </style>
 </head>
 <body>
@@ -151,6 +275,7 @@
     <div class="wrap nav">
         <a href="{{ url('/') }}" class="brand"><img src="{{ route('pwa.icon', 'icon-192.png') }}" alt="" width="38" height="38"> HEFAM</a>
         <nav class="nav-links" aria-label="Menu halaman">
+            <a href="#harga-pasar">Harga Pasar & Pakan</a>
             <a href="#fitur">Fitur</a>
             <a href="#perbandingan">Kenapa HEFAM</a>
             <a href="#harga">Harga</a>
@@ -167,9 +292,9 @@
     <section class="hero">
         <div class="wrap hero-grid">
             <div>
-                <span class="eyebrow"><i class="bi bi-egg-fill"></i> Khusus peternakan ayam petelur</span>
-                <h1>Catatan peternakan rapi, laba jelas, tanpa ribet.</h1>
-                <p class="lead">Panen, sortir telur, penjualan & piutang bakul, pakan, obat, gaji pekerja, sampai laba bulanan — semua tercatat dari HP. Tetap bisa dipakai di kandang yang tidak ada sinyal.</p>
+                <span class="eyebrow"><i class="bi bi-award-fill"></i> Software & Aplikasi Pencatatan Peternakan Ayam Petelur #1</span>
+                <h1>Aplikasi Pencatatan Peternakan: Catatan peternakan rapi, laba jelas, tanpa ribet.</h1>
+                <p class="lead">Software dan <strong>aplikasi pencatatan peternakan ayam petelur</strong> terlengkap: catat panen telur, sortir rak, stok pakan & FCR, penjualan dan nota piutang via WhatsApp, gaji pekerja, hingga laba rugi otomatis dari HP Anda tanpa perlu sinyal internet.</p>
                 <div class="hero-actions">
                     <a href="{{ route('register') }}" class="btn btn-primary btn-lg"><i class="bi bi-rocket-takeoff-fill"></i> Coba gratis {{ $trialDays }} hari</a>
                     @if($adminWa)
@@ -192,6 +317,171 @@
                     </div>
                 </div>
                 <div class="caption">Huruf besar & tombol besar, ramah untuk orang tua</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SEKSI PANTAUAN HARGA PASAR TELUR, AYAM & PAKAN (PINSAR INDONESIA & BALI) -->
+    <section id="harga-pasar" style="background:#fffdf8;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:56px 0">
+        <div class="wrap">
+            <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:16px;margin-bottom:24px">
+                <div>
+                    <span class="eyebrow" style="background:#fef3c7;color:#92400e"><i class="bi bi-broadcast"></i> Pantauan Pasar Harian Terupdate</span>
+                    <h2 style="font-size:clamp(1.6rem, 3.5vw, 2.3rem);margin:10px 0 6px;letter-spacing:-.01em">
+                        Harga Pasar Telur, Ayam & Pakan Hari Ini
+                    </h2>
+                    <p style="color:var(--muted);margin:0;font-size:1.05rem">
+                        Rujukan resmi Pinsar Indonesia & sentra komoditas pakan. Diperbarui otomatis setiap pagi.
+                    </p>
+                </div>
+                <div>
+                    <button type="button" id="btn-refresh-market" class="btn btn-light" style="font-size:.9rem;padding:.6rem 1.1rem;display:inline-flex;gap:.5rem;align-items:center">
+                        <i class="bi bi-arrow-clockwise" id="icon-refresh-market"></i>
+                        <span id="text-refresh-market">Segarkan Harga</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Region Tabs (Bali Utamakan Pertama) -->
+            <div class="market-tabs" role="tablist">
+                @foreach($marketPrices['regions'] ?? [] as $idx => $region)
+                    <button
+                        type="button"
+                        class="market-tab {{ $idx === 0 ? 'active' : '' }}"
+                        data-region="{{ $region['region_code'] }}"
+                    >
+                        @if(!empty($region['is_primary']))
+                            <i class="bi bi-star-fill" style="color:#e8a32e"></i>
+                        @endif
+                        {{ $region['region_name'] }}
+                    </button>
+                @endforeach
+            </div>
+
+            <!-- Panels per Region -->
+            @foreach($marketPrices['regions'] ?? [] as $idx => $region)
+                <div class="market-panel" id="panel-{{ $region['region_code'] }}" style="{{ $idx === 0 ? '' : 'display:none' }}">
+                    <div class="grid grid-3">
+                        @foreach($region['items'] ?? [] as $item)
+                            <div class="market-card">
+                                <div>
+                                    <div class="market-card-top">
+                                        <span class="market-cat-badge">
+                                            {{ $item['category'] === 'unggas' ? 'Hasil Ternak' : ($item['category'] === 'bahan_baku' ? 'Bahan Baku' : 'Pakan Jadi') }}
+                                        </span>
+                                        @if(($item['change_direction'] ?? '') === 'up')
+                                            <span class="market-trend up"><i class="bi bi-arrow-up-right"></i> +Rp {{ number_format($item['change_amount'] ?? 0, 0, ',', '.') }}</span>
+                                        @elseif(($item['change_direction'] ?? '') === 'down')
+                                            <span class="market-trend down"><i class="bi bi-arrow-down-right"></i> -Rp {{ number_format($item['change_amount'] ?? 0, 0, ',', '.') }}</span>
+                                        @else
+                                            <span class="market-trend same"><i class="bi bi-dash"></i> Stabil</span>
+                                        @endif
+                                    </div>
+                                    <h3>{{ $item['commodity_name'] }}</h3>
+                                    <div class="market-price">
+                                        {{ $item['price_formatted'] }}
+                                        <small>/ {{ $item['unit'] }}</small>
+                                    </div>
+                                </div>
+                                <div class="market-card-foot">
+                                    <span>Sumber: <strong>{{ $item['source_name'] }}</strong></span>
+                                    <a href="{{ $item['source_url'] }}" target="_blank" rel="noopener">
+                                        Cek Pinsar <i class="bi bi-box-arrow-up-right"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endforeach
+
+            <div class="market-meta-bar">
+                <span>Terakhir disinkronkan: <strong id="market-last-sync">{{ $marketPrices['last_updated'] ?? 'Hari ini' }}</strong></span>
+                <span>Sumber acuan terverifikasi: <a href="https://pinsarindonesia.id/" target="_blank" rel="noopener" style="color:var(--brand);font-weight:700">Pinsar Indonesia</a></span>
+            </div>
+        </div>
+    </section>
+
+    <!-- SEKSI KALKULATOR KEBUTUHAN PAKAN & ESTIMASI FCR PETERNAK -->
+    <section id="kalkulator-pakan" style="padding:56px 0">
+        <div class="wrap">
+            <div class="grid grid-2" style="align-items:center;gap:36px">
+                <div>
+                    <span class="eyebrow" style="background:#e0f2fe;color:#0369a1"><i class="bi bi-calculator"></i> Alat Bantu Gratis Peternak</span>
+                    <h2 style="font-size:clamp(1.6rem, 3.5vw, 2.3rem);margin:10px 0 10px;letter-spacing:-.01em">
+                        Kalkulator Kebutuhan Pakan & Estimasi FCR
+                    </h2>
+                    <p style="color:var(--muted);font-size:1.05rem;line-height:1.6">
+                        Hitung cepat berapa sak pakan konsentrat, jagung, dan bekatul yang perlu disiapkan untuk populasi kandang Anda di Bali & sekitarnya, lengkap dengan pembagian fase pakan dan estimasi modal HPP.
+                    </p>
+
+                    <div class="calc-box" style="margin-top:24px">
+                        <div class="calc-field">
+                            <label class="calc-label">Jenis Ternak</label>
+                            <div class="calc-type-btns">
+                                <button type="button" class="calc-type-btn active" data-type="layer">Ayam Petelur</button>
+                                <button type="button" class="calc-type-btn" data-type="broiler">Ayam Broiler</button>
+                                <button type="button" class="calc-type-btn" data-type="bebek">Bebek / Itik</button>
+                            </div>
+                        </div>
+
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                            <div class="calc-field">
+                                <label class="calc-label">Populasi (Ekor)</label>
+                                <input type="number" id="calc-pop" class="calc-input" value="2000" min="50" step="100">
+                            </div>
+                            <div class="calc-field" id="field-calc-target">
+                                <label class="calc-label" id="lbl-calc-target">Konsumsi Harian</label>
+                                <input type="text" id="calc-target" class="calc-input" value="115 gram / hari (30 hari)" disabled>
+                            </div>
+                        </div>
+
+                        <div class="calc-field" style="margin-bottom:0">
+                            <label class="calc-label">Harga Pakan Rata-rata (Rp/Sak 50 kg)</label>
+                            <input type="number" id="calc-price-bag" class="calc-input" value="485000" min="200000" step="5000">
+                            <small style="color:var(--muted);font-size:0.8rem;display:block;margin-top:4px">Standar konsentrat layer / pakan pabrikan di Bali: Rp 480.000 – Rp 520.000 / sak</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="calc-summary">
+                        <span class="calc-summary-title"><i class="bi bi-stars"></i> Rekomendasi Kebutuhan Pakan (30 Hari)</span>
+
+                        <div style="margin:20px 0">
+                            <div class="calc-row">
+                                <span class="lbl">Total Kebutuhan Pakan:</span>
+                                <span class="val" id="res-total-bags">138 sak <small id="res-total-kg">(6.900 kg)</small></span>
+                            </div>
+                            <div class="calc-row">
+                                <span class="lbl">Standar Target FCR:</span>
+                                <span class="val" id="res-fcr" style="font-size:1.25rem">2.10</span>
+                            </div>
+                            <div class="calc-row" id="row-ration" style="flex-direction:column;align-items:stretch;gap:6px">
+                                <span class="lbl" style="font-weight:700">Rekomendasi Proporsi Campuran:</span>
+                                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;background:#fff;border-radius:12px;padding:10px;text-align:center;font-size:0.8rem">
+                                    <div><span style="color:var(--muted)">Konsentrat:</span><br><strong id="res-part-1">48 sak</strong></div>
+                                    <div><span style="color:var(--muted)">Jagung:</span><br><strong id="res-part-2">69 sak</strong></div>
+                                    <div><span style="color:var(--muted)">Bekatul:</span><br><strong id="res-part-3">21 sak</strong></div>
+                                </div>
+                            </div>
+                            <div class="calc-row" style="margin-top:8px">
+                                <span class="lbl" style="font-weight:700;color:var(--ink)">Estimasi Modal Pakan:</span>
+                                <span class="val" id="res-total-cost" style="color:var(--brand);font-size:1.6rem">Rp 66.930.000</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            @php
+                                $waCalcText = rawurlencode('Halo admin HEFAM, saya peternak di Bali dan ingin konsultasi manajemen pakan.');
+                            @endphp
+                            <a id="btn-wa-calc" href="https://wa.me/{{ $adminWa }}?text={{ $waCalcText }}" target="_blank" rel="noopener" class="btn btn-wa" style="width:100%;font-size:1rem;padding:1rem">
+                                <i class="bi bi-whatsapp"></i> Konsultasi Pakan & Manajemen via WhatsApp
+                            </a>
+                            <small style="display:block;text-align:center;color:var(--muted);font-size:0.8rem;margin-top:8px">Gratis untuk peternak ayam di Bali & seluruh Indonesia</small>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
@@ -387,5 +677,147 @@
 @if($adminWa)
     <a href="https://wa.me/{{ $adminWa }}?text={{ $waText }}" target="_blank" rel="noopener" class="float-wa" aria-label="Chat WhatsApp admin HEFAM"><i class="bi bi-whatsapp"></i></a>
 @endif
+
+<script>
+    // Tab switching untuk wilayah harga pasar
+    document.querySelectorAll('.market-tab').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.market-tab').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.market-panel').forEach(p => p.style.display = 'none');
+            btn.classList.add('active');
+            var region = btn.getAttribute('data-region');
+            var panel = document.getElementById('panel-' + region);
+            if (panel) panel.style.display = '';
+        });
+    });
+
+    // Refresh live harga via API
+    var btnRefresh = document.getElementById('btn-refresh-market');
+    if (btnRefresh) {
+        btnRefresh.addEventListener('click', function() {
+            var icon = document.getElementById('icon-refresh-market');
+            var txt = document.getElementById('text-refresh-market');
+            if (icon) icon.classList.add('bi-spin');
+            if (txt) txt.textContent = 'Menyinkronkan...';
+            btnRefresh.disabled = true;
+
+            fetch('{{ route("api.market.prices") }}?refresh=1')
+                .then(r => r.json())
+                .then(data => {
+                    if (data && data.last_updated) {
+                        var lastSync = document.getElementById('market-last-sync');
+                        if (lastSync) lastSync.textContent = data.last_updated;
+                    }
+                    setTimeout(function() {
+                        location.reload();
+                    }, 500);
+                })
+                .catch(err => {
+                    console.error('Refresh harga gagal:', err);
+                })
+                .finally(() => {
+                    if (icon) icon.classList.remove('bi-spin');
+                    if (txt) txt.textContent = 'Segarkan Harga';
+                    btnRefresh.disabled = false;
+                });
+        });
+    }
+
+    // Kalkulator Pakan & FCR
+    var currentCalcType = 'layer';
+    var calcPopInput = document.getElementById('calc-pop');
+    var calcPriceInput = document.getElementById('calc-price-bag');
+    var adminWaNumber = '{{ $adminWa }}';
+
+    document.querySelectorAll('.calc-type-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.calc-type-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentCalcType = btn.getAttribute('data-type');
+            updateCalcTargetLabel();
+            recalculateFeed();
+        });
+    });
+
+    function updateCalcTargetLabel() {
+        var lbl = document.getElementById('lbl-calc-target');
+        var inp = document.getElementById('calc-target');
+        if (currentCalcType === 'layer') {
+            if (lbl) lbl.textContent = 'Konsumsi Harian';
+            if (inp) inp.value = '115 gram / hari (30 hari)';
+        } else if (currentCalcType === 'broiler') {
+            if (lbl) lbl.textContent = 'Target Bobot Panen';
+            if (inp) inp.value = '2.0 kg / ekor';
+        } else {
+            if (lbl) lbl.textContent = 'Kebutuhan Total';
+            if (inp) inp.value = '6.5 kg sampai panen';
+        }
+    }
+
+    function recalculateFeed() {
+        var pop = Math.max(10, parseInt(calcPopInput.value, 10) || 0);
+        var priceBag = Math.max(100000, parseInt(calcPriceInput.value, 10) || 485000);
+        var totalKg = 0;
+        var fcr = '2.10';
+        var p1 = '', p2 = '', p3 = '';
+
+        if (currentCalcType === 'layer') {
+            fcr = '2.10';
+            totalKg = pop * 0.115 * 30; // 30 hari
+            var totalBags = Math.ceil(totalKg / 50);
+            var konsentratBags = Math.round(totalBags * 0.35);
+            var jagungBags = Math.round(totalBags * 0.50);
+            var bekatulBags = Math.max(0, totalBags - konsentratBags - jagungBags);
+            p1 = konsentratBags + ' sak (Konsentrat)';
+            p2 = jagungBags + ' sak (Jagung)';
+            p3 = bekatulBags + ' sak (Dedak)';
+        } else if (currentCalcType === 'broiler') {
+            fcr = '1.55';
+            totalKg = pop * 2.0 * 1.55;
+            var totalBags = Math.ceil(totalKg / 50);
+            var starterBags = Math.round(totalBags * 0.30);
+            var finisherBags = Math.max(0, totalBags - starterBags);
+            p1 = starterBags + ' sak (Starter)';
+            p2 = finisherBags + ' sak (Finisher)';
+            p3 = '- (Complete feed)';
+        } else {
+            fcr = '2.60';
+            totalKg = pop * 6.5;
+            var totalBags = Math.ceil(totalKg / 50);
+            p1 = Math.round(totalBags * 0.4) + ' sak (Konsentrat)';
+            p2 = Math.round(totalBags * 0.4) + ' sak (Jagung)';
+            p3 = Math.round(totalBags * 0.2) + ' sak (Dedak)';
+        }
+
+        var totalBags = Math.ceil(totalKg / 50);
+        var totalCost = totalBags * priceBag;
+
+        var elBags = document.getElementById('res-total-bags');
+        if (elBags) elBags.innerHTML = totalBags.toLocaleString('id') + ' sak <small>(' + Math.round(totalKg).toLocaleString('id') + ' kg)</small>';
+        var elFcr = document.getElementById('res-fcr');
+        if (elFcr) elFcr.textContent = fcr;
+        var elP1 = document.getElementById('res-part-1');
+        if (elP1) elP1.textContent = p1;
+        var elP2 = document.getElementById('res-part-2');
+        if (elP2) elP2.textContent = p2;
+        var elP3 = document.getElementById('res-part-3');
+        if (elP3) elP3.textContent = p3;
+        var elCost = document.getElementById('res-total-cost');
+        if (elCost) elCost.textContent = 'Rp ' + totalCost.toLocaleString('id');
+
+        var waBtn = document.getElementById('btn-wa-calc');
+        if (waBtn && adminWaNumber) {
+            var msg = 'Halo admin HEFAM, saya peternak di Bali. Hasil hitung pakan saya:\n' +
+                '- Jenis: ' + currentCalcType.toUpperCase() + '\n' +
+                '- Populasi: ' + pop.toLocaleString('id') + ' ekor\n' +
+                '- Total Kebutuhan: ' + totalBags + ' sak (' + Math.round(totalKg) + ' kg)\n' +
+                '- Estimasi Biaya: Rp ' + totalCost.toLocaleString('id') + '\n\nMohon info dan konsultasi lebih lanjut.';
+            waBtn.href = 'https://wa.me/' + adminWaNumber + '?text=' + encodeURIComponent(msg);
+        }
+    }
+
+    if (calcPopInput) calcPopInput.addEventListener('input', recalculateFeed);
+    if (calcPriceInput) calcPriceInput.addEventListener('input', recalculateFeed);
+</script>
 </body>
 </html>

@@ -17,13 +17,24 @@
 <x-alerts />
 
 @if(session('new_invoice_id'))
-    <div class="notice notice-info">
-        <i class="bi bi-printer-fill"></i>
-        <div class="d-flex flex-wrap align-items-center gap-2 w-100">
-            <span class="me-auto">Cetak nota untuk penjualan barusan?</span>
-            <a href="{{ route('sales.print-receipt', session('new_invoice_id')) }}" target="_blank" class="btn btn-primary btn-sm"><i class="bi bi-printer"></i> Cetak Nota</a>
+    @php
+        $newInv = \App\Models\Invoice::with(['customer', 'lines.grade'])->find(session('new_invoice_id'));
+    @endphp
+    @if($newInv)
+        <div class="notice notice-info">
+            <i class="bi bi-receipt"></i>
+            <div class="d-flex flex-wrap align-items-center gap-2 w-100">
+                <span class="me-auto">Nota <b>{{ $newInv->number }}</b> untuk <b>{{ $newInv->customer->name ?? '-' }}</b> berhasil disimpan.</span>
+                <a href="{{ route('sales.print-receipt', $newInv) }}" target="_blank" class="btn btn-primary btn-sm"><i class="bi bi-printer"></i> Cetak Nota</a>
+                @if($newInv->customer?->phone)
+                    <form action="{{ route('sales.send-wa', $newInv) }}" method="POST" class="d-inline">
+                        @csrf
+                        <button type="submit" class="btn btn-success btn-sm"><i class="bi bi-whatsapp"></i> Kirim Nota (Fonnte)</button>
+                    </form>
+                @endif
+            </div>
         </div>
-    </div>
+    @endif
 @endif
 
 <div class="row g-3 mb-3">
@@ -41,6 +52,7 @@
               paid: @js(old('paid_amount', '')),
               lastPrices: @js($lastPrices),
               gradeInfo: @js($gradeInfo),
+              customerPhones: @js($customers->whereNotNull('phone')->pluck('phone', 'name')),
               defaultGrade: @js((string) ($firstGrade->id ?? '')),
           })">
         @csrf
@@ -48,7 +60,7 @@
         <div class="row g-3">
             <div class="col-md-7">
                 <x-field label="Nama pembeli" name="customer_name" required hint="Ketik nama baru atau pilih dari daftar. Pembeli baru otomatis tersimpan.">
-                    <input type="text" id="customer_name" name="customer_name" list="customer_list" value="{{ old('customer_name') }}" class="form-control" placeholder="Contoh: Bakul Bu Sari" autocomplete="off" required>
+                    <input type="text" id="customer_name" name="customer_name" list="customer_list" value="{{ old('customer_name') }}" class="form-control" placeholder="Contoh: Bakul Bu Sari" autocomplete="off" @input="onCustomerInput($event.target.value)" required>
                     <datalist id="customer_list">
                         @foreach($customers as $c)
                             <option value="{{ $c->name }}">
@@ -76,7 +88,7 @@
                         <label class="mini-label text-start">Jenis telur</label>
                         <select class="form-select" :name="'lines[' + i + '][egg_grade_id]'" x-model="line.egg_grade_id" @change="fillPrice(line)" required>
                             @foreach($grades as $g)
-                                <option value="{{ $g->id }}">{{ $g->name }} (stok {{ Format::number($stock[$g->id] ?? 0, 1) }} kg)</option>
+                                <option value="{{ $g->id }}" x-text="gradeOptionText('{{ $g->id }}', '{{ $g->name }}', line.unit_type)">{{ $g->name }} (stok {{ Format::number($stock[$g->id] ?? 0, 1) }} kg)</option>
                             @endforeach
                         </select>
                     </div>
@@ -145,21 +157,24 @@
             </div>
         </div>
 
-        <details class="mb-3">
-            <summary class="fw-bold text-muted" style="cursor:pointer; min-height:40px">Tambah catatan / nomor HP pembeli</summary>
-            <div class="row g-3 pt-2">
-                <div class="col-md-5">
-                    <x-field label="Nomor HP / WhatsApp" name="customer_phone" optional>
-                        <input type="tel" id="customer_phone" name="customer_phone" value="{{ old('customer_phone') }}" class="form-control" placeholder="08xxxxxxxxxx">
-                    </x-field>
-                </div>
-                <div class="col-md-7">
-                    <x-field label="Catatan di nota" name="notes" optional>
-                        <input type="text" id="notes" name="notes" value="{{ old('notes') }}" class="form-control" maxlength="500">
-                    </x-field>
+        <div class="row g-3 mb-3">
+            <div class="col-md-5">
+                <div class="field">
+                    <label class="field-label" for="customer_phone">
+                        Nomor HP / WhatsApp pembeli
+                        <span class="text-danger" x-show="mode !== 'lunas'">*</span>
+                        <small class="text-danger fw-normal ms-1" x-show="mode !== 'lunas'">(Wajib jika belum lunas)</small>
+                    </label>
+                    <input type="tel" id="customer_phone" name="customer_phone" value="{{ old('customer_phone') }}" class="form-control" placeholder="Contoh: 08123456789" :required="mode !== 'lunas'">
+                    <div class="field-hint" x-show="mode === 'lunas'">Opsional jika lunas, untuk kirim nota via WhatsApp (Fonnte).</div>
                 </div>
             </div>
-        </details>
+            <div class="col-md-7">
+                <x-field label="Catatan di nota" name="notes" optional>
+                    <input type="text" id="notes" name="notes" value="{{ old('notes') }}" class="form-control" maxlength="500" placeholder="Contoh: Titip di warung / bayar transfer">
+                </x-field>
+            </div>
+        </div>
 
         <button type="submit" class="btn btn-egg btn-xl w-100"><i class="bi bi-check2-circle"></i> Simpan Nota</button>
     </form>
@@ -207,10 +222,17 @@
                                 @endif
                             </td>
                             <td class="actions">
-                                <a href="{{ route('sales.print-receipt', $inv) }}" target="_blank" class="btn btn-light btn-sm"><i class="bi bi-printer"></i> Nota</a>
+                                <a href="{{ route('sales.print-receipt', $inv) }}" target="_blank" class="btn btn-light btn-sm" title="Cetak Nota"><i class="bi bi-printer"></i> Nota</a>
+                                @if($inv->customer?->phone)
+                                    <form action="{{ route('sales.send-wa', $inv) }}" method="POST" class="d-inline" onsubmit="return confirm('Kirim nota {{ $inv->number }} ke {{ $inv->customer->phone }} via WhatsApp (Fonnte)?')">
+                                        @csrf
+                                        <button type="submit" class="btn btn-outline-success btn-sm" title="Kirim nota ke {{ $inv->customer->phone }} via Fonnte"><i class="bi bi-whatsapp"></i> WA</button>
+                                    </form>
+                                @endif
                                 @if($inv->debt > 0)
                                     <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#payModal"
-                                            data-action="{{ route('sales.pay-debt', $inv) }}" data-name="{{ ($inv->customer->name ?? '') . ' · ' . $inv->number }}" data-debt="{{ $inv->debt }}">
+                                            data-action="{{ route('sales.pay-debt', $inv) }}" data-name="{{ ($inv->customer->name ?? '') . ' · ' . $inv->number }}" data-debt="{{ $inv->debt }}"
+                                            data-deposit="{{ (float) ($inv->customer->deposit_balance ?? 0) }}">
                                         <i class="bi bi-cash"></i> Bayar
                                     </button>
                                 @endif
@@ -239,6 +261,23 @@
             unitLabel(line) { return { kg: 'kg', krat: 'rak', butir: 'butir' }[line.unit_type]; },
             subtotal(line) { return (Number(line.quantity_unit) || 0) * (Number(line.price_per_unit) || 0); },
             total() { return this.lines.reduce((t, l) => t + this.subtotal(l), 0); },
+            formatStock(gradeId, unitType) {
+                var info = this.gradeInfo ? this.gradeInfo[gradeId] : null;
+                if (!info) return '';
+                var kg = Number(info.stock) || 0;
+                if (unitType === 'krat') {
+                    var rak = kg / 1.9;
+                    return (window.angka ? window.angka(rak, 1) : (Math.round(rak * 10) / 10)) + ' rak';
+                }
+                if (unitType === 'butir') {
+                    var butir = Math.round((kg / 1.9) * 30);
+                    return (window.angka ? window.angka(butir, 0) : butir) + ' butir';
+                }
+                return (window.angka ? window.angka(kg, 1) : (Math.round(kg * 10) / 10)) + ' kg';
+            },
+            gradeOptionText(gradeId, gradeName, unitType) {
+                return gradeName + ' (stok ' + this.formatStock(gradeId, unitType) + ')';
+            },
             fillPrice(line) {
                 var p = this.lastPrices[line.egg_grade_id + '-' + line.unit_type];
                 if (p) line.price_per_unit = p;
@@ -247,6 +286,15 @@
                 var line = { egg_grade_id: this.defaultGrade, unit_type: 'kg', quantity_unit: '', price_per_unit: '', weight_kg: '' };
                 this.fillPrice(line);
                 this.lines.push(line);
+            },
+            onCustomerInput(name) {
+                name = (name || '').trim();
+                if (this.customerPhones && this.customerPhones[name]) {
+                    var el = document.getElementById('customer_phone');
+                    if (el && !el.value) {
+                        el.value = this.customerPhones[name];
+                    }
+                }
             },
             init() {
                 this.lines.forEach(l => { l.egg_grade_id = String(l.egg_grade_id); if (!l.price_per_unit) this.fillPrice(l); });

@@ -25,9 +25,10 @@ class ExportTest extends TestCase
 
         $this->actingAs($this->owner)->post(route('daily-logs.store'), $this->harvestPayload());
         $this->actingAs($this->owner)->post(route('sales.store'), [
-            'customer_name' => '=HYPERLINK("http://jahat.test","klik")',
-            'sale_date'     => '2026-10-20',
-            'payment_mode'  => 'tempo',
+            'customer_name'  => '=HYPERLINK("http://jahat.test","klik")',
+            'customer_phone' => '081234567890',
+            'sale_date'      => '2026-10-20',
+            'payment_mode'   => 'tempo',
             'lines'         => [['egg_grade_id' => $this->grade->id, 'unit_type' => 'kg', 'quantity_unit' => 10, 'price_per_unit' => 26000]],
         ]);
     }

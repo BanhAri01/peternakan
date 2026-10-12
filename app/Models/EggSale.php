@@ -27,12 +27,14 @@ class EggSale extends Model
         'debt_amount',
         'payment_status',
         'due_date',
+        'last_reminded_at',
         'notes',
     ];
 
     protected $casts = [
         'sale_date' => \App\Casts\DateOnly::class,
         'due_date'  => \App\Casts\DateOnly::class,
+        'last_reminded_at' => 'datetime',
     ];
 
     public const UNITS = [

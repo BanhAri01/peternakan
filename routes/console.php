@@ -49,8 +49,20 @@ Artisan::command('hefam:pengingat {waktu : pagi atau sore} {--farm= : id peterna
     return 0;
 })->purpose('Kirim pengingat WhatsApp pagi/sore ke pemilik peternakan');
 
+Artisan::command('hefam:tagih-pelanggan {--farm= : id peternakan} {--paksa : kirim walau di luar jam 07:00-19:00 atau sudah diingatkan}', function (FarmReminders $reminders) {
+    $force = (bool) $this->option('paksa');
+    $results = $reminders->sendAllCustomerDueBills($this->option('farm') ? (int) $this->option('farm') : null, $force);
+
+    foreach ($results as $farmId => $res) {
+        $this->line('Peternakan #' . $farmId . ': ' . $res['status'] . ' (' . $res['sent'] . ' pesan ke pembeli)');
+    }
+
+    return 0;
+})->purpose('Kirim tagihan WhatsApp otomatis langsung ke pelanggan yang utangnya jatuh tempo (pukul 07.00 - 19.00)');
+
 Schedule::command('hefam:backup')->dailyAt('01:30')->withoutOverlapping();
 Schedule::command('model:prune', ['--model' => [ActivityLog::class]])->dailyAt('02:15');
+Schedule::command('hefam:tagih-pelanggan')->hourly()->between('07:00', '19:00')->withoutOverlapping();
 foreach (['pagi' => 'morning_at', 'sore' => 'evening_at'] as $kind => $key) {
     foreach (config('hefam.whatsapp.' . $key) as $time) {
         Schedule::command('hefam:pengingat ' . $kind)->dailyAt($time)->withoutOverlapping();

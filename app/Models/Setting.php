@@ -34,6 +34,7 @@ class Setting extends Model
         'wa_notify_medicine'  => '1',
         'wa_notify_harvest'   => '1',
         'wa_notify_sort'      => '1',
+        'wa_auto_customer_debt' => '1', // Tagih otomatis ke pembeli saat jatuh tempo (07:00-19:00)
         'hdp_warning'      => 70,    // HDP di bawah angka ini dianggap perlu perhatian
         'low_feed_days'    => 5,     // peringatan jika pakan tinggal sekian hari
         'receipt_paper'    => 'continuous', // ukuran kertas nota

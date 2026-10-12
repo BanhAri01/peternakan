@@ -8,11 +8,14 @@ use App\Models\Customer;
 use App\Models\EggGrade;
 use App\Models\EggSale;
 use App\Models\Invoice;
+use App\Models\Setting;
 use App\Services\EggStock;
+use App\Services\WhatsApp;
 use App\Support\Format;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class EggSaleController extends Controller
 {
@@ -59,7 +62,23 @@ class EggSaleController extends Controller
     {
         $data = $request->validate([
             'customer_name'          => 'required|string|max:255',
-            'customer_phone'         => 'nullable|string|max:30',
+            'customer_phone'         => [
+                'nullable',
+                Rule::requiredIf(function () use ($request) {
+                    if (! in_array($request->input('payment_mode'), ['sebagian', 'tempo'], true)) {
+                        return false;
+                    }
+                    if ($request->filled('customer_id')) {
+                        $c = Customer::find($request->input('customer_id'));
+                        if ($c && ! empty(trim((string) $c->phone))) {
+                            return false;
+                        }
+                    }
+                    return true;
+                }),
+                'string',
+                'max:30',
+            ],
             'sale_date'              => 'required|date|before_or_equal:today',
             'lines'                  => 'required|array|min:1|max:20',
             'lines.*.egg_grade_id'   => ['required', FarmRule::exists('egg_grades')],
@@ -72,6 +91,8 @@ class EggSaleController extends Controller
             'due_date'               => 'nullable|date',
             'notes'                  => 'nullable|string|max:500',
         ], [
+            'customer_phone.required'      => 'Nomor HP/WhatsApp pembeli wajib diisi jika pembayaran belum lunas atau utang.',
+            'customer_phone.required_if'   => 'Nomor HP/WhatsApp pembeli wajib diisi jika pembayaran belum lunas atau utang.',
             'paid_amount.required_if'      => 'Isi jumlah uang yang sudah diterima.',
             'sale_date.before_or_equal'    => 'Tanggal jual tidak boleh di masa depan.',
             'lines.required'               => 'Tambahkan minimal satu baris telur.',
@@ -155,20 +176,63 @@ class EggSaleController extends Controller
 
     public function payDebt(Request $request, Invoice $invoice)
     {
-        $debt = $invoice->debt;
+        $debt = (float) $invoice->debt;
+        $customer = $invoice->customer;
+
+        if ($request->boolean('use_deposit')) {
+            if (! $customer || (float) $customer->deposit_balance <= 0) {
+                return back()->with('danger', 'Pelanggan tidak memiliki saldo titip uang (deposit).');
+            }
+
+            $deduct = min($debt, (float) $customer->deposit_balance);
+            DB::transaction(function () use ($invoice, $customer, $deduct) {
+                $customer->useDeposit($deduct, $invoice, 'Potong saldo deposit untuk pelunasan nota ' . $invoice->number);
+                $invoice->applyPayment($deduct);
+            });
+
+            $left = $invoice->fresh()->debt;
+            $msg = 'Saldo deposit ' . Format::rupiah($deduct) . ' berhasil dipotong untuk nota ' . $invoice->number . '.';
+            if ($left > 0) {
+                $msg .= ' Sisa tagihan nota: ' . Format::rupiah($left) . '.';
+            } else {
+                $msg .= ' Nota sudah LUNAS.';
+            }
+
+            return back()->with('success', $msg);
+        }
 
         $request->validate([
-            'payment_add' => 'required|numeric|min:1|max:' . max(1, ceil($debt)),
-        ], [
-            'payment_add.max' => 'Pembayaran melebihi sisa tagihan (' . Format::rupiah($debt) . ').',
+            'payment_add' => 'required|numeric|min:1',
         ]);
 
-        $invoice->applyPayment(min($debt, (float) $request->payment_add));
+        $paymentAdd    = (float) $request->payment_add;
+        $payForInvoice = min($debt, $paymentAdd);
+        $overpayment   = max(0.0, $paymentAdd - $debt);
+        $customer      = $invoice->customer;
+
+        DB::transaction(function () use ($invoice, $customer, $payForInvoice, $overpayment) {
+            if ($payForInvoice > 0) {
+                $invoice->applyPayment($payForInvoice);
+            }
+
+            if ($overpayment > 0 && $customer) {
+                $customer->addDeposit(
+                    $overpayment,
+                    $invoice,
+                    'Kelebihan pembayaran nota ' . $invoice->number
+                );
+            }
+        });
+
         $left = $invoice->fresh()->debt;
 
-        $message = $left > 0
-            ? 'Pembayaran ' . Format::rupiah($request->payment_add) . ' dicatat. Sisa tagihan nota ' . $invoice->number . ': ' . Format::rupiah($left) . '.'
-            : 'Nota ' . $invoice->number . ' (' . ($invoice->customer->name ?? '') . ') sudah LUNAS.';
+        if ($overpayment > 0) {
+            $message = 'Pembayaran ' . Format::rupiah($paymentAdd) . ' dicatat. Nota ' . $invoice->number . ' LUNAS (terpotong ' . Format::rupiah($payForInvoice) . '). Kelebihan ' . Format::rupiah($overpayment) . ' otomatis dicatat ke Titip Uang / Saldo Deposit ' . ($customer->name ?? '') . '.';
+        } elseif ($left > 0) {
+            $message = 'Pembayaran ' . Format::rupiah($paymentAdd) . ' dicatat. Sisa tagihan nota ' . $invoice->number . ': ' . Format::rupiah($left) . '.';
+        } else {
+            $message = 'Nota ' . $invoice->number . ' (' . ($customer->name ?? '') . ') sudah LUNAS.';
+        }
 
         return back()->with('success', $message);
     }
@@ -193,10 +257,85 @@ class EggSaleController extends Controller
         $customer = Customer::whereRaw('LOWER(name) = ?', [mb_strtolower($name)])->first()
             ?? Customer::create(['name' => $name]);
 
-        if ($phone && !$customer->phone) {
+        if ($phone && $customer->phone !== $phone) {
             $customer->update(['phone' => $phone]);
         }
 
         return $customer;
+    }
+
+    public function sendReceiptWa(Invoice $invoice, WhatsApp $whatsApp)
+    {
+        $phone = $invoice->customer?->phone;
+        if (!$phone) {
+            return back()->with('danger', 'Nomor HP/WhatsApp pembeli belum tercatat pada nota ini.');
+        }
+
+        $message = self::makeWaMessage($invoice);
+
+        try {
+            $whatsApp->send($phone, $message);
+            if ($whatsApp->isLive()) {
+                return back()->with('success', 'Nota ' . $invoice->number . ' berhasil dikirim lewat WhatsApp (Fonnte) ke ' . $phone . '.');
+            }
+
+            return back()->with('success', 'Nota ' . $invoice->number . ' tercatat dikirim ke ' . $phone . ' (mode simulasi/log; isi FONNTE_TOKEN di .env untuk kirim sungguhan).');
+        } catch (\Throwable $e) {
+            return back()->with('danger', 'Gagal mengirim WhatsApp (Fonnte): ' . $e->getMessage());
+        }
+    }
+
+    public static function makeWaMessage(Invoice $invoice): string
+    {
+        $invoice->loadMissing(['customer', 'lines.grade']);
+
+        if ($invoice->customer) {
+            return $invoice->customer->buildDebtSummaryWaMessage($invoice);
+        }
+
+        $farmName     = Setting::get('farm_name', 'HEFAM');
+        $customerName = 'Pelanggan';
+        $date         = Format::date($invoice->sale_date);
+
+        $lines = [];
+        $lines[] = "*NOTA PENJUALAN TELUR*";
+        $lines[] = "*{$farmName}*";
+        $lines[] = "--------------------------------";
+        $lines[] = "No. Nota : {$invoice->number}";
+        $lines[] = "Tanggal  : {$date}";
+        $lines[] = "Pembeli  : {$customerName}";
+        $lines[] = "";
+        $lines[] = "*Rincian Pembelian:*";
+
+        foreach ($invoice->lines as $line) {
+            $gradeName = $line->grade?->name ?? 'Telur';
+            $qty       = Format::number($line->quantity_unit, 2);
+            $unit      = $line->unit_label;
+            $price     = Format::rupiah($line->price_per_unit);
+            $subtotal  = Format::rupiah($line->total_amount);
+            $lines[]   = "• {$gradeName}: {$qty} {$unit} × {$price} = {$subtotal}";
+        }
+
+        $lines[] = "";
+        $lines[] = "Total Tagihan : " . Format::rupiah($invoice->total);
+        if ($invoice->paid > 0) {
+            $lines[] = "Sudah Dibayar : " . Format::rupiah($invoice->paid);
+        }
+        if ($invoice->debt > 0) {
+            $lines[] = "*Sisa Utang*   : *" . Format::rupiah($invoice->debt) . "*";
+            if ($invoice->due_date) {
+                $lines[] = "Jatuh Tempo  : " . Format::date($invoice->due_date);
+            }
+        }
+        $lines[] = "Status       : " . $invoice->status_label;
+
+        if ($invoice->notes) {
+            $lines[] = "Catatan      : {$invoice->notes}";
+        }
+
+        $lines[] = "--------------------------------";
+        $lines[] = "Terima kasih telah berbelanja di {$farmName}.";
+
+        return implode("\n", $lines);
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
+use App\Services\WhatsApp;
 use Illuminate\Http\Request;
 
 class CustomerController extends Controller
@@ -43,7 +44,9 @@ class CustomerController extends Controller
             ->whereHas('lines', fn ($q) => $q->where('debt_amount', '>', 0))
             ->orderBy('sale_date')->get();
 
-        return view('customers.show', compact('customer', 'invoices', 'stats', 'unpaid'));
+        $deposits = $customer->deposits()->with('invoice')->latest()->limit(10)->get();
+
+        return view('customers.show', compact('customer', 'invoices', 'stats', 'unpaid', 'deposits'));
     }
 
     public function edit(Customer $customer)
@@ -62,5 +65,26 @@ class CustomerController extends Controller
         $customer->update($data);
 
         return redirect()->route('customers.show', $customer)->with('success', 'Data pelanggan berhasil disimpan.');
+    }
+
+    public function sendDebtWa(Customer $customer, WhatsApp $whatsApp)
+    {
+        $phone = $customer->phone;
+        if (!$phone) {
+            return back()->with('danger', 'Nomor HP/WhatsApp pelanggan belum diisi.');
+        }
+
+        $message = $customer->buildDebtSummaryWaMessage();
+
+        try {
+            $whatsApp->send($phone, $message);
+            if ($whatsApp->isLive()) {
+                return back()->with('success', 'Rincian tagihan & utang berhasil dikirim lewat WhatsApp (Fonnte) ke ' . $phone . '.');
+            }
+
+            return back()->with('success', 'Rincian tagihan & utang tercatat dikirim ke ' . $phone . ' (mode simulasi/log; isi FONNTE_TOKEN di .env untuk kirim sungguhan).');
+        } catch (\Throwable $e) {
+            return back()->with('danger', 'Gagal mengirim WhatsApp (Fonnte): ' . $e->getMessage());
+        }
     }
 }

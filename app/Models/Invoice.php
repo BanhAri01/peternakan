@@ -17,11 +17,12 @@ class Invoice extends Model
 {
     use BelongsToFarm, SoftDeletes, RecordsActivity;
 
-    protected $fillable = ['number', 'customer_id', 'sale_date', 'due_date', 'notes', 'created_by'];
+    protected $fillable = ['number', 'customer_id', 'sale_date', 'due_date', 'last_reminded_at', 'notes', 'created_by'];
 
     protected $casts = [
         'sale_date' => \App\Casts\DateOnly::class,
         'due_date'  => \App\Casts\DateOnly::class,
+        'last_reminded_at' => 'datetime',
     ];
 
     public function lines()
