@@ -33,7 +33,12 @@ return [
     ],
 
     'assistant' => [
+        // claude = Claude API (produksi) | demo = mesin demo offline tanpa biaya (uji lokal)
+        'driver'         => env('HEFAM_AI_DRIVER', 'claude'),
         'api_key'        => env('ANTHROPIC_API_KEY'),
+        // Token Fonnte khusus nomor asisten (kosong = pakai FONNTE_TOKEN)
+        'fonnte_token'   => env('HEFAM_AI_FONNTE_TOKEN'),
+        'max_phones'     => 5,
         'timeout'        => (float) env('HEFAM_AI_TIMEOUT', 60),
         'webhook_secret' => env('HEFAM_AI_WEBHOOK_SECRET'),
         'wa_device'      => env('HEFAM_AI_WA_DEVICE'),

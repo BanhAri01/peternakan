@@ -26,6 +26,12 @@ class AppServiceProvider extends ServiceProvider
             'midtrans' => new MidtransGateway(config('services.midtrans')),
             default    => new FakeGateway(),
         });
+
+        // Mesin Asisten Kandang
+        $this->app->singleton(\App\Assistant\Llm::class, fn () => match (config('hefam.assistant.driver')) {
+            'demo'  => new \App\Assistant\DemoLlm(),
+            default => new \App\Assistant\ClaudeLlm(),
+        });
     }
 
     /**

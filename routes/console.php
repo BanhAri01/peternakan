@@ -86,3 +86,52 @@ Artisan::command('hefam:admin {email} {name=Admin HEFAM}', function (string $ema
     $this->line('Kata sandi baru: ' . $password);
     $this->comment('Simpan kata sandi ini di tempat aman, lalu masuk lewat halaman login.');
 })->purpose('Buat atau atur ulang akun admin HEFAM');
+
+// Uji coba dan demo interaktif Asisten Kandang (AI) langsung dari terminal
+Artisan::command('hefam:asisten {pertanyaan? : Pertanyaan tentang kandang} {--farm= : ID peternakan} {--mode= : Mode quick atau deep} {--driver= : Driver claude atau demo}', function () {
+    $farmId = $this->option('farm');
+    $farm = $farmId ? \App\Models\Farm::find($farmId) : \App\Models\Farm::where('status', 'active')->first();
+
+    if (!$farm) {
+        $this->error('Tidak ada peternakan aktif.');
+        return 1;
+    }
+
+    if ($driver = $this->option('driver')) {
+        config(['hefam.assistant.driver' => $driver]);
+    }
+
+    $question = $this->argument('pertanyaan');
+    if (!$question) {
+        $question = $this->ask('Apa yang ingin Anda tanyakan ke Asisten Kandang?');
+    }
+
+    if (!$question) {
+        $this->warn('Pertanyaan tidak boleh kosong.');
+        return 1;
+    }
+
+    $owner = $farm->owner;
+    $this->info("🤖 Menghubungi Asisten Kandang untuk: {$farm->name}...");
+    $start = microtime(true);
+
+    /** @var \App\Assistant\Agent $agent */
+    $agent = app(\App\Assistant\Agent::class);
+    $answer = $agent->ask($farm, $question, \App\Assistant\Agent::WEB, $owner, null, $this->option('mode'));
+    $elapsed = round(microtime(true) - $start, 2);
+
+    $this->newLine();
+    $this->line("<fg=cyan;options=bold>Jawaban Asisten:</>");
+    $this->line($answer->text);
+    $this->newLine();
+
+    $this->line("────────────────────────────────────────────────────────────");
+    $this->line("Status       : " . $answer->status . " | Mode: " . ($answer->mode ?? 'auto'));
+    $this->line("Alat Dipakai : " . ($answer->tools ? implode(', ', $answer->tools) : '-'));
+    $this->line("Biaya Token  : Rp " . number_format($answer->cost, 2, ',', '.') . " | Waktu: {$elapsed}s");
+
+    $quota = \App\Assistant\Quota::for($farm);
+    $this->line("Sisa Pulsa   : {$quota->percentLeft()}% (±{$quota->questionsLeft()} pertanyaan lagi)");
+    return 0;
+})->purpose('Uji coba dan tanya langsung ke Asisten Kandang AI');
+

@@ -11,6 +11,7 @@
     $menu = $isOwner ? [
         'Utama' => [
             ['route' => 'owner.dashboard', 'match' => 'owner.dashboard', 'icon' => 'bi-house-door-fill', 'label' => 'Beranda'],
+            ['route' => 'assistant.index', 'match' => 'assistant.*', 'icon' => 'bi-robot', 'label' => 'Asisten Kandang', 'feature' => 'assistant'],
         ],
         'Kegiatan Harian' => [
             ['route' => 'daily-logs.index', 'match' => 'daily-logs.index|daily-logs.edit', 'icon' => 'bi-journal-text', 'label' => 'Riwayat Panen'],

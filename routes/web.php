@@ -4,6 +4,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\BackupController;
 use App\Http\Controllers\Admin\FarmController as AdminFarmController;
 use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\AssistantController;
+use App\Http\Controllers\AssistantWebhookController;
 use App\Http\Controllers\FeedCountController;
 use App\Http\Controllers\FeedingController;
 use App\Http\Controllers\HomeController;
@@ -51,6 +53,7 @@ Route::get('/pwa/offline.js', [PwaController::class, 'script'])->name('pwa.scrip
 Route::get('/pwa/ikon/{name}', [PwaController::class, 'icon'])->name('pwa.icon');
 Route::get('/pwa/tanpa-sinyal', [PwaController::class, 'offline'])->name('pwa.offline');
 Route::post('/webhook/pembayaran', [SubscriptionController::class, 'webhook'])->middleware('throttle:120,1')->name('webhooks.payment');
+Route::post('/webhook/asisten/{secret}', AssistantWebhookController::class)->middleware('throttle:120,1')->name('webhooks.assistant');
 Route::get('/api/market-prices', function (\Illuminate\Http\Request $request, \App\Services\MarketPriceService $service) {
     if ($request->query('refresh') === '1') {
         $service->syncFromSource();
@@ -145,6 +148,14 @@ Route::middleware('auth')->group(function () {
     Route::middleware(['farm', 'role:owner'])->group(function () {
 
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('owner.dashboard');
+
+        // Asisten Kandang (paket Entrepreneur)
+        Route::middleware('feature:assistant')->group(function () {
+            Route::get('/asisten', [AssistantController::class, 'index'])->name('assistant.index');
+            Route::post('/asisten/tanya', [AssistantController::class, 'ask'])->middleware('throttle:20,1')->name('assistant.ask');
+            Route::post('/asisten/nomor', [AssistantController::class, 'storePhone'])->middleware('throttle:10,1')->name('assistant.phones.store');
+            Route::delete('/asisten/nomor/{assistantPhone}', [AssistantController::class, 'destroyPhone'])->name('assistant.phones.destroy');
+        });
 
         Route::get('/pakan/{feeding}/ubah', [FeedingController::class, 'edit'])->name('feedings.edit');
         Route::put('/pakan/{feeding}', [FeedingController::class, 'update'])->name('feedings.update');

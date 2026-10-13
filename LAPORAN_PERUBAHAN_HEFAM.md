@@ -6,9 +6,14 @@
 ---
 
 ## 1. Ringkasan Eksekutif
-Pembaruan ini mencakup integrasi fitur strategis untuk operasional peternakan komersial, modernisasi alur penagihan piutang, peluncuran portal mandiri pelanggan, sistem pengingat otomatis WhatsApp (Fonnte) dengan batasan jam operasional, kalkulator pakan/FCR, informasi harga pasar rujukan Pinsar Indonesia terfokus Bali, serta penguatan keamanan multi-tenancy.
+Pembaruan ini mencakup integrasi fitur strategis untuk operasional peternakan komersial:
+1. **Asisten Kandang (AI)** berbasis chat web interaktif dan WhatsApp (Fonnte API), dengan sistem pulsa kuota token, fungsi pembaca catatan kandang *read-only* anti-halusinasi, serta mode demo offline.
+2. Modernisasi alur penagihan piutang otomatis WhatsApp (Fonnte) dengan batasan jam operasional 07:00 – 19:00.
+3. Portal mandiri pelanggan tanpa login dengan token HMAC SHA-256.
+4. Modul titip uang / saldo deposit pelanggan dan pemotongan nota.
+5. Kalkulator pakan/FCR dan rujukan harga pasar harian Pinsar Indonesia (fokus Bali).
 
-Seluruh 235 skenario pengujian otomatis (**1.252 assertions**) dinyatakan **LULUS 100% (PASS)** tanpa kendala.
+Seluruh **247 skenario pengujian otomatis (1.297 assertions)** dinyatakan **LULUS 100% (PASS)** tanpa kendala.
 
 ---
 
@@ -90,7 +95,35 @@ Seluruh 235 skenario pengujian otomatis (**1.252 assertions**) dinyatakan **LULU
   - Target FCR standar komersial (1,95 – 2,15).
   - Tombol konsultasi cepat langsung ke WhatsApp peternakan.
 * **File Terkait**:
-  - `resources/views/landing.blade.php`
+### F. Modul Asisten Kandang (AI) untuk WhatsApp & Aplikasi Web
+* **Kebutuhan Lapangan**: Peternak dan orang tua sering kali tidak sempat membuka menu laptop/browser saat bekerja di kandang. Mereka membutuhkan asisten pintar di WhatsApp dan aplikasi yang hafal seluruh buku catatan kandang (telur, pakan, piutang, keuangan, kesehatan ayam) dalam bahasa sehari-hari.
+* **Fitur & Logika Bisnis**:
+  1. **Dua Saluran (Web Chat & WhatsApp Fonnte)**:
+     - Di aplikasi web (`/asisten`): Chat interaktif berbasis Alpine.js dengan pill contoh pertanyaan cepat, status pulsa waktu-nyata, dan kartu contekan siap cetak.
+     - Di WhatsApp: Menerima pertanyaan dari nomor WA terdaftar melalui webhook Fonnte (`/webhook/asisten/{secret}`) dan membalas via background queue job (`AnswerAssistantWhatsApp`).
+  2. **Model Ganda (Claude API Live & DemoLlm Offline)**:
+     - Driver `claude`: Menggunakan Anthropic Claude (Haiku untuk tanya cepat, Sonnet untuk analisis mendalam).
+     - Driver `demo`: Mesin demo offline cerdas yang meniru alur tool-calling tanpa memanggil API berbayar dan membaca data riil dari database peternakan.
+  3. **Keamanan Multi-Tenant & Anti-Halusinasi Keras**:
+     - `farm_id` selalu ditentukan dari user yang login atau nomor WhatsApp yang terdaftar di database, bukan dari isi prompt atau jawaban AI.
+     - Seluruh data agregasi (panen, pakan, piutang, gaji, keuangan) dihitung oleh SQL tool di backend Laravel (`FarmTools`). AI dilarang keras mengarang angka di luar hasil alat.
+     - Semua alat bersifat *read-only* (hanya membaca data).
+  4. **Sistem Kuota ("Pulsa Asisten")**:
+     - Ditampilkan sebagai persentase sederhana di layar pengguna (`Pulsa: 99% 🔋 ±623 pertanyaan lagi`).
+     - Token input/output dihitung presisi dan dikonversi ke Rupiah (`Pricing::cost`).
+     - Perintah gratis (menu, pulsa, salam) tidak memotong kuota dan tidak memanggil AI.
+     - Jika pulsa habis, sistem otomatis beralih ke balasan pintasan (*shortcuts*) berbasis aturan tanpa gagal (*graceful fallback*).
+  5. **Perintah CLI Artisan**:
+     - Tersedia perintah terminal `php artisan hefam:asisten "{pertanyaan}" --driver=demo` untuk pengujian dan demo langsung.
+* **File Terkait**:
+  - `app/Assistant/Agent.php` & `app/Assistant/AgentAnswer.php`
+  - `app/Assistant/FarmTools.php` & `app/Assistant/Shortcuts.php`
+  - `app/Assistant/ClaudeLlm.php` & `app/Assistant/DemoLlm.php`
+  - `app/Assistant/Quota.php` & `app/Assistant/Pricing.php`
+  - `app/Http/Controllers/AssistantController.php` & `app/Http/Controllers/AssistantWebhookController.php`
+  - `app/Jobs/AnswerAssistantWhatsApp.php`
+  - `resources/views/assistant/index.blade.php`
+  - `tests/Feature/AssistantTest.php`
 
 ---
 
@@ -98,6 +131,8 @@ Seluruh 235 skenario pengujian otomatis (**1.252 assertions**) dinyatakan **LULU
 
 | Kerentanan / Area Audit | Resiko Semula | Solusi & Mitigasi yang Diterapkan | Status |
 | :--- | :--- | :--- | :---: |
+| **Pemisahan Multi-Tenant Asisten AI** | Percobaan prompt injection untuk membaca data peternakan lain via chat. | Tenant `farm_id` diikat kuat ke nomor WA terdaftar di database atau session auth aktif. Tool query otomatis terisolasi ke tenant aktif. | **AMAN** |
+| **Autentikasi Webhook WhatsApp Asisten** | Akses unauthorized atau spoofing payload webhook Fonnte. | Validasi rahasia URL aman (`hash_equals`), pencocokan nomor device gateway, serta pengabaian pesan grup secara otomatis. | **AMAN** |
 | **Isolasi Multi-Tenancy Portal** | Potensi IDOR jika nomor ID pelanggan ditebak. | Validasi HMAC SHA-256 token unik berbasis `app.key`, `farm_id`, dan `customer_id`. | **AMAN** |
 | **Akses Portal Peternakan Nonaktif** | Pelanggan masih bisa mengakses data jika tenant dibekukan. | Penambahan validasi `!$farm->isAccessible()` -> HTTP 403 Forbidden pada `CustomerPortalController`. | **AMAN** |
 | **Perlindungan Brute Force** | Percobaan tebak PIN atau token portal secara masif. | Middleware `throttle:60,1` pada portal dan `throttle:5,1` pada login pekerja. Penguncian otomatis setelah 20x salah. | **AMAN** |
@@ -109,17 +144,30 @@ Seluruh 235 skenario pengujian otomatis (**1.252 assertions**) dinyatakan **LULU
 ---
 
 ## 4. Hasil Verifikasi Pengujian Otomatis (Test Suite)
-
+ 
 Pengujian dijalankan melalui PHPUnit / Pest Test Suite dengan hasil sebagai berikut:
-
+ 
 ```text
-Tests:    235 passed (1252 assertions)
-Duration: 16.14s
+Tests:    247 passed (1297 assertions)
+Duration: 69.12s
 Status:   100% PASS
 ```
 
 ### Rincian Modul Pengujian Kunci:
-1. `Tests\Feature\CustomerDebtReminderTest` (8 tests):
+1. `Tests\Feature\AssistantTest` (12 tests):
+   - `paket standar dan pro tidak bisa mengakses asisten`: **PASS**
+   - `paket entrepreneur bisa membuka halaman asisten`: **PASS**
+   - `pemilik bisa bertanya via web dan mendapat jawaban akurat`: **PASS**
+   - `deteksi mode otomatis untuk analisis mendalam`: **PASS**
+   - `perintah gratis seperti menu dan pulsa tidak memanggil alat berat`: **PASS**
+   - `pemilik bisa mendaftarkan dan menghapus nomor whatsapp`: **PASS**
+   - `nomor whatsapp tidak bisa didaftarkan ganda antar peternakan`: **PASS**
+   - `webhook whatsapp menolak rahasia url palsu`: **PASS**
+   - `webhook whatsapp mengabaikan grup dan nomor tak dikenal`: **PASS**
+   - `webhook whatsapp menerima pesan dari nomor terdaftar`: **PASS**
+   - `job penjawab whatsapp mengirim balasan ke fonnte`: **PASS**
+   - `asisten tetap merespon ramah jika pulsa habis`: **PASS**
+2. `Tests\Feature\CustomerDebtReminderTest` (8 tests):
    - `mengirim tagihan otomatis ke whatsapp pelanggan saat jatuh tempo antara 07 sampai 19`: **PASS**
    - `pesan tagihan memperhitungkan saldo titip uang deposit`: **PASS**
    - `tidak mengirim di luar jam operasional 07 sampai 19 tanpa opsi paksa`: **PASS**

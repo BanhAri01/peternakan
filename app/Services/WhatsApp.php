@@ -19,7 +19,7 @@ class WhatsApp
         return $this->driver() === 'fonnte' && config('hefam.whatsapp.fonnte_token');
     }
 
-    public function send(string $phone, string $message): void
+    public function send(string $phone, string $message, ?string $token = null): void
     {
         $target = Format::waNumber($phone);
 
@@ -35,7 +35,7 @@ class WhatsApp
 
         $response = Http::asForm()
             ->timeout(20)
-            ->withHeaders(['Authorization' => config('hefam.whatsapp.fonnte_token')])
+            ->withHeaders(['Authorization' => $token ?: config('hefam.whatsapp.fonnte_token')])
             ->post(config('hefam.whatsapp.fonnte_url'), [
                 'target'      => $target,
                 'message'     => $message,
