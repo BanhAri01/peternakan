@@ -141,3 +141,20 @@ Artisan::command('hefam:batalkan-pending', function () {
     return 0;
 })->purpose('Batalkan tagihan langganan pending agar bisa membuat tagihan baru');
 
+Artisan::command('hefam:aktifkan-ai {farm_id=1} {--months=12}', function () {
+    $farm = \App\Models\Farm::find($this->argument('farm_id'));
+    if (!$farm) {
+        $this->error('Peternakan tidak ditemukan.');
+        return 1;
+    }
+    $months = (int) $this->option('months');
+    $farm->update([
+        'plan'         => 'entrepreneur',
+        'status'       => 'active',
+        'active_until' => now()->addMonths($months)->toDateString(),
+    ]);
+    $this->info("✅ Peternakan [{$farm->name}] berhasil diaktifkan ke paket Entrepreneur (aktif s/d {$farm->active_until}).");
+    $this->line("Menu Asisten Kandang (/asisten) sekarang sudah terbuka dan siap digunakan!");
+    return 0;
+})->purpose('Aktifkan paket Entrepreneur langsung ke peternakan agar fitur Asisten AI terbuka');
+
