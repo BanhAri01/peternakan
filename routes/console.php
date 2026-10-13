@@ -135,3 +135,9 @@ Artisan::command('hefam:asisten {pertanyaan? : Pertanyaan tentang kandang} {--fa
     return 0;
 })->purpose('Uji coba dan tanya langsung ke Asisten Kandang AI');
 
+Artisan::command('hefam:batalkan-pending', function () {
+    $count = \App\Models\SubscriptionPayment::where('status', 'pending')->update(['status' => 'expired']);
+    $this->info("Berhasil membatalkan {$count} tagihan pending lama.");
+    return 0;
+})->purpose('Batalkan tagihan langganan pending agar bisa membuat tagihan baru');
+
