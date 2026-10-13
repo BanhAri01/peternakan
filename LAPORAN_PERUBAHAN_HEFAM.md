@@ -127,6 +127,29 @@ Seluruh **247 skenario pengujian otomatis (1.297 assertions)** dinyatakan **LULU
 
 ---
 
+### G. Gateway Pembayaran Langganan Otomatis (Midtrans Production)
+* **Kebutuhan Lapangan**: Memudahkan peternak memperpanjang atau memilih paket langganan HEFAM (Starter, Pro, Entrepreneur) secara mandiri 24/7 menggunakan QRIS, GoPay, ShopeePay, serta Virtual Account Bank (BCA, Mandiri, BNI, BRI, Permata) tanpa verifikasi bukti transfer manual.
+* **Fitur & Logika Bisnis**:
+  1. **Snap API Integration**:
+     - Tagihan dibuat via `MidtransGateway::createCharge()` dengan masa kedaluwarsa dinamis (`PAYMENT_EXPIRY_HOURS`).
+     - Tampilan pembayaran aman berstandar Bank Indonesia dengan logo metode pembayaran lengkap.
+  2. **Webhook Pembayaran Otomatis (`/webhook/pembayaran`)**:
+     - Verifikasi tanda tangan SHA-512 `hash_equals` berbasis `server_key` untuk mencegah manipulasi order status.
+     - Penanganan status `settlement` & `capture` langsung memperpanjang masa aktif peternakan (`active_until`) sesuai paket dan jumlah bulan secara atomik (`lockForUpdate`).
+     - Pencegahan dobel perpanjangan (*idempotent*): notifikasi berulang dari Midtrans tidak akan menambah durasi berkali-kali.
+  3. **Fallback Cek Status**:
+     - Jika webhook mengalami delay jaringan, begitu pembeli kembali ke halaman penyelesaian (`/langganan/selesai`), sistem melakukan pengecekan aktif via Core API Midtrans (`fetchStatus`).
+  4. **Mode Production Live**:
+     - Telah dikonfigurasikan dengan kunci Production resmi (`MIDTRANS_IS_PRODUCTION=true`), menghilangkan watermark uji coba (*TEST label*) dan siap memproses dana komersial.
+* **File Terkait**:
+  - `app/Services/Payments/MidtransGateway.php`
+  - `app/Services/Payments/SubscriptionBilling.php`
+  - `app/Http/Controllers/SubscriptionController.php`
+  - `resources/views/subscription/show.blade.php`
+  - `tests/Feature/SubscriptionPaymentTest.php`
+
+---
+
 ## 3. Audit Keamanan & Perbaikan Bug (Security & Bug Fixes)
 
 | Kerentanan / Area Audit | Resiko Semula | Solusi & Mitigasi yang Diterapkan | Status |
