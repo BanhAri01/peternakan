@@ -37,7 +37,6 @@ class MidtransGateway implements PaymentGateway
                     'price'    => (int) $payment->amount,
                     'quantity' => 1,
                 ]],
-                'enabled_payments'    => ['other_qris', 'gopay', 'shopeepay', 'bca_va', 'bni_va', 'bri_va', 'permata_va', 'echannel', 'other_va'],
                 'expiry'              => ['unit' => 'hour', 'duration' => (int) config('services.payment.expiry_hours')],
                 'callbacks'           => ['finish' => $finishUrl],
             ]);
