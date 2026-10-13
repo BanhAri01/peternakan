@@ -103,13 +103,19 @@ class MidtransGateway implements PaymentGateway
             throw new RuntimeException('MIDTRANS_SERVER_KEY belum diatur.');
         }
 
-        return Http::baseUrl($baseUrl)
+        $client = Http::baseUrl($baseUrl)
             ->withBasicAuth((string) $this->config['server_key'], '')
             ->acceptJson()
             ->asJson()
             ->timeout(20)
             ->retry(2, 300, fn (Throwable $exception) => $exception instanceof ConnectionException
                 || ($exception instanceof RequestException && $exception->response->serverError()), throw: false);
+
+        if (app()->isLocal() && !ini_get('curl.cainfo')) {
+            $client->withoutVerifying();
+        }
+
+        return $client;
     }
 
     private function snapUrl(): string

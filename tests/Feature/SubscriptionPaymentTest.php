@@ -20,6 +20,7 @@ class SubscriptionPaymentTest extends TestCase
         parent::setUp();
         Carbon::setTestNow(Carbon::parse('2026-10-20 10:00:00'));
         $this->setUpFarm();
+        config(['services.payment.driver' => 'fake']);
         $this->farm->update(['status' => 'trial', 'trial_ends_at' => '2026-10-25', 'phone' => '081234567890']);
     }
 
