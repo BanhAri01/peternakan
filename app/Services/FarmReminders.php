@@ -93,10 +93,7 @@ class FarmReminders
             return ['status' => 'di luar jam kirim pembeli (07:00 - 19:00)', 'sent' => 0];
         }
 
-        if (Setting::get('wa_reminder_enabled') !== '1') {
-            return ['status' => 'nonaktif', 'sent' => 0];
-        }
-
+        // Tagih pembeli punya saklar sendiri, tidak ikut saklar pengingat untuk pemilik
         if (Setting::get('wa_auto_customer_debt') === '0') {
             return ['status' => 'tagih pembeli dinonaktifkan', 'sent' => 0];
         }

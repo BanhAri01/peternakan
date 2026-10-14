@@ -206,7 +206,7 @@
         @endif
         <div class="form-check form-switch mb-3">
             <input class="form-check-input" type="checkbox" role="switch" id="wa_reminder_enabled" name="wa_reminder_enabled" value="1" @checked(old('wa_reminder_enabled', $settings['wa_reminder_enabled']) === '1')>
-            <label class="form-check-label fw-bold" for="wa_reminder_enabled">Kirim pengingat ke WhatsApp</label>
+            <label class="form-check-label fw-bold" for="wa_reminder_enabled">Kirim pengingat ke WhatsApp pemilik</label>
         </div>
         @foreach(['pagi' => 'Pengingat pagi (06.00)', 'sore' => 'Pengingat sore (17.00)'] as $kind => $kindLabel)
             <p class="fw-bold mb-2">{{ $kindLabel }}, pilih isinya:</p>
@@ -228,7 +228,7 @@
                 </label>
             </div>
             <div class="text-muted small ps-4">
-                Pesan tagihan dikirim langsung ke WhatsApp pembeli/tengkulak pada <b>pukul 07.00 – 19.00</b> saat nota jatuh tempo, lengkap dengan rincian nota dan tautan portal tagihan online tanpa login.
+                Pesan tagihan dikirim langsung ke WhatsApp pembeli/tengkulak pada <b>pukul 07.00 – 19.00</b> saat nota jatuh tempo, lengkap dengan rincian nota dan tautan portal tagihan online tanpa login. Selama belum lunas, tagihan dikirim ulang <b>tiap {{ \App\Services\FarmReminders::CUSTOMER_REPEAT_DAYS }} hari</b>. Saklar ini berjalan sendiri, tidak tergantung pengingat pemilik di atas.
             </div>
         </div>
         <p class="text-muted small mb-3">Pesan hanya dikirim kalau ada yang perlu diingatkan. Matikan yang tidak perlu supaya kuota WhatsApp lebih hemat.</p>

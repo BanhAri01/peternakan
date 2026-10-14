@@ -213,4 +213,32 @@ class CustomerDebtReminderTest extends TestCase
 
         Http::assertNothingSent();
     }
+
+    public function test_tagih_pembeli_tetap_jalan_walau_pengingat_pemilik_dimatikan(): void
+    {
+        Http::fake(['api.fonnte.com/*' => Http::response(['status' => true, 'id' => ['fonnte-123']])]);
+        Setting::put(['wa_reminder_enabled' => '0', 'wa_auto_customer_debt' => '1']);
+        $this->createDueSale();
+
+        $this->artisan('hefam:tagih-pelanggan')->assertSuccessful()->expectsOutputToContain('1 pesan ke pembeli');
+
+        Http::assertSent(fn ($request) => $request['target'] === '6281234567890');
+    }
+
+    public function test_tagihan_gagal_terkirim_dicoba_lagi_jam_berikutnya(): void
+    {
+        Http::fake(['api.fonnte.com/*' => Http::sequence()
+            ->push(['status' => false, 'reason' => 'request invalid on disconnected device'])
+            ->push(['status' => true, 'id' => ['fonnte-2']])]);
+        $this->createDueSale();
+
+        $this->artisan('hefam:tagih-pelanggan')->assertSuccessful();
+        $this->actAsFarm($this->farm);
+        $this->assertNull(Invoice::first()->last_reminded_at);
+
+        Carbon::setTestNow(Carbon::parse('2026-10-13 10:00:00'));
+        $this->artisan('hefam:tagih-pelanggan')->assertSuccessful()->expectsOutputToContain('1 pesan ke pembeli');
+        $this->actAsFarm($this->farm);
+        $this->assertNotNull(Invoice::first()->last_reminded_at);
+    }
 }
