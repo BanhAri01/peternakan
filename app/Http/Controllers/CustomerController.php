@@ -77,7 +77,7 @@ class CustomerController extends Controller
         $message = $customer->buildDebtSummaryWaMessage();
 
         try {
-            $whatsApp->send($phone, $message);
+            app(\App\Services\FarmReminders::class)->sendManual(app(\App\Tenancy\FarmContext::class)->get(), $phone, $message);
             if ($whatsApp->isLive()) {
                 return back()->with('success', 'Rincian tagihan & utang berhasil dikirim lewat WhatsApp (Fonnte) ke ' . $phone . '.');
             }
@@ -86,5 +86,22 @@ class CustomerController extends Controller
         } catch (\Throwable $e) {
             return back()->with('danger', 'Gagal mengirim WhatsApp (Fonnte): ' . $e->getMessage());
         }
+    }
+    public function returnDeposit(Request $request, Customer $customer)
+    {
+        $data = $request->validate([
+            'amount' => 'required|numeric|min:1',
+            'note'   => 'required|string|max:150',
+        ], ['note.required' => 'Tulis alasannya, misalnya "dikembalikan tunai".']);
+
+        try {
+            $customer->useDeposit((float) $data['amount'], null, 'Dikembalikan / koreksi: ' . $data['note']);
+        } catch (\InvalidArgumentException $e) {
+            return back()->with('danger', $e->getMessage());
+        }
+
+        \App\Audit\ActivityRecorder::custom($customer, 'updated', 'Titip uang ' . $customer->name . ' dikurangi ' . \App\Support\Format::rupiah($data['amount']) . ' (' . $data['note'] . ')');
+
+        return back()->with('success', 'Titip uang ' . $customer->name . ' dikurangi ' . \App\Support\Format::rupiah($data['amount']) . '.');
     }
 }

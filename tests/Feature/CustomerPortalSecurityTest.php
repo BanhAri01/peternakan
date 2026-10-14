@@ -27,8 +27,8 @@ class CustomerPortalSecurityTest extends TestCase
         $this->customerA = Customer::create([
             'name'            => 'Toko Berkah Gianyar',
             'phone'           => '081234567890',
-            'deposit_balance' => 150000,
         ]);
+        $this->customerA->forceFill(['deposit_balance' => 150000])->save();
 
         // Farm B dan Pelanggan B untuk uji isolasi multi-tenant
         $this->farmB = Farm::create(['name' => 'Farm Sukses', 'status' => 'active']);
@@ -37,8 +37,8 @@ class CustomerPortalSecurityTest extends TestCase
         $this->customerB = Customer::create([
             'name'            => 'Toko Rejeki Tabanan',
             'phone'           => '089876543210',
-            'deposit_balance' => 50000,
         ]);
+        $this->customerB->forceFill(['deposit_balance' => 50000])->save();
 
         $this->actAsFarm($this->farm);
     }

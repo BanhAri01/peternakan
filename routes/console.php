@@ -89,11 +89,10 @@ Artisan::command('hefam:admin {email} {name=Admin HEFAM}', function (string $ema
 
 // Uji coba dan demo interaktif Asisten Kandang (AI) langsung dari terminal
 Artisan::command('hefam:asisten {pertanyaan? : Pertanyaan tentang kandang} {--farm= : ID peternakan} {--mode= : Mode quick atau deep} {--driver= : Driver claude atau demo}', function () {
-    $farmId = $this->option('farm');
-    $farm = $farmId ? \App\Models\Farm::find($farmId) : \App\Models\Farm::where('status', 'active')->first();
+    $farm = \App\Models\Farm::find($this->option('farm'));
 
     if (!$farm) {
-        $this->error('Tidak ada peternakan aktif.');
+        $this->error('Isi --farm=ID peternakan.');
         return 1;
     }
 
@@ -135,26 +134,44 @@ Artisan::command('hefam:asisten {pertanyaan? : Pertanyaan tentang kandang} {--fa
     return 0;
 })->purpose('Uji coba dan tanya langsung ke Asisten Kandang AI');
 
-Artisan::command('hefam:batalkan-pending', function () {
-    $count = \App\Models\SubscriptionPayment::withoutGlobalScopes()->where('status', 'pending')->update(['status' => 'expired']);
-    $this->info("Berhasil membatalkan {$count} tagihan pending lama.");
-    return 0;
-})->purpose('Batalkan tagihan langganan pending agar bisa membuat tagihan baru');
-
-Artisan::command('hefam:aktifkan-ai {farm_id=1} {--months=12}', function () {
-    $farm = \App\Models\Farm::find($this->argument('farm_id'));
+Artisan::command('hefam:batalkan-pending {farm : ID peternakan}', function () {
+    $farm = \App\Models\Farm::find($this->argument('farm'));
     if (!$farm) {
         $this->error('Peternakan tidak ditemukan.');
         return 1;
     }
-    $months = (int) $this->option('months');
-    $farm->update([
-        'plan'         => 'entrepreneur',
-        'status'       => 'active',
-        'active_until' => now()->addMonths($months)->toDateString(),
-    ]);
-    $this->info("✅ Peternakan [{$farm->name}] berhasil diaktifkan ke paket Entrepreneur (aktif s/d {$farm->active_until}).");
-    $this->line("Menu Asisten Kandang (/asisten) sekarang sudah terbuka dan siap digunakan!");
-    return 0;
-})->purpose('Aktifkan paket Entrepreneur langsung ke peternakan agar fitur Asisten AI terbuka');
 
+    $pending = \App\Models\SubscriptionPayment::withoutGlobalScopes()->where('farm_id', $farm->id)->where('status', 'pending');
+    $count = $pending->count();
+    if ($count === 0 || !$this->confirm("Batalkan {$count} tagihan langganan pending milik [{$farm->name}]? Pastikan pelanggan belum membayarnya.")) {
+        $this->line('Tidak ada yang dibatalkan.');
+        return 0;
+    }
+
+    $pending->update(['status' => 'expired']);
+    $this->info("{$count} tagihan pending [{$farm->name}] dibatalkan.");
+    return 0;
+})->purpose('Batalkan tagihan langganan pending satu peternakan agar bisa membuat tagihan baru');
+
+Artisan::command('hefam:asisten-pulsa {farm : ID peternakan} {rupiah : Tambahan pulsa bulan ini} {--catatan=}', function () {
+    $farm = \App\Models\Farm::find($this->argument('farm'));
+    $amount = (int) $this->argument('rupiah');
+    if (!$farm || $amount <= 0 || $amount > 1000000) {
+        $this->error('Peternakan tidak ditemukan atau nominal di luar 1 - 1.000.000.');
+        return 1;
+    }
+    if (!$this->confirm("Tambah pulsa Asisten Rp{$amount} untuk [{$farm->name}] bulan ini?", true)) {
+        return 0;
+    }
+
+    \App\Models\AssistantTopup::withoutGlobalScope(\App\Tenancy\FarmScope::class)->forceCreate([
+        'farm_id' => $farm->id,
+        'period'  => \Carbon\Carbon::today()->format('Y-m'),
+        'amount'  => $amount,
+        'note'    => $this->option('catatan') ?: 'Tambah pulsa oleh admin',
+    ]);
+
+    $quota = \App\Assistant\Quota::for($farm);
+    $this->info("Pulsa [{$farm->name}] sekarang {$quota->percentLeft()}% (sisa Rp" . number_format($quota->remaining(), 0, ',', '.') . ').');
+    return 0;
+})->purpose('Tambah pulsa Asisten Kandang setelah peternakan membayar tambahan');

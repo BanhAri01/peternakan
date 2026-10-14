@@ -115,7 +115,7 @@ class CustomerDebtReminderTest extends TestCase
     public function test_pesan_tagihan_memperhitungkan_saldo_titip_uang_deposit(): void
     {
         Http::fake(['api.fonnte.com/*' => Http::response(['status' => true])]);
-        $this->customer->update(['deposit_balance' => 60000]);
+        $this->customer->forceFill(['deposit_balance' => 60000])->save();
         $this->createDueSale('2026-10-13', 260000); // 260.000 - deposit 60.000 = bersih 200.000
 
         $this->artisan('hefam:tagih-pelanggan')->assertSuccessful();

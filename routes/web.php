@@ -46,6 +46,19 @@ Route::get('/tentang-kami', [LegalController::class, 'about'])->name('legal.abou
 Route::get('/syarat-ketentuan', [LegalController::class, 'terms'])->name('legal.terms');
 Route::get('/kebijakan-privasi', [LegalController::class, 'privacy'])->name('legal.privacy');
 Route::get('/kebijakan-pengembalian-dana', [LegalController::class, 'refund'])->name('legal.refund');
+Route::get('/robots.txt', fn () => response(implode("\n", [
+    'User-agent: *',
+    'Allow: /$',
+    'Allow: /daftar',
+    'Allow: /tentang-kami',
+    'Allow: /syarat-ketentuan',
+    'Allow: /kebijakan-privasi',
+    'Allow: /kebijakan-pengembalian-dana',
+    'Disallow: /',
+    '',
+    'Sitemap: ' . url('sitemap.xml'),
+    '',
+]), 200, ['Content-Type' => 'text/plain; charset=UTF-8']))->name('robots');
 Route::get('/sitemap.xml', fn () => response()->view('sitemap')->header('Content-Type', 'application/xml; charset=utf-8'))->name('sitemap');
 Route::get('/manifest.webmanifest', [PwaController::class, 'manifest'])->name('pwa.manifest');
 Route::get('/sw.js', [PwaController::class, 'serviceWorker'])->name('pwa.sw');
@@ -54,12 +67,6 @@ Route::get('/pwa/ikon/{name}', [PwaController::class, 'icon'])->name('pwa.icon')
 Route::get('/pwa/tanpa-sinyal', [PwaController::class, 'offline'])->name('pwa.offline');
 Route::post('/webhook/pembayaran', [SubscriptionController::class, 'webhook'])->middleware('throttle:120,1')->name('webhooks.payment');
 Route::post('/webhook/asisten/{secret}', AssistantWebhookController::class)->middleware('throttle:120,1')->name('webhooks.assistant');
-Route::get('/api/market-prices', function (\Illuminate\Http\Request $request, \App\Services\MarketPriceService $service) {
-    if ($request->query('refresh') === '1') {
-        $service->syncFromSource();
-    }
-    return response()->json($service->getLatestPrices());
-})->name('api.market.prices');
 
 // =========================================================================
 // PORTAL TAGIHAN & NOTA PELANGGAN (Publik, aman dengan token hash & proteksi brute-force)
@@ -182,6 +189,7 @@ Route::middleware('auth')->group(function () {
             ->parameters(['pelanggan' => 'customer'])
             ->names('customers');
         Route::post('/pelanggan/{customer}/kirim-wa', [CustomerController::class, 'sendDebtWa'])->name('customers.send-wa');
+        Route::post('/pelanggan/{customer}/titip-uang/kembalikan', [CustomerController::class, 'returnDeposit'])->name('customers.deposit-return');
 
         // Jenis telur (grade)
         Route::get('/kategori-grade', [EggGradeController::class, 'index'])->name('grades.index');

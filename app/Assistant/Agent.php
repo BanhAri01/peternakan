@@ -160,13 +160,29 @@ TXT;
         $history = $this->history($channel, $user, $phone, $asked->id);
 
         try {
-            return $reply($this->converse($farm, $channel, $mode, $question, $history, $note));
+            $before = $quota->percentLeft();
+            $answer = $reply($this->converse($farm, $channel, $mode, $question, $history, $note));
+
+            return $this->warnLowQuota($answer, $before, Quota::for($farm)->percentLeft());
         } catch (Throwable $e) {
             Log::warning('Asisten Kandang gagal: ' . $e->getMessage(), ['farm' => $farm->id]);
             $fallback = $this->fallback($question, 'error', 'Maaf, asisten sedang sibuk atau sinyal ke server terganggu. Coba lagi beberapa menit lagi.', $mode);
 
             return $reply(new AgentAnswer($fallback->text, 'error', $mode, round($this->run['cost'] ?? 0, 2), array_values(array_unique($this->run['tools'] ?? [])), $this->run['model'] ?? null));
         }
+    }
+
+    /** Peringatan sekali saat pulsa turun melewati sisa 20% (terpakai 80%). */
+    private function warnLowQuota(AgentAnswer $answer, int $before, int $after): AgentAnswer
+    {
+        if ($before <= 20 || $after > 20) {
+            return $answer;
+        }
+
+        return new AgentAnswer(
+            $answer->text . "\n\n_🔋 Pulsa Asisten tinggal " . $after . '% untuk bulan ini._',
+            $answer->status, $answer->mode, $answer->cost, $answer->tools, $answer->model,
+        );
     }
 
     private function converse(Farm $farm, string $channel, string $mode, string $question, array $history, ?string $note): AgentAnswer

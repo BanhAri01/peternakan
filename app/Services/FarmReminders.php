@@ -181,6 +181,37 @@ class FarmReminders
         return ['limit' => $farm->limit('wa_monthly'), 'used' => $used];
     }
 
+    /**
+     * Kirim WhatsApp dari tombol (nota / tagihan pelanggan) dengan kuota paket yang sama
+     * seperti pengingat otomatis, lalu dicatat supaya ikut terhitung.
+     */
+    public function sendManual(Farm $farm, string $phone, string $message): void
+    {
+        $quota = $this->quota($farm);
+        if ($quota['limit'] === 0) {
+            throw new \RuntimeException('Paket ' . $farm->planLabel() . ' belum termasuk kirim WhatsApp dari aplikasi. Pakai tombol "Buka WA" atau naikkan paket.');
+        }
+        if ($quota['limit'] !== null && $quota['used'] >= $quota['limit']) {
+            throw new \RuntimeException('Kuota WhatsApp bulan ini habis (' . $quota['used'] . ' dari ' . $quota['limit'] . ' pesan). Pakai tombol "Buka WA".');
+        }
+
+        $target = Format::waNumber($phone);
+        if (!$target) {
+            throw new \RuntimeException('Nomor WhatsApp tidak valid: ' . $phone);
+        }
+
+        $this->whatsApp->send($target, $message);
+
+        NotificationLog::withoutGlobalScope(FarmScope::class)->create([
+            'farm_id' => $farm->id,
+            'kind'    => 'manual-' . \Illuminate\Support\Str::lower(\Illuminate\Support\Str::random(12)),
+            'sent_on' => Carbon::today()->toDateString(),
+            'target'  => $target,
+            'status'  => 'terkirim',
+            'message' => $message,
+        ]);
+    }
+
     public function recordTest(Farm $farm, string $target, string $message): void
     {
         NotificationLog::withoutGlobalScope(FarmScope::class)->updateOrCreate(

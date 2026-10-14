@@ -247,7 +247,7 @@ class SalesTest extends TestCase
         $customer = Customer::first();
 
         // Berikan saldo deposit awal 100.000 ke pelanggan
-        $customer->update(['deposit_balance' => 100000]);
+        $customer->forceFill(['deposit_balance' => 100000])->save();
 
         // Bayar nota menggunakan saldo deposit
         $this->actingAs($this->owner)
@@ -265,5 +265,50 @@ class SalesTest extends TestCase
             'type'        => 'out',
             'amount'      => 100000,
         ]);
+    }
+    public function test_uang_tidak_hilang_saat_tombol_bayar_ditekan_dua_kali(): void
+    {
+        $this->actingAs($this->owner)->post(route('sales.store'), $this->sale(['payment_mode' => 'tempo']));
+        $invoice  = Invoice::first();
+        $customer = Customer::first();
+
+        $this->actingAs($this->owner)->post(route('sales.pay-debt', $invoice), ['payment_add' => 300000]);
+        $this->actingAs($this->owner)->post(route('sales.pay-debt', $invoice), ['payment_add' => 300000]);
+
+        $this->assertEquals(0, $invoice->fresh()->debt);
+        $this->assertEquals(340000, $customer->fresh()->deposit_balance);
+    }
+
+    public function test_titip_uang_bisa_dikembalikan_tapi_tidak_bisa_minus(): void
+    {
+        $this->actingAs($this->owner)->post(route('sales.store'), $this->sale());
+        $customer = Customer::first();
+        $customer->addDeposit(150000, null, 'Titip');
+
+        $this->actingAs($this->owner)->post(route('customers.deposit-return', $customer), ['amount' => 200000, 'note' => 'salah ketik'])->assertSessionHas('danger');
+        $this->actingAs($this->owner)->post(route('customers.deposit-return', $customer), ['amount' => 50000, 'note' => 'dikembalikan tunai'])->assertSessionHas('success');
+
+        $this->assertEquals(100000, $customer->fresh()->deposit_balance);
+        $this->actingAs($this->worker)->post(route('customers.deposit-return', $customer), ['amount' => 1, 'note' => 'x'])->assertRedirect();
+        $this->assertEquals(100000, $customer->fresh()->deposit_balance);
+    }
+
+    public function test_pembeli_bernama_sama_tidak_menimpa_nomor_wa_pelanggan_lama(): void
+    {
+        $this->actingAs($this->owner)->post(route('sales.store'), $this->sale());
+        $this->actingAs($this->owner)->post(route('sales.store'), $this->sale(['customer_phone' => '089999999999']));
+
+        $this->assertSame('081234567890', Customer::sole()->phone);
+    }
+
+    public function test_kirim_wa_dari_tombol_ikut_aturan_paket(): void
+    {
+        $this->actingAs($this->owner)->post(route('sales.store'), $this->sale());
+        $invoice = Invoice::first();
+        $this->farm->forceFill(['plan' => 'standar'])->save();
+        $this->actAsFarm($this->farm->fresh());
+
+        $this->actingAs($this->owner->fresh())->post(route('sales.send-wa', $invoice))->assertSessionHas('danger');
+        $this->assertDatabaseCount('notification_logs', 0);
     }
 }

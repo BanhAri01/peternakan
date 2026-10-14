@@ -39,43 +39,18 @@ class LandingTest extends TestCase
         $this->actingAs($admin)->get('/')->assertRedirect(route('admin.farms.index'));
     }
 
-    public function test_tamu_melihat_harga_pasar_komoditas_dengan_fokus_bali_dan_pinsar(): void
+    public function test_landing_tanpa_rating_palsu_klaim_nomor_satu_dan_harga_pasar_karangan(): void
     {
-        $response = $this->get('/');
-        $response->assertOk()
-            ->assertSee('Harga Pasar Telur, Ayam', false)
-            ->assertSee('Rujukan resmi Pinsar Indonesia', false)
-            ->assertSee('Bali (Tabanan, Badung', false)
-            ->assertSee('Kalkulator Kebutuhan Pakan', false);
-    }
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('Kalkulator Kebutuhan Pakan', false)
+            ->assertDontSee('aggregateRating', false)
+            ->assertDontSee('reviewCount', false)
+            ->assertDontSee('Terbaik #1', false)
+            ->assertDontSee('Petelur #1', false)
+            ->assertDontSee('nomor 1', false)
+            ->assertDontSee('Pinsar', false);
 
-    public function test_api_market_prices_mengembalikan_json_dengan_prioritas_bali(): void
-    {
-        $response = $this->get(route('api.market.prices'));
-        $response->assertOk()
-            ->assertJsonStructure([
-                'last_updated',
-                'primary_source',
-                'regions' => [
-                    '*' => [
-                        'region_code',
-                        'region_name',
-                        'is_primary',
-                        'items' => [
-                            '*' => [
-                                'commodity_code',
-                                'commodity_name',
-                                'price',
-                                'price_formatted',
-                                'unit',
-                            ],
-                        ],
-                    ],
-                ],
-            ]);
-
-        $data = $response->json();
-        $this->assertSame('bali', $data['regions'][0]['region_code']);
-        $this->assertTrue($data['regions'][0]['is_primary']);
+        $this->get('/api/market-prices')->assertNotFound();
     }
 }

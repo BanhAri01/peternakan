@@ -11,7 +11,7 @@ class Customer extends Model
 {
     use HasFactory, BelongsToFarm, RecordsActivity;
 
-    protected $fillable = ['name', 'phone', 'address', 'deposit_balance'];
+    protected $fillable = ['name', 'phone', 'address'];
 
     private ?float $debtTotal = null;
 
@@ -32,34 +32,40 @@ class Customer extends Model
 
     public function addDeposit(float $amount, ?Invoice $invoice = null, ?string $notes = null): CustomerDeposit
     {
-        return \Illuminate\Support\Facades\DB::transaction(function () use ($amount, $invoice, $notes) {
-            $this->increment('deposit_balance', $amount);
-            $this->refresh();
-
-            return $this->deposits()->create([
-                'invoice_id'    => $invoice?->id,
-                'type'          => 'in',
-                'amount'        => $amount,
-                'balance_after' => (float) $this->deposit_balance,
-                'notes'         => $notes,
-            ]);
-        });
+        return $this->moveDeposit('in', $amount, $invoice, $notes);
     }
 
     public function useDeposit(float $amount, ?Invoice $invoice = null, ?string $notes = null): CustomerDeposit
     {
-        return \Illuminate\Support\Facades\DB::transaction(function () use ($amount, $invoice, $notes) {
-            if ($this->deposit_balance < $amount) {
-                throw new \InvalidArgumentException('Saldo titip uang (deposit) tidak mencukupi.');
+        return $this->moveDeposit('out', $amount, $invoice, $notes);
+    }
+
+    /**
+     * Saldo titip uang selalu diubah dengan baris pelanggan terkunci, supaya dua pembayaran
+     * bersamaan tidak saling menimpa dan saldo tidak pernah minus.
+     */
+    private function moveDeposit(string $type, float $amount, ?Invoice $invoice, ?string $notes): CustomerDeposit
+    {
+        $amount = round($amount, 2);
+        if ($amount <= 0) {
+            throw new \InvalidArgumentException('Nominal titip uang harus lebih dari 0.');
+        }
+
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($type, $amount, $invoice, $notes) {
+            $current = (float) static::whereKey($this->getKey())->lockForUpdate()->value('deposit_balance');
+            $balance = round($type === 'in' ? $current + $amount : $current - $amount, 2);
+
+            if ($balance < 0) {
+                throw new \InvalidArgumentException('Saldo titip uang tidak mencukupi (sisa ' . \App\Support\Format::rupiah($current) . ').');
             }
-            $this->decrement('deposit_balance', $amount);
-            $this->refresh();
+
+            $this->forceFill(['deposit_balance' => $balance])->saveQuietly();
 
             return $this->deposits()->create([
                 'invoice_id'    => $invoice?->id,
-                'type'          => 'out',
+                'type'          => $type,
                 'amount'        => $amount,
-                'balance_after' => (float) $this->deposit_balance,
+                'balance_after' => $balance,
                 'notes'         => $notes,
             ]);
         });

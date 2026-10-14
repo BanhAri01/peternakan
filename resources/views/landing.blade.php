@@ -1,8 +1,8 @@
 @php
     use App\Support\Format;
     $waText  = rawurlencode('Halo admin HEFAM, saya peternak ayam petelur dan ingin tahu lebih lanjut tentang HEFAM.');
-    $title   = 'Aplikasi Pencatatan Peternakan Ayam Petelur Terbaik #1 · HEFAM';
-    $desc    = 'HEFAM adalah aplikasi pencatatan peternakan ayam petelur nomor 1 di Indonesia. Catat panen telur, sortir rak, pakan FCR, piutang bakul via WhatsApp, dan laba peternakan otomatis dari HP tanpa sinyal. Coba gratis ' . $trialDays . ' hari.';
+    $title   = 'Aplikasi Pencatatan Peternakan Ayam Petelur · HEFAM';
+    $desc    = 'HEFAM adalah aplikasi pencatatan peternakan ayam petelur. Catat panen telur, sortir rak, pakan FCR, piutang bakul via WhatsApp, dan laba peternakan otomatis dari HP tanpa sinyal. Coba gratis ' . $trialDays . ' hari.';
     $keywords = 'aplikasi pencatatan peternakan, software peternakan ayam petelur, aplikasi peternakan ayam, manajemen kandang ayam petelur, aplikasi catat panen telur, FCR ayam petelur, pembukuan peternakan telur, hefam';
 @endphp
 <!DOCTYPE html>
@@ -56,20 +56,13 @@
           "applicationCategory": "BusinessApplication",
           "operatingSystem": "All, Web, Android, iOS",
           "inLanguage": "id",
-          "description": "Aplikasi pencatatan peternakan ayam petelur nomor 1 di Indonesia untuk mencatat panen telur, sortir rak, stok pakan, FCR, piutang, dan laba rugi.",
+          "description": "Aplikasi pencatatan peternakan ayam petelur untuk mencatat panen telur, sortir rak, stok pakan, FCR, piutang, dan laba rugi.",
           "url": "{{ url('/') }}",
           "offers": {
-            "@type": "Offer",
-            "price": "0",
+            "@type": "AggregateOffer",
             "priceCurrency": "IDR",
-            "description": "Coba gratis {{ $trialDays }} hari tanpa kartu kredit"
-          },
-          "aggregateRating": {
-            "@type": "AggregateRating",
-            "ratingValue": "4.9",
-            "reviewCount": "158",
-            "bestRating": "5",
-            "worstRating": "1"
+            "lowPrice": "{{ collect($tiers)->min('price') }}",
+            "highPrice": "{{ collect($tiers)->max('price') }}"
           }
         },
         {
@@ -233,24 +226,6 @@
         .foot { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: space-between; align-items: center; }
 
         /* Market & Calculator styles */
-        .market-tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; margin: 20px 0; }
-        .market-tab { padding: 8px 16px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); font-weight: 700; font-size: 0.9rem; cursor: pointer; white-space: nowrap; transition: all .2s; }
-        .market-tab:hover { color: var(--ink); border-color: var(--brand); }
-        .market-tab.active { background: var(--brand); color: #fff; border-color: var(--brand); }
-        .market-card { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; transition: transform .2s, box-shadow .2s; }
-        .market-card:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(0,0,0,.06); border-color: var(--brand); }
-        .market-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-        .market-cat-badge { font-size: 0.72rem; font-weight: 800; padding: 3px 8px; border-radius: 6px; background: var(--bg); color: var(--muted); text-transform: uppercase; }
-        .market-trend { font-size: 0.78rem; font-weight: 800; display: inline-flex; align-items: center; gap: 3px; }
-        .market-trend.up { color: #16a34a; }
-        .market-trend.down { color: #e11d48; }
-        .market-trend.same { color: var(--muted); }
-        .market-card h3 { margin: 0 0 8px; font-size: 1.05rem; font-weight: 800; color: var(--ink); line-height: 1.3; }
-        .market-price { font-size: 1.6rem; font-weight: 800; color: var(--brand); display: flex; align-items: baseline; gap: 4px; }
-        .market-price small { font-size: 0.85rem; font-weight: 600; color: var(--muted); }
-        .market-card-foot { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--line); font-size: 0.8rem; color: var(--muted); display: flex; justify-content: space-between; align-items: center; }
-        .market-card-foot a { color: var(--brand); font-weight: 700; text-decoration: none; }
-        .market-meta-bar { margin-top: 14px; font-size: 0.85rem; color: var(--muted); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
 
         .calc-box { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 26px; }
         .calc-field { margin-bottom: 16px; }
@@ -275,7 +250,7 @@
     <div class="wrap nav">
         <a href="{{ url('/') }}" class="brand"><img src="{{ route('pwa.icon', 'icon-192.png') }}" alt="" width="38" height="38"> HEFAM</a>
         <nav class="nav-links" aria-label="Menu halaman">
-            <a href="#harga-pasar">Harga Pasar & Pakan</a>
+            <a href="#kalkulator-pakan">Kalkulator Pakan</a>
             <a href="#fitur">Fitur</a>
             <a href="#perbandingan">Kenapa HEFAM</a>
             <a href="#harga">Harga</a>
@@ -292,7 +267,7 @@
     <section class="hero">
         <div class="wrap hero-grid">
             <div>
-                <span class="eyebrow"><i class="bi bi-award-fill"></i> Software & Aplikasi Pencatatan Peternakan Ayam Petelur #1</span>
+                <span class="eyebrow"><i class="bi bi-award-fill"></i> Aplikasi Pencatatan Peternakan Ayam Petelur</span>
                 <h1>Aplikasi Pencatatan Peternakan: Catatan peternakan rapi, laba jelas, tanpa ribet.</h1>
                 <p class="lead">Software dan <strong>aplikasi pencatatan peternakan ayam petelur</strong> terlengkap: catat panen telur, sortir rak, stok pakan & FCR, penjualan dan nota piutang via WhatsApp, gaji pekerja, hingga laba rugi otomatis dari HP Anda tanpa perlu sinyal internet.</p>
                 <div class="hero-actions">
@@ -317,87 +292,6 @@
                     </div>
                 </div>
                 <div class="caption">Huruf besar & tombol besar, ramah untuk orang tua</div>
-            </div>
-        </div>
-    </section>
-
-    <!-- SEKSI PANTAUAN HARGA PASAR TELUR, AYAM & PAKAN (PINSAR INDONESIA & BALI) -->
-    <section id="harga-pasar" style="background:#fffdf8;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:56px 0">
-        <div class="wrap">
-            <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:16px;margin-bottom:24px">
-                <div>
-                    <span class="eyebrow" style="background:#fef3c7;color:#92400e"><i class="bi bi-broadcast"></i> Pantauan Pasar Harian Terupdate</span>
-                    <h2 style="font-size:clamp(1.6rem, 3.5vw, 2.3rem);margin:10px 0 6px;letter-spacing:-.01em">
-                        Harga Pasar Telur, Ayam & Pakan Hari Ini
-                    </h2>
-                    <p style="color:var(--muted);margin:0;font-size:1.05rem">
-                        Rujukan resmi Pinsar Indonesia & sentra komoditas pakan. Diperbarui otomatis setiap pagi.
-                    </p>
-                </div>
-                <div>
-                    <button type="button" id="btn-refresh-market" class="btn btn-light" style="font-size:.9rem;padding:.6rem 1.1rem;display:inline-flex;gap:.5rem;align-items:center">
-                        <i class="bi bi-arrow-clockwise" id="icon-refresh-market"></i>
-                        <span id="text-refresh-market">Segarkan Harga</span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Region Tabs (Bali Utamakan Pertama) -->
-            <div class="market-tabs" role="tablist">
-                @foreach($marketPrices['regions'] ?? [] as $idx => $region)
-                    <button
-                        type="button"
-                        class="market-tab {{ $idx === 0 ? 'active' : '' }}"
-                        data-region="{{ $region['region_code'] }}"
-                    >
-                        @if(!empty($region['is_primary']))
-                            <i class="bi bi-star-fill" style="color:#e8a32e"></i>
-                        @endif
-                        {{ $region['region_name'] }}
-                    </button>
-                @endforeach
-            </div>
-
-            <!-- Panels per Region -->
-            @foreach($marketPrices['regions'] ?? [] as $idx => $region)
-                <div class="market-panel" id="panel-{{ $region['region_code'] }}" style="{{ $idx === 0 ? '' : 'display:none' }}">
-                    <div class="grid grid-3">
-                        @foreach($region['items'] ?? [] as $item)
-                            <div class="market-card">
-                                <div>
-                                    <div class="market-card-top">
-                                        <span class="market-cat-badge">
-                                            {{ $item['category'] === 'unggas' ? 'Hasil Ternak' : ($item['category'] === 'bahan_baku' ? 'Bahan Baku' : 'Pakan Jadi') }}
-                                        </span>
-                                        @if(($item['change_direction'] ?? '') === 'up')
-                                            <span class="market-trend up"><i class="bi bi-arrow-up-right"></i> +Rp {{ number_format($item['change_amount'] ?? 0, 0, ',', '.') }}</span>
-                                        @elseif(($item['change_direction'] ?? '') === 'down')
-                                            <span class="market-trend down"><i class="bi bi-arrow-down-right"></i> -Rp {{ number_format($item['change_amount'] ?? 0, 0, ',', '.') }}</span>
-                                        @else
-                                            <span class="market-trend same"><i class="bi bi-dash"></i> Stabil</span>
-                                        @endif
-                                    </div>
-                                    <h3>{{ $item['commodity_name'] }}</h3>
-                                    <div class="market-price">
-                                        {{ $item['price_formatted'] }}
-                                        <small>/ {{ $item['unit'] }}</small>
-                                    </div>
-                                </div>
-                                <div class="market-card-foot">
-                                    <span>Sumber: <strong>{{ $item['source_name'] }}</strong></span>
-                                    <a href="{{ $item['source_url'] }}" target="_blank" rel="noopener">
-                                        Cek Pinsar <i class="bi bi-box-arrow-up-right"></i>
-                                    </a>
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
-                </div>
-            @endforeach
-
-            <div class="market-meta-bar">
-                <span>Terakhir disinkronkan: <strong id="market-last-sync">{{ $marketPrices['last_updated'] ?? 'Hari ini' }}</strong></span>
-                <span>Sumber acuan terverifikasi: <a href="https://pinsarindonesia.id/" target="_blank" rel="noopener" style="color:var(--brand);font-weight:700">Pinsar Indonesia</a></span>
             </div>
         </div>
     </section>
@@ -439,7 +333,7 @@
                         <div class="calc-field" style="margin-bottom:0">
                             <label class="calc-label">Harga Pakan Rata-rata (Rp/Sak 50 kg)</label>
                             <input type="number" id="calc-price-bag" class="calc-input" value="485000" min="200000" step="5000">
-                            <small style="color:var(--muted);font-size:0.8rem;display:block;margin-top:4px">Standar konsentrat layer / pakan pabrikan di Bali: Rp 480.000 – Rp 520.000 / sak</small>
+                            <small style="color:var(--muted);font-size:0.8rem;display:block;margin-top:4px">Isi harga pakan yang biasa Anda beli. Hasil hitungan hanya perkiraan.</small>
                         </div>
                     </div>
                 </div>
@@ -679,50 +573,6 @@
 @endif
 
 <script>
-    // Tab switching untuk wilayah harga pasar
-    document.querySelectorAll('.market-tab').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            document.querySelectorAll('.market-tab').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.market-panel').forEach(p => p.style.display = 'none');
-            btn.classList.add('active');
-            var region = btn.getAttribute('data-region');
-            var panel = document.getElementById('panel-' + region);
-            if (panel) panel.style.display = '';
-        });
-    });
-
-    // Refresh live harga via API
-    var btnRefresh = document.getElementById('btn-refresh-market');
-    if (btnRefresh) {
-        btnRefresh.addEventListener('click', function() {
-            var icon = document.getElementById('icon-refresh-market');
-            var txt = document.getElementById('text-refresh-market');
-            if (icon) icon.classList.add('bi-spin');
-            if (txt) txt.textContent = 'Menyinkronkan...';
-            btnRefresh.disabled = true;
-
-            fetch('{{ route("api.market.prices") }}?refresh=1')
-                .then(r => r.json())
-                .then(data => {
-                    if (data && data.last_updated) {
-                        var lastSync = document.getElementById('market-last-sync');
-                        if (lastSync) lastSync.textContent = data.last_updated;
-                    }
-                    setTimeout(function() {
-                        location.reload();
-                    }, 500);
-                })
-                .catch(err => {
-                    console.error('Refresh harga gagal:', err);
-                })
-                .finally(() => {
-                    if (icon) icon.classList.remove('bi-spin');
-                    if (txt) txt.textContent = 'Segarkan Harga';
-                    btnRefresh.disabled = false;
-                });
-        });
-    }
-
     // Kalkulator Pakan & FCR
     var currentCalcType = 'layer';
     var calcPopInput = document.getElementById('calc-pop');

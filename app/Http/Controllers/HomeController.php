@@ -19,13 +19,10 @@ class HomeController extends Controller
             };
         }
 
-        $marketPrices = app(\App\Services\MarketPriceService::class)->getLatestPrices();
-
         return view('landing', [
-            'tiers'        => Plans::tiers(),
-            'trialDays'    => Farm::TRIAL_DAYS,
-            'adminWa'      => config('hefam.admin_whatsapp'),
-            'marketPrices' => $marketPrices,
+            'tiers'     => Plans::tiers(),
+            'trialDays' => Farm::TRIAL_DAYS,
+            'adminWa'   => config('hefam.admin_whatsapp'),
         ]);
     }
 }

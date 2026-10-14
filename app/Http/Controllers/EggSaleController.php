@@ -176,58 +176,67 @@ class EggSaleController extends Controller
 
     public function payDebt(Request $request, Invoice $invoice)
     {
-        $debt = (float) $invoice->debt;
         $customer = $invoice->customer;
 
         if ($request->boolean('use_deposit')) {
-            if (! $customer || (float) $customer->deposit_balance <= 0) {
-                return back()->with('danger', 'Pelanggan tidak memiliki saldo titip uang (deposit).');
+            if (! $customer) {
+                return back()->with('danger', 'Nota ini tidak punya pelanggan, jadi tidak ada titip uang yang bisa dipotong.');
             }
 
-            $deduct = min($debt, (float) $customer->deposit_balance);
-            DB::transaction(function () use ($invoice, $customer, $deduct) {
-                $customer->useDeposit($deduct, $invoice, 'Potong saldo deposit untuk pelunasan nota ' . $invoice->number);
-                $invoice->applyPayment($deduct);
-            });
+            try {
+                $deduct = DB::transaction(function () use ($invoice, $customer) {
+                    $balance = (float) Customer::whereKey($customer->id)->lockForUpdate()->value('deposit_balance');
+                    $applied = $invoice->applyPayment(min((float) $invoice->fresh()->debt, $balance));
+                    if ($applied > 0) {
+                        $customer->useDeposit($applied, $invoice, 'Potong titip uang untuk nota ' . $invoice->number);
+                    }
+
+                    return $applied;
+                });
+            } catch (\InvalidArgumentException $e) {
+                return back()->with('danger', $e->getMessage());
+            }
+
+            if ($deduct <= 0) {
+                return back()->with('danger', 'Tidak ada yang dipotong: titip uang kosong atau nota sudah lunas.');
+            }
 
             $left = $invoice->fresh()->debt;
-            $msg = 'Saldo deposit ' . Format::rupiah($deduct) . ' berhasil dipotong untuk nota ' . $invoice->number . '.';
-            if ($left > 0) {
-                $msg .= ' Sisa tagihan nota: ' . Format::rupiah($left) . '.';
-            } else {
-                $msg .= ' Nota sudah LUNAS.';
-            }
 
-            return back()->with('success', $msg);
+            return back()->with('success', 'Titip uang ' . Format::rupiah($deduct) . ' dipotong untuk nota ' . $invoice->number . '.'
+                . ($left > 0 ? ' Sisa tagihan nota: ' . Format::rupiah($left) . '.' : ' Nota sudah LUNAS.'));
         }
 
         $request->validate([
-            'payment_add' => 'required|numeric|min:1',
+            'payment_add' => 'required|numeric|min:1|max:1000000000',
         ]);
 
-        $paymentAdd    = (float) $request->payment_add;
-        $payForInvoice = min($debt, $paymentAdd);
-        $overpayment   = max(0.0, $paymentAdd - $debt);
-        $customer      = $invoice->customer;
+        $paymentAdd = round((float) $request->payment_add, 2);
 
-        DB::transaction(function () use ($invoice, $customer, $payForInvoice, $overpayment) {
-            if ($payForInvoice > 0) {
-                $invoice->applyPayment($payForInvoice);
+        if (! $customer && $paymentAdd > (float) $invoice->debt) {
+            return back()->with('danger', 'Pembayaran melebihi sisa tagihan (' . Format::rupiah($invoice->debt) . '). Nota tanpa pelanggan tidak bisa menyimpan kelebihan sebagai titip uang.');
+        }
+
+        // Kelebihan dihitung dari yang benar-benar terpakai di nota (aman bila dua kali tekan simpan).
+        [$applied, $overpayment] = DB::transaction(function () use ($invoice, $customer, $paymentAdd) {
+            $applied = $invoice->applyPayment($paymentAdd);
+            $overpayment = round($paymentAdd - $applied, 2);
+
+            if ($overpayment > 0) {
+                if (! $customer) {
+                    throw new \InvalidArgumentException('Nota sudah lunas.');
+                }
+                $customer->addDeposit($overpayment, $invoice, 'Kelebihan pembayaran nota ' . $invoice->number);
             }
 
-            if ($overpayment > 0 && $customer) {
-                $customer->addDeposit(
-                    $overpayment,
-                    $invoice,
-                    'Kelebihan pembayaran nota ' . $invoice->number
-                );
-            }
+            return [$applied, $overpayment];
         });
 
         $left = $invoice->fresh()->debt;
 
         if ($overpayment > 0) {
-            $message = 'Pembayaran ' . Format::rupiah($paymentAdd) . ' dicatat. Nota ' . $invoice->number . ' LUNAS (terpotong ' . Format::rupiah($payForInvoice) . '). Kelebihan ' . Format::rupiah($overpayment) . ' otomatis dicatat ke Titip Uang / Saldo Deposit ' . ($customer->name ?? '') . '.';
+            $message = 'Pembayaran ' . Format::rupiah($paymentAdd) . ' dicatat. ' . ($applied > 0 ? Format::rupiah($applied) . ' untuk nota ' . $invoice->number . ', ' : '')
+                . 'kelebihan ' . Format::rupiah($overpayment) . ' disimpan sebagai titip uang ' . ($customer->name ?? '') . '.';
         } elseif ($left > 0) {
             $message = 'Pembayaran ' . Format::rupiah($paymentAdd) . ' dicatat. Sisa tagihan nota ' . $invoice->number . ': ' . Format::rupiah($left) . '.';
         } else {
@@ -257,7 +266,8 @@ class EggSaleController extends Controller
         $customer = Customer::whereRaw('LOWER(name) = ?', [mb_strtolower($name)])->first()
             ?? Customer::create(['name' => $name]);
 
-        if ($phone && $customer->phone !== $phone) {
+        // Nomor hanya diisi bila kosong: pembeli lain bernama sama tidak boleh menimpa nomor penerima tagihan.
+        if ($phone && !$customer->phone) {
             $customer->update(['phone' => $phone]);
         }
 
@@ -274,7 +284,7 @@ class EggSaleController extends Controller
         $message = self::makeWaMessage($invoice);
 
         try {
-            $whatsApp->send($phone, $message);
+            app(\App\Services\FarmReminders::class)->sendManual(app(\App\Tenancy\FarmContext::class)->get(), $phone, $message);
             if ($whatsApp->isLive()) {
                 return back()->with('success', 'Nota ' . $invoice->number . ' berhasil dikirim lewat WhatsApp (Fonnte) ke ' . $phone . '.');
             }

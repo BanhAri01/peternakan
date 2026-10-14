@@ -63,7 +63,7 @@ class RegisterController extends Controller
             if ($country && $country !== 'Indonesia') {
                 $parts[] = trim($country);
             }
-            $data['city'] = implode(', ', array_filter($parts));
+            $data['city'] = mb_substr(implode(', ', array_filter($parts)), 0, 255);
         }
 
         $owner = $provisioner->create($data);

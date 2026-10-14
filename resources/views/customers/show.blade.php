@@ -31,6 +31,15 @@
         <div>
             <strong>Titip Uang / Saldo Deposit: {{ Format::rupiah($customer->deposit_balance) }}</strong>
             <div class="small">Pelanggan ini memiliki kelebihan uang pembayaran yang tersimpan di peternakan dan dapat digunakan untuk transaksi selanjutnya.</div>
+            <details class="mt-2">
+                <summary class="small fw-bold" style="cursor:pointer">Kembalikan uang / koreksi salah ketik</summary>
+                <form action="{{ route('customers.deposit-return', $customer) }}" method="POST" class="row g-2 mt-1" onsubmit="return confirm('Kurangi titip uang {{ $customer->name }}?')">
+                    @csrf
+                    <div class="col-sm-4"><input type="number" name="amount" class="form-control" min="1" step="any" max="{{ $customer->deposit_balance }}" placeholder="Jumlah" required></div>
+                    <div class="col-sm-5"><input type="text" name="note" class="form-control" maxlength="150" placeholder="Alasan, mis. dikembalikan tunai" required></div>
+                    <div class="col-sm-3"><button type="submit" class="btn btn-outline-danger w-100">Kurangi</button></div>
+                </form>
+            </details>
         </div>
     </div>
 @endif
@@ -134,7 +143,11 @@
                                 @endif
                             </td>
                             <td data-label="Nominal" class="num">
-                                <b class="text-success">+@rupiah($dep->amount)</b>
+                                @if($dep->type === 'out')
+                                    <b class="text-danger">−@rupiah($dep->amount)</b>
+                                @else
+                                    <b class="text-success">+@rupiah($dep->amount)</b>
+                                @endif
                             </td>
                             <td data-label="Saldo Akhir" class="num">
                                 <b>@rupiah($dep->balance_after)</b>

@@ -27,11 +27,10 @@ class AppServiceProvider extends ServiceProvider
             default    => new FakeGateway(),
         });
 
-        // Mesin Asisten Kandang
-        $this->app->singleton(\App\Assistant\Llm::class, fn () => match (config('hefam.assistant.driver')) {
-            'demo'  => new \App\Assistant\DemoLlm(),
-            default => new \App\Assistant\ClaudeLlm(),
-        });
+        // Mesin Asisten Kandang; mesin demo (tanpa AI) tidak pernah dipakai di production.
+        $this->app->singleton(\App\Assistant\Llm::class, fn () => config('hefam.assistant.driver') === 'demo' && !$this->app->isProduction()
+            ? new \App\Assistant\DemoLlm()
+            : new \App\Assistant\ClaudeLlm());
     }
 
     /**
