@@ -208,4 +208,80 @@ class CustomerPortalSecurityTest extends TestCase
 
         $response->assertForbidden();
     }
+
+    private function portalGet(string $token)
+    {
+        return $this->get(route('portal.customer', ['customer' => $this->customerA->id, 'token' => $token]));
+    }
+
+    public function test_link_portal_berlaku_tujuh_hari_lalu_kedaluwarsa(): void
+    {
+        $token = $this->customerA->portalToken();
+
+        $this->travel(7)->days();
+        $this->portalGet($token)->assertOk()->assertSee('Toko Berkah Gianyar');
+
+        $this->travel(1)->days();
+        $this->portalGet($token)
+            ->assertStatus(410)
+            ->assertSee('Link tagihan sudah lewat')
+            ->assertDontSee('150.000');
+    }
+
+    public function test_link_lama_tanpa_tanggal_dianggap_kedaluwarsa_bukan_ditolak(): void
+    {
+        $legacy = substr(hash_hmac('sha256', "portal:customer:{$this->customerA->id}:{$this->customerA->farm_id}", config('app.key')), 0, 24);
+
+        $this->portalGet($legacy)->assertStatus(410)->assertSee('Kirim link baru ke WhatsApp saya');
+    }
+
+    public function test_tanggal_link_yang_diubah_manual_ditolak(): void
+    {
+        [, $sig] = explode('-', $this->customerA->portalToken());
+        $forged  = now()->addYears(5)->timestamp . '-' . $sig;
+
+        $this->portalGet($forged)->assertForbidden();
+    }
+
+    public function test_cetak_nota_dengan_link_kedaluwarsa_diarahkan_ke_halaman_link_baru(): void
+    {
+        $token = $this->customerA->portalToken();
+        $this->travel(9)->days();
+
+        $this->get(route('portal.receipt', ['customer' => $this->customerA->id, 'token' => $token, 'invoice' => 1]))
+            ->assertRedirect(route('portal.customer', [$this->customerA->id, $token]));
+    }
+
+    public function test_pelanggan_bisa_minta_link_baru_ke_nomor_wa_terdaftar(): void
+    {
+        $this->farm->update(['plan' => 'entrepreneur']);
+        config(['hefam.whatsapp.driver' => 'fonnte', 'hefam.whatsapp.fonnte_token' => 'token-test']);
+        \Illuminate\Support\Facades\Http::fake(['https://api.fonnte.com/send' => \Illuminate\Support\Facades\Http::response(['status' => true], 200)]);
+
+        $token = $this->customerA->portalToken();
+        $this->travel(8)->days();
+
+        $resend = route('portal.resend', [$this->customerA->id, $token]);
+        $this->post($resend)->assertRedirect()->assertSessionHas('success');
+        $this->post($resend)->assertRedirect();
+
+        \Illuminate\Support\Facades\Http::assertSentCount(1);
+        \Illuminate\Support\Facades\Http::assertSent(function ($request) {
+            if ($request['target'] !== '6281234567890' || !preg_match('#/tagihan/' . $this->customerA->id . '/(\S+)#', $request['message'], $m)) {
+                return false;
+            }
+
+            return $this->customerA->portalTokenStatus($m[1]) === 'valid';
+        });
+    }
+
+    public function test_link_baru_tidak_bisa_diminta_dengan_link_palsu_atau_yang_masih_berlaku(): void
+    {
+        \Illuminate\Support\Facades\Http::fake();
+
+        $this->post(route('portal.resend', [$this->customerA->id, 'palsu-123']))->assertForbidden();
+        $this->post(route('portal.resend', [$this->customerA->id, $this->customerA->portalToken()]))->assertRedirect();
+
+        \Illuminate\Support\Facades\Http::assertNothingSent();
+    }
 }

@@ -11,6 +11,9 @@ class Customer extends Model
 {
     use HasFactory, BelongsToFarm, RecordsActivity;
 
+    // Link portal tagihan berlaku sampai akhir hari ke-7; pengingat otomatis (tiap 7 hari) selalu membawa link baru
+    public const PORTAL_DAYS = 7;
+
     protected $fillable = ['name', 'phone', 'address'];
 
     private ?float $debtTotal = null;
@@ -88,7 +91,35 @@ class Customer extends Model
 
     public function portalToken(): string
     {
-        return substr(hash_hmac('sha256', "portal:customer:{$this->id}:{$this->farm_id}", config('app.key')), 0, 24);
+        $expires = now()->addDays(self::PORTAL_DAYS)->endOfDay()->timestamp;
+
+        return $expires . '-' . $this->portalSignature($expires);
+    }
+
+    // valid | expired (link asli tapi sudah lewat masa berlaku, termasuk link lama tanpa tanggal) | invalid
+    public function portalTokenStatus(string $token): string
+    {
+        if (preg_match('/^(\d{9,11})-([a-f0-9]{24})$/', $token, $m)) {
+            if (!hash_equals($this->portalSignature((int) $m[1]), $m[2])) {
+                return 'invalid';
+            }
+
+            return (int) $m[1] >= now()->timestamp ? 'valid' : 'expired';
+        }
+
+        $legacy = substr(hash_hmac('sha256', "portal:customer:{$this->id}:{$this->farm_id}", config('app.key')), 0, 24);
+
+        return hash_equals($legacy, $token) ? 'expired' : 'invalid';
+    }
+
+    public function portalExpiresAt(string $token): ?\Carbon\Carbon
+    {
+        return preg_match('/^(\d{9,11})-/', $token, $m) ? \Carbon\Carbon::createFromTimestamp((int) $m[1]) : null;
+    }
+
+    private function portalSignature(int $expires): string
+    {
+        return substr(hash_hmac('sha256', "portal:customer:{$this->id}:{$this->farm_id}:{$expires}", config('app.key')), 0, 24);
     }
 
     public function portalUrl(?Invoice $currentInvoice = null): string
@@ -258,7 +289,7 @@ class Customer extends Model
             $lines[]   = "";
             $lines[]   = "🌐 *CEK RINCIAN & NOTA ONLINE:*";
             $lines[]   = $portalUrl;
-            $lines[]   = "_(Buka tautan di atas untuk melihat detail barang, nota & status utang)_";
+            $lines[]   = "_(Buka tautan di atas untuk melihat detail barang, nota & status utang. Berlaku sampai " . \App\Support\Format::date(now()->addDays(self::PORTAL_DAYS)) . ")_";
 
             if ($farmPhone) {
                 $lines[] = "";

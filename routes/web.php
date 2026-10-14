@@ -74,6 +74,7 @@ Route::post('/webhook/asisten/{secret}', AssistantWebhookController::class)->mid
 Route::middleware('throttle:60,1')->group(function () {
     Route::get('/tagihan/{customer}/{token}', [CustomerPortalController::class, 'show'])->name('portal.customer');
     Route::get('/tagihan/{customer}/{token}/nota/{invoice}/cetak', [CustomerPortalController::class, 'printReceipt'])->name('portal.receipt');
+    Route::post('/tagihan/{customer}/{token}/link-baru', [CustomerPortalController::class, 'resendLink'])->middleware('throttle:5,1')->name('portal.resend');
 });
 
 // =========================================================================
