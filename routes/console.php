@@ -4,6 +4,7 @@ use App\Models\ActivityLog;
 use App\Models\User;
 use App\Services\DatabaseBackup;
 use App\Services\FarmReminders;
+use App\Services\WhatsAppHealth;
 use App\Support\Format;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
@@ -60,7 +61,16 @@ Artisan::command('hefam:tagih-pelanggan {--farm= : id peternakan} {--paksa : kir
     return 0;
 })->purpose('Kirim tagihan WhatsApp otomatis langsung ke pelanggan yang utangnya jatuh tempo (pukul 07.00 - 19.00)');
 
+Artisan::command('hefam:cek-wa', function (WhatsAppHealth $health) {
+    foreach ($health->check() as $label => $status) {
+        $this->line(WhatsAppHealth::LABELS[$label] . ': ' . $status);
+    }
+
+    return 0;
+})->purpose('Cek apakah perangkat WhatsApp Fonnte masih tersambung; kirim email peringatan bila terputus');
+
 Schedule::command('hefam:backup')->dailyAt('01:30')->withoutOverlapping();
+Schedule::command('hefam:cek-wa')->everyThirtyMinutes()->withoutOverlapping();
 Schedule::command('model:prune', ['--model' => [ActivityLog::class]])->dailyAt('02:12');
 Schedule::command('hefam:tagih-pelanggan')->hourly()->between('07:00', '19:00')->withoutOverlapping();
 foreach (['pagi' => 'morning_at', 'sore' => 'evening_at'] as $kind => $key) {

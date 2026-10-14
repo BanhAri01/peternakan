@@ -224,6 +224,24 @@
             </nav>
         @endif
 
+        {{-- Peringatan WhatsApp Fonnte terputus --}}
+        @if(($isOwner || $isAdmin) && ($waDown = app(\App\Services\WhatsAppHealth::class)->down()))
+            <div class="wa-down-banner" role="alert">
+                <i class="bi bi-whatsapp"></i>
+                <span>
+                    WhatsApp HEFAM terputus sejak {{ collect($waDown)->min('since')->translatedFormat('j M H:i') }}.
+                    @if($isAdmin)
+                        ({{ collect($waDown)->keys()->map(fn ($l) => \App\Services\WhatsAppHealth::LABELS[$l])->implode(', ') }}) Scan ulang QR di Fonnte.
+                    @else
+                        Pengingat &amp; tagihan WhatsApp tertunda dan akan terkirim otomatis setelah tersambung lagi. Admin HEFAM sudah diberi tahu.
+                    @endif
+                </span>
+                @if($isAdmin)
+                    <a href="https://fonnte.com" target="_blank" rel="noopener">Buka Fonnte <i class="bi bi-box-arrow-up-right"></i></a>
+                @endif
+            </div>
+        @endif
+
         {{-- Pengingat masa coba / langganan untuk pemilik --}}
         @if($isOwner && $farm && $farm->daysLeft() !== null && $farm->daysLeft() <= ($farm->status === 'trial' ? \App\Models\Farm::TRIAL_DAYS : 7) && !request()->routeIs('subscription.*'))
             <div class="trial-banner">

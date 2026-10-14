@@ -42,8 +42,15 @@ class WhatsApp
                 'countryCode' => '62',
             ]);
 
+        $health = app(WhatsAppHealth::class);
+
         if ($response->failed() || $response->json('status') !== true) {
-            throw new RuntimeException('Fonnte menolak pesan: ' . ($response->json('reason') ?? $response->body()));
+            $reason = (string) ($response->json('reason') ?? $response->body());
+            $health->reportFailure($token, $reason);
+
+            throw new RuntimeException('Fonnte menolak pesan: ' . $reason);
         }
+
+        $health->reportSuccess($token);
     }
 }

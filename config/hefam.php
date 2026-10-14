@@ -28,6 +28,9 @@ return [
         'driver'        => env('HEFAM_WA_DRIVER', 'log'),
         'fonnte_token'  => env('FONNTE_TOKEN'),
         'fonnte_url'    => env('FONNTE_URL', 'https://api.fonnte.com/send'),
+        'fonnte_device_url' => env('FONNTE_DEVICE_URL', 'https://api.fonnte.com/device'),
+        // Email penerima peringatan bila perangkat WhatsApp terputus
+        'alert_email'   => env('HEFAM_ALERT_EMAIL', env('HEFAM_CONTACT_EMAIL', 'idewamadearisantika@gmail.com')),
         'morning_at'    => ['06:00', '07:00'],
         'evening_at'    => ['17:00', '18:00'],
     ],
