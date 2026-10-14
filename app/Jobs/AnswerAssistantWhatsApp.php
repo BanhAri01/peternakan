@@ -27,7 +27,7 @@ class AnswerAssistantWhatsApp
     {
         $phone = AssistantPhone::allFarms()->with(['farm', 'user'])->find($this->phoneId);
 
-        if (!$phone || !$phone->farm) {
+        if (!$phone || !$phone->farm || !$phone->serviceable()) {
             return;
         }
 

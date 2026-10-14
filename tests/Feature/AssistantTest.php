@@ -136,24 +136,109 @@ class AssistantTest extends TestCase
         $this->assertEmpty($response->json('tools'));
     }
 
+    private function registerPhone(User $owner, string $phone, bool $ok = true): ?string
+    {
+        Http::fake(['https://api.fonnte.com/send' => Http::response(['status' => $ok, 'reason' => $ok ? null : 'nomor tidak aktif'], 200)]);
+
+        $this->actingAs($owner)->post(route('assistant.phones.store'), ['phone' => $phone, 'label' => 'HP Bapak']);
+
+        $sent = Http::recorded()->last()[0] ?? null;
+
+        return $sent && preg_match('/\*(\d{6})\*/', (string) $sent['message'], $m) ? $m[1] : null;
+    }
+
     public function test_pemilik_bisa_mendaftarkan_dan_menghapus_nomor_whatsapp(): void
     {
-        $response = $this->actingAs($this->owner)->post(route('assistant.phones.store'), [
-            'phone' => '0812 3456 7890',
-            'label' => 'HP Bapak',
-        ]);
+        $code = $this->registerPhone($this->owner, '0812 3456 7890');
 
-        $response->assertRedirect();
+        $this->assertNotNull($code);
         $this->assertDatabaseHas('assistant_phones', [
             'farm_id' => $this->farm->id,
             'phone' => '6281234567890',
             'label' => 'HP Bapak',
+            'verified_at' => null,
         ]);
 
         $phone = AssistantPhone::where('phone', '6281234567890')->first();
+        $this->actingAs($this->owner)->post(route('assistant.phones.verify', $phone), ['code' => $code])->assertSessionHasNoErrors();
+        $this->assertNotNull($phone->fresh()->verified_at);
+
         $delResponse = $this->actingAs($this->owner)->delete(route('assistant.phones.destroy', $phone));
         $delResponse->assertRedirect();
         $this->assertDatabaseMissing('assistant_phones', ['id' => $phone->id]);
+    }
+
+    public function test_nomor_belum_diverifikasi_tidak_dilayani_dan_kode_salah_ditolak(): void
+    {
+        $code  = $this->registerPhone($this->owner, '0812 3456 7890');
+        $phone = AssistantPhone::where('phone', '6281234567890')->first();
+
+        $this->postJson(route('webhooks.assistant', ['secret' => 'rahasia-asisten-123']), ['sender' => '081234567890', 'message' => 'Telur?'])
+            ->assertJson(['status' => 'ignored', 'reason' => 'unknown']);
+
+        $this->actingAs($this->owner)->post(route('assistant.phones.verify', $phone), ['code' => '000000'])->assertSessionHasErrors("code_{$phone->id}");
+        $this->actingAs($this->owner)->post(route('assistant.phones.verify', $phone), ['code' => $code])->assertSessionHasNoErrors();
+
+        $this->postJson(route('webhooks.assistant', ['secret' => 'rahasia-asisten-123']), ['sender' => '081234567890', 'message' => 'Telur?'])
+            ->assertJson(['status' => 'accepted']);
+    }
+
+    public function test_kode_salah_lima_kali_membatalkan_kode(): void
+    {
+        $code  = $this->registerPhone($this->owner, '0812 3456 7890');
+        $phone = AssistantPhone::where('phone', '6281234567890')->first();
+
+        foreach (range(1, 5) as $i) {
+            $this->actingAs($this->owner)->post(route('assistant.phones.verify', $phone), ['code' => '111111']);
+        }
+
+        $this->actingAs($this->owner)->post(route('assistant.phones.verify', $phone), ['code' => $code])->assertSessionHasErrors("code_{$phone->id}");
+        $this->assertNull($phone->fresh()->verified_at);
+    }
+
+    public function test_peternakan_lain_tidak_bisa_merebut_nomor_yang_sedang_didaftarkan(): void
+    {
+        $this->registerPhone($this->owner, '0812 3456 7890');
+
+        $farm2  = Farm::create(['name' => 'Farm Kedua', 'plan' => 'entrepreneur', 'status' => 'active']);
+        $owner2 = User::create(['farm_id' => $farm2->id, 'name' => 'Owner 2', 'role' => 'owner', 'email' => 'o2@test.com', 'password' => 'pass']);
+
+        $this->actingAs($owner2)->post(route('assistant.phones.store'), ['phone' => '081234567890'])->assertSessionHasErrors('phone');
+
+        $this->travel(11)->minutes();
+        $this->assertNotNull($this->registerPhone($owner2, '081234567890'));
+        $this->assertSame($farm2->id, AssistantPhone::allFarms()->sole()->farm_id);
+    }
+
+    public function test_pendaftaran_dibatalkan_bila_kode_gagal_dikirim(): void
+    {
+        $this->registerPhone($this->owner, '0812 3456 7890', ok: false);
+
+        $this->assertSame(0, AssistantPhone::allFarms()->count());
+    }
+
+    public function test_kirim_ulang_kode_ditahan_satu_menit(): void
+    {
+        $this->registerPhone($this->owner, '0812 3456 7890');
+        $this->actingAs($this->owner)->post(route('assistant.phones.store'), ['phone' => '0812 3456 7890'])->assertSessionHasErrors('phone');
+
+        $this->travel(2)->minutes();
+        $this->assertNotNull($this->registerPhone($this->owner, '0812 3456 7890'));
+        $this->assertSame(1, AssistantPhone::allFarms()->count());
+    }
+
+    public function test_nomor_berhenti_dilayani_bila_akun_pendaftarnya_dihapus(): void
+    {
+        $owner2 = User::create(['farm_id' => $this->farm->id, 'name' => 'Owner Kedua', 'role' => 'owner', 'email' => 'kedua@test.com', 'password' => 'pass']);
+        $phone  = AssistantPhone::create(['farm_id' => $this->farm->id, 'phone' => '6281234567890', 'user_id' => $owner2->id, 'verified_at' => now()]);
+        $owner2->delete();
+
+        $this->postJson(route('webhooks.assistant', ['secret' => 'rahasia-asisten-123']), ['sender' => '081234567890', 'message' => 'Telur?'])
+            ->assertJson(['status' => 'ignored', 'reason' => 'inactive']);
+
+        Http::fake();
+        (new \App\Jobs\AnswerAssistantWhatsApp($phone->id, 'Telur?'))->handle(app(Agent::class), app(WhatsApp::class));
+        Http::assertNothingSent();
     }
 
     public function test_nomor_whatsapp_tidak_bisa_didaftarkan_ganda_antar_peternakan(): void
@@ -162,6 +247,8 @@ class AssistantTest extends TestCase
             'farm_id' => $this->farm->id,
             'phone' => '6281234567890',
             'label' => 'HP Utama',
+            'user_id' => $this->owner->id,
+            'verified_at' => now(),
         ]);
 
         // Buat peternakan kedua
@@ -210,6 +297,7 @@ class AssistantTest extends TestCase
             'phone' => '6281234567890',
             'label' => 'HP Mandor',
             'user_id' => $this->owner->id,
+            'verified_at' => now(),
         ]);
 
         $response = $this->postJson(route('webhooks.assistant', ['secret' => 'rahasia-asisten-123']), [
@@ -238,6 +326,7 @@ class AssistantTest extends TestCase
             'phone' => '6281234567890',
             'label' => 'HP Mandor',
             'user_id' => $this->owner->id,
+            'verified_at' => now(),
         ]);
 
         Http::fake([

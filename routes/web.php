@@ -161,6 +161,7 @@ Route::middleware('auth')->group(function () {
             Route::get('/asisten', [AssistantController::class, 'index'])->name('assistant.index');
             Route::post('/asisten/tanya', [AssistantController::class, 'ask'])->middleware('throttle:20,1')->name('assistant.ask');
             Route::post('/asisten/nomor', [AssistantController::class, 'storePhone'])->middleware('throttle:10,1')->name('assistant.phones.store');
+            Route::post('/asisten/nomor/{assistantPhone}/verifikasi', [AssistantController::class, 'verifyPhone'])->middleware('throttle:10,1')->name('assistant.phones.verify');
             Route::delete('/asisten/nomor/{assistantPhone}', [AssistantController::class, 'destroyPhone'])->name('assistant.phones.destroy');
         });
 

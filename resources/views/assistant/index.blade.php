@@ -175,7 +175,7 @@
         {{-- Integrasi WhatsApp --}}
         <x-panel title="Tanya Lewat WhatsApp" icon="bi-whatsapp" tone="brand" class="mb-4">
             <p class="small text-muted mb-3">
-                Pemilik dan mandor bisa bertanya langsung ke WhatsApp Asisten tanpa perlu membuka aplikasi. Nomor HP harus didaftarkan di bawah ini agar sistem mengenali peternakan Anda.
+                Pemilik dan mandor bisa bertanya langsung ke WhatsApp Asisten tanpa perlu membuka aplikasi. Daftarkan nomornya di bawah ini; kami kirim kode ke WhatsApp nomor itu untuk memastikan nomornya benar milik Anda.
             </p>
 
             {{-- Form Tambah Nomor --}}
@@ -200,16 +200,47 @@
             @else
                 <ul class="list-group list-group-flush small">
                     @foreach($phones as $p)
-                        <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
-                            <div>
-                                <span class="fw-bold text-dark d-block">{{ $p->phone }}</span>
-                                <span class="text-muted" style="font-size: 0.8rem;">{{ $p->label ?? ($p->user->name ?? 'Pemilik') }}</span>
+                        <li class="list-group-item px-0 py-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="fw-bold text-dark d-block">
+                                        {{ $p->phone }}
+                                        @if(!$p->isVerified())
+                                            <span class="badge bg-warning text-dark ms-1">Menunggu kode</span>
+                                        @elseif(!$p->ownerActive())
+                                            <span class="badge bg-danger ms-1">Tidak aktif</span>
+                                        @endif
+                                    </span>
+                                    <span class="text-muted" style="font-size: 0.8rem;">{{ $p->label ?? ($p->user->name ?? 'Pemilik') }}</span>
+                                </div>
+                                <form action="{{ route('assistant.phones.destroy', $p) }}" method="POST" onsubmit="return confirm('Lepas nomor {{ $p->phone }}?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-link text-danger p-0" title="Hapus"><i class="bi bi-trash"></i></button>
+                                </form>
                             </div>
-                            <form action="{{ route('assistant.phones.destroy', $p) }}" method="POST" onsubmit="return confirm('Lepas nomor {{ $p->phone }}?')">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn btn-sm btn-link text-danger p-0" title="Hapus"><i class="bi bi-trash"></i></button>
-                            </form>
+
+                            @if($p->isVerified() && !$p->ownerActive())
+                                <div class="small text-muted mt-1">Akun yang mendaftarkan nomor ini sudah dihapus. Lepas lalu daftarkan ulang supaya bisa dipakai lagi.</div>
+                            @elseif(!$p->isVerified())
+                                <form action="{{ route('assistant.phones.verify', $p) }}" method="POST" class="mt-2">
+                                    @csrf
+                                    <label class="form-label small fw-bold mb-1">Kode 6 angka dari WhatsApp</label>
+                                    <div class="input-group input-group-sm">
+                                        <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="123456" class="form-control @error('code_' . $p->id) is-invalid @enderror" required>
+                                        <button type="submit" class="btn btn-egg">Aktifkan</button>
+                                    </div>
+                                    @error('code_' . $p->id)
+                                        <div class="text-danger small mt-1">{{ $message }}</div>
+                                    @enderror
+                                </form>
+                                <form action="{{ route('assistant.phones.store') }}" method="POST" class="mt-1">
+                                    @csrf
+                                    <input type="hidden" name="phone" value="{{ $p->phone }}">
+                                    <input type="hidden" name="label" value="{{ $p->label }}">
+                                    <button type="submit" class="btn btn-sm btn-link p-0">Kirim ulang kode</button>
+                                </form>
+                            @endif
                         </li>
                     @endforeach
                 </ul>

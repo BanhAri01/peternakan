@@ -45,9 +45,12 @@ class AssistantWebhookController extends Controller
             return $this->ignored('empty');
         }
 
-        $phone = AssistantPhone::allFarms()->where('phone', $sender)->first();
+        $phone = AssistantPhone::allFarms()->with('user')->verified()->where('phone', $sender)->first();
         if (!$phone) {
             return $this->ignored('unknown');
+        }
+        if (!$phone->ownerActive()) {
+            return $this->ignored('inactive');
         }
 
         $id = $request->input('inboxid') ?? $request->input('id');
