@@ -61,7 +61,7 @@ Artisan::command('hefam:tagih-pelanggan {--farm= : id peternakan} {--paksa : kir
 })->purpose('Kirim tagihan WhatsApp otomatis langsung ke pelanggan yang utangnya jatuh tempo (pukul 07.00 - 19.00)');
 
 Schedule::command('hefam:backup')->dailyAt('01:30')->withoutOverlapping();
-Schedule::command('model:prune', ['--model' => [ActivityLog::class]])->dailyAt('02:15');
+Schedule::command('model:prune', ['--model' => [ActivityLog::class]])->dailyAt('02:12');
 Schedule::command('hefam:tagih-pelanggan')->hourly()->between('07:00', '19:00')->withoutOverlapping();
 foreach (['pagi' => 'morning_at', 'sore' => 'evening_at'] as $kind => $key) {
     foreach (config('hefam.whatsapp.' . $key) as $time) {
