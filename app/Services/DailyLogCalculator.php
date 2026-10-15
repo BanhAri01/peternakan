@@ -5,7 +5,7 @@ namespace App\Services;
 use App\Tenancy\FarmRule;
 use Illuminate\Http\Request;
 
-// Menghitung total telur dan HDP dari isian form panen harian. Pakan dicatat per sesi (FeedingService).
+// Menghitung total telur dan HDP dari isian form panen harian. Pakan dari form panen disimpan lewat FeedingService.
 class DailyLogCalculator
 {
     public const TRAY_SIZE = 30;

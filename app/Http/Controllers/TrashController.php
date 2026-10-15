@@ -107,8 +107,10 @@ class TrashController extends Controller
             Coop::whereKey($coop->id)->decrement('current_population', $loss);
         }
 
+        $stamp = $log->deleted_at;
         DailyLogGrade::onlyTrashed()->where('daily_log_id', $log->id)->restore();
         $log->restore();
+        app(\App\Services\FeedingService::class)->restoreForDay($log->coop_id, $log->log_date->toDateString(), $stamp);
 
         return 'Laporan panen ' . $coop->name . ' tanggal ' . Format::date($log->log_date) . ' dipulihkan. Jumlah ayam dan stok pakan sudah disesuaikan.';
     }

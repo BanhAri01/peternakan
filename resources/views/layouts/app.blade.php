@@ -15,7 +15,6 @@
         ],
         'Kegiatan Harian' => [
             ['route' => 'daily-logs.index', 'match' => 'daily-logs.index|daily-logs.edit', 'icon' => 'bi-journal-text', 'label' => 'Riwayat Panen'],
-            ['route' => 'feedings.create', 'match' => 'feedings.*', 'icon' => 'bi-basket2', 'label' => 'Beri Pakan'],
             ['route' => 'sortings.create', 'match' => 'sortings.*', 'icon' => 'bi-funnel-fill', 'label' => 'Sortir Telur'],
             ['route' => 'sales.index', 'match' => 'sales.*', 'icon' => 'bi-basket2-fill', 'label' => 'Penjualan Telur'],
             ['route' => 'customers.index', 'match' => 'customers.*', 'icon' => 'bi-person-lines-fill', 'label' => 'Pelanggan & Piutang'],
@@ -217,7 +216,6 @@
         @if($user?->isWorker())
             {{-- Menu pekerja: dua tombol besar --}}
             <nav class="worker-tabs" aria-label="Menu pekerja">
-                <a href="{{ route('feedings.create') }}" class="{{ request()->routeIs('feedings.*') ? 'active' : '' }}"><i class="bi bi-basket2-fill"></i> Beri Pakan</a>
                 <a href="{{ route('daily-logs.create') }}" class="{{ request()->routeIs('daily-logs.*') ? 'active' : '' }}"><i class="bi bi-clipboard2-check-fill"></i> Catat Panen</a>
                 <a href="{{ route('sortings.create') }}" class="{{ request()->routeIs('sortings.*') ? 'active' : '' }}"><i class="bi bi-funnel-fill"></i> Sortir</a>
                 <a href="{{ route('feed-counts.create') }}" class="{{ request()->routeIs('feed-counts.*') ? 'active' : '' }}"><i class="bi bi-calculator-fill"></i> Hitung Stok</a>

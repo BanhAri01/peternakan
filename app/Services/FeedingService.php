@@ -157,6 +157,94 @@ class FeedingService
         $this->syncDailyLog($feeding->coop_id, $feeding->feed_date->toDateString());
     }
 
+    /**
+     * Pakan dicatat dari form panen: semua pemberian pakan kandang itu di tanggal itu diganti dengan isian baru.
+     * Bila isinya sama persis dengan yang sudah tercatat, tidak ada yang diubah (biaya lama tetap).
+     */
+    public function replaceForDay(int $coopId, string $date, array $lines, ?int $userId): void
+    {
+        $items   = self::items($lines);
+        $current = Feeding::with('items')->where('coop_id', $coopId)->where('feed_date', $date)->get();
+
+        if (self::kgByFeed($current->flatMap->items->all()) === self::kgByFeed($items)) {
+            $this->syncDailyLog($coopId, $date);
+
+            return;
+        }
+
+        DB::transaction(function () use ($coopId, $date, $items, $current, $userId) {
+            foreach ($current as $feeding) {
+                $this->applyStock($feeding, 1);
+                $feeding->items()->delete();
+                $feeding->forceDelete();
+            }
+
+            if ($items !== []) {
+                $feeding = Feeding::create([
+                    'coop_id'     => $coopId,
+                    'feed_date'   => $date,
+                    'session'     => null,
+                    'recorded_by' => $userId,
+                ]);
+                $feeding->items()->createMany($items);
+                $this->applyStock($feeding, -1);
+            }
+
+            $this->syncDailyLog($coopId, $date);
+        });
+    }
+
+    // Saat panen dihapus: pakan hari itu ikut ke Sampah dengan waktu hapus yang sama, stok dikembalikan
+    public function trashForDay(int $coopId, string $date, \DateTimeInterface $stamp): void
+    {
+        $ids = [];
+        foreach (Feeding::where('coop_id', $coopId)->where('feed_date', $date)->get() as $feeding) {
+            $this->applyStock($feeding, 1);
+            $feeding->delete();
+            $ids[] = $feeding->id;
+        }
+
+        if ($ids !== []) {
+            Feeding::onlyTrashed()->whereIn('id', $ids)->update(['deleted_at' => $stamp]);
+        }
+    }
+
+    // Saat panen dipulihkan: pakan yang terhapus bersamanya ikut kembali, stok dipotong lagi
+    public function restoreForDay(int $coopId, string $date, \DateTimeInterface $stamp): void
+    {
+        foreach (Feeding::onlyTrashed()->where('coop_id', $coopId)->where('feed_date', $date)->where('deleted_at', $stamp)->get() as $feeding) {
+            $this->applyStock($feeding, -1);
+            $feeding->restore();
+        }
+
+        $this->syncDailyLog($coopId, $date);
+    }
+
+    // Isian form panen dari pemberian pakan yang sudah tercatat (karung + sisa kg per jenis)
+    public static function linesForDay(int $coopId, string $date): array
+    {
+        $sackKg = Setting::num('sack_kg') ?: 50;
+        $items  = FeedingItem::active()->where('feedings.coop_id', $coopId)->where('feedings.feed_date', $date)->get(['feeding_items.feed_stock_id', 'feeding_items.feed_kg']);
+
+        return collect(self::kgByFeed($items->all()))->map(function ($kg, $feedId) use ($sackKg) {
+            $sacks = (int) floor($kg / $sackKg);
+
+            return ['id' => (string) $feedId, 'sacks' => $sacks ?: '', 'extra' => round($kg - $sacks * $sackKg, 2) ?: ''];
+        })->values()->all();
+    }
+
+    private static function kgByFeed(array $items): array
+    {
+        $kg = [];
+        foreach ($items as $item) {
+            $id      = (int) data_get($item, 'feed_stock_id');
+            $kg[$id] = round(($kg[$id] ?? 0) + (float) data_get($item, 'feed_kg'), 2);
+        }
+        ksort($kg);
+
+        return array_filter($kg, fn ($v) => $v > 0);
+    }
+
     public function syncDailyLog(int $coopId, string $date): void
     {
         $log = DailyLog::where('coop_id', $coopId)->where('log_date', $date)->first();

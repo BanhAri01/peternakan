@@ -140,7 +140,6 @@ Route::middleware('auth')->group(function () {
         Route::post('/panen/simpan', [DailyLogController::class, 'store'])->name('daily-logs.store');
 
         // Pemberian pakan per sesi & hitung stok gudang
-        Route::get('/pakan/beri', [FeedingController::class, 'create'])->name('feedings.create');
         Route::post('/pakan/beri', [FeedingController::class, 'store'])->name('feedings.store');
         Route::get('/stok-pakan/hitung', [FeedCountController::class, 'create'])->name('feed-counts.create');
         Route::post('/stok-pakan/hitung', [FeedCountController::class, 'store'])->name('feed-counts.store');
@@ -166,9 +165,6 @@ Route::middleware('auth')->group(function () {
             Route::delete('/asisten/nomor/{assistantPhone}', [AssistantController::class, 'destroyPhone'])->name('assistant.phones.destroy');
         });
 
-        Route::get('/pakan/{feeding}/ubah', [FeedingController::class, 'edit'])->name('feedings.edit');
-        Route::put('/pakan/{feeding}', [FeedingController::class, 'update'])->name('feedings.update');
-        Route::delete('/pakan/{feeding}', [FeedingController::class, 'destroy'])->name('feedings.destroy');
         Route::get('/stok-pakan/cek', [FeedCountController::class, 'index'])->name('feed-counts.index');
 
         // Riwayat panen

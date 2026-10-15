@@ -47,26 +47,21 @@ class FeedingTest extends TestCase
         return ['feed_stock_id' => $this->feed->id, 'sacks' => $sacks, 'extra_kg' => $kg];
     }
 
-    public function test_sesi_bawaan_pagi_sore_dan_sesi_aktif_mengikuti_jam(): void
-    {
-        $this->assertSame(['Pagi', 'Sore'], array_column(FeedingService::sessions(), 'name'));
-        $this->assertSame(0, FeedingService::currentSession(Carbon::parse('2026-10-20 09:00')));
-        $this->assertSame(1, FeedingService::currentSession(Carbon::parse('2026-10-20 16:00')));
-    }
-
-    public function test_pekerja_mencatat_pagi_dan_sore_stok_berkurang_dan_panen_menjumlahkan(): void
+    public function test_menu_beri_pakan_dan_sesi_sudah_tidak_ada(): void
     {
         $this->useFarmDevice();
-        $this->actingAs($this->worker)->get(route('feedings.create'))->assertOk()->assertSee('Sesi ke berapa?')->assertSee('Kandang A');
+        $this->actingAs($this->worker)->get(route('daily-logs.create'))->assertOk()
+            ->assertSee('Pakan yang diberikan')->assertDontSee('Beri Pakan');
+        $this->actingAs($this->owner)->get('/pakan/beri')->assertStatus(405);
+        $this->actingAs($this->owner)->get(route('settings.edit'))->assertOk()->assertDontSee('Nama sesi');
+    }
 
-        $this->actingAs($this->worker)->feed(0, [$this->layer(1)])->assertSessionHas('success');
-        $this->actingAs($this->worker)->feed(1, [$this->layer(1, 5), ['feed_stock_id' => $this->grower->id, 'sacks' => 0, 'extra_kg' => 10]])->assertSessionHas('success');
-
-        $this->assertEquals(1000 - 105, $this->feed->fresh()->stock_kg);
-        $this->assertEquals(490, $this->grower->fresh()->stock_kg);
-
-        $payload = $this->harvestPayload();
+    public function test_pekerja_mencatat_pakan_di_form_panen_dengan_beberapa_jenis(): void
+    {
+        $this->useFarmDevice();
+        $payload = $this->harvestPayload(['feeds' => [$this->layer(2, 5), ['feed_stock_id' => $this->grower->id, 'sacks' => 0, 'extra_kg' => 10]]]);
         unset($payload['feed_stock_id'], $payload['feed_sacks'], $payload['extra_feed_kg']);
+
         $this->actingAs($this->worker)->post(route('daily-logs.store'), $payload)->assertSessionHas('success');
 
         $log = DailyLog::firstOrFail();
@@ -75,6 +70,9 @@ class FeedingTest extends TestCase
         $this->assertEquals(round(115 / 55, 2), $log->fcr);
         $this->assertSame($this->feed->id, $log->feed_stock_id);
         $this->assertEquals(1000 - 105, $this->feed->fresh()->stock_kg);
+        $this->assertEquals(490, $this->grower->fresh()->stock_kg);
+        $this->assertSame(1, Feeding::count());
+        $this->assertNull(Feeding::first()->session);
     }
 
     public function test_sesi_yang_sama_tidak_bisa_dicatat_dua_kali(): void
@@ -109,29 +107,54 @@ class FeedingTest extends TestCase
         $this->assertEquals(950, $this->feed->fresh()->stock_kg);
     }
 
-    public function test_pemilik_mengubah_dan_menghapus_lalu_memulihkan(): void
+    public function test_ubah_panen_menggabungkan_pakan_sesi_lama_lalu_hapus_dan_pulihkan(): void
     {
-        $this->actingAs($this->worker)->feed(0, [$this->layer(2)]);
-        $feeding = Feeding::firstOrFail();
+        $this->actingAs($this->worker)->feed(0, [$this->layer(1)]);
+        $this->actingAs($this->worker)->feed(1, [$this->layer(1, 5)]);
+        $payload = $this->harvestPayload();
+        unset($payload['feed_stock_id'], $payload['feed_sacks'], $payload['extra_feed_kg']);
+        $this->actingAs($this->owner)->post(route('daily-logs.store'), $payload)->assertSessionHas('success');
+        $log = DailyLog::firstOrFail();
+        $this->assertEquals(105, $log->feed_consumed_kg);
 
-        $this->actingAs($this->worker)->get(route('feedings.edit', $feeding))->assertRedirect();
+        $this->actingAs($this->owner)->get(route('daily-logs.edit', $log))->assertOk()->assertSee('Pakan yang diberikan')
+            ->assertViewHas('feedLines', [['id' => (string) $this->feed->id, 'sacks' => 2, 'extra' => 5]]);
 
-        $this->actingAs($this->owner)->get(route('feedings.edit', $feeding))->assertOk()->assertSee('Simpan Perubahan');
-        $this->actingAs($this->owner)->put(route('feedings.update', $feeding), [
-            'coop_id' => $this->coop->id, 'feed_date' => today()->toDateString(), 'session' => 0,
-            'feeds' => [['feed_stock_id' => $this->grower->id, 'sacks' => 1, 'extra_kg' => 0]],
-        ])->assertSessionHas('success');
+        $this->feed->update(['cost_per_kg' => 9000]);
+        $this->actingAs($this->owner)->put(route('daily-logs.update', $log), $payload + ['feeds' => [$this->layer(2, 5)]])->assertSessionHasNoErrors();
+        $this->assertSame(2, Feeding::count());
+        $this->assertEquals(105 * 7000, $log->fresh()->feed_cost_total);
 
+        $this->actingAs($this->owner)->put(route('daily-logs.update', $log), $payload + ['feeds' => [['feed_stock_id' => $this->grower->id, 'sacks' => 1, 'extra_kg' => 0]]])->assertSessionHasNoErrors();
+        $this->assertSame(1, Feeding::count());
         $this->assertEquals(1000, $this->feed->fresh()->stock_kg);
         $this->assertEquals(450, $this->grower->fresh()->stock_kg);
+        $this->assertEquals(50, $log->fresh()->feed_consumed_kg);
 
-        $this->actingAs($this->owner)->delete(route('feedings.destroy', $feeding))->assertSessionHas('success');
+        $this->actingAs($this->owner)->delete(route('daily-logs.destroy', $log))->assertSessionHas('success');
         $this->actAsFarm($this->farm);
         $this->assertEquals(500, $this->grower->fresh()->stock_kg);
+        $this->assertSame(0, Feeding::count());
 
-        $this->actingAs($this->owner)->post(route('trash.restore', ['beri-pakan', $feeding->id]))->assertSessionHas('success');
+        $this->actingAs($this->owner)->post(route('trash.restore', ['panen', $log->id]))->assertSessionHas('success');
         $this->actAsFarm($this->farm);
         $this->assertEquals(450, $this->grower->fresh()->stock_kg);
+        $this->assertSame(1, Feeding::count());
+        $this->assertEquals(50, $log->fresh()->feed_consumed_kg);
+    }
+
+    public function test_ubah_panen_tanpa_pakan_mengembalikan_stok(): void
+    {
+        $this->actingAs($this->owner)->post(route('daily-logs.store'), $this->harvestPayload())->assertSessionHas('success');
+        $log = DailyLog::firstOrFail();
+
+        $payload = $this->harvestPayload(['feeds' => [['feed_stock_id' => $this->feed->id, 'sacks' => '', 'extra_kg' => '']]]);
+        unset($payload['feed_stock_id'], $payload['feed_sacks'], $payload['extra_feed_kg']);
+        $this->actingAs($this->owner)->put(route('daily-logs.update', $log), $payload)->assertSessionHasNoErrors();
+
+        $this->assertEquals(1000, $this->feed->fresh()->stock_kg);
+        $this->assertEquals(0, $log->fresh()->feed_consumed_kg);
+        $this->assertSame(0, Feeding::count());
     }
 
     public function test_format_panen_lama_dengan_pakan_tetap_diterima_sebagai_pemberian_pakan(): void
@@ -201,18 +224,15 @@ class FeedingTest extends TestCase
         $this->assertEquals(1000, FeedingService::expectedStock($this->feed->id, '2026-10-17'));
     }
 
-    public function test_pengaturan_sesi_bisa_diubah_jadi_tiga_kali(): void
+    public function test_pengaturan_toleransi_hitung_stok_tetap_bisa_diubah(): void
     {
         $this->actingAs($this->owner)->put(route('settings.update'), [
             'farm_name' => 'Uji', 'egg_price_per_kg' => 27000, 'sack_kg' => 50, 'hdp_warning' => 75, 'low_feed_days' => 4,
             'receipt_paper' => 'continuous', 'receipt_style' => 'ink', 'receipt_color' => '#3f5a26',
-            'feed_sessions' => [['name' => 'Sore', 'time' => '15:00'], ['name' => 'Pagi', 'time' => '06:00'], ['name' => 'Siang', 'time' => '11:00']],
             'feed_count_tolerance_kg' => 5,
         ])->assertSessionHasNoErrors();
 
-        $this->assertSame(['Pagi', 'Siang', 'Sore'], array_column(FeedingService::sessions(), 'name'));
         $this->assertEquals(5, Setting::num('feed_count_tolerance_kg'));
-        $this->actingAs($this->owner)->get(route('feedings.create'))->assertSee('Siang');
     }
 
     public function test_pemakaian_harian_dan_pengingat_memakai_pemberian_pakan(): void
@@ -230,14 +250,20 @@ class FeedingTest extends TestCase
 
     public function test_peternakan_lain_tidak_bisa_melihat_atau_mengubah(): void
     {
-        $this->actingAs($this->worker)->feed(0, [$this->layer(1)]);
-        $feeding = Feeding::firstOrFail();
+        $this->actingAs($this->owner)->post(route('daily-logs.store'), $this->harvestPayload())->assertSessionHas('success');
+        $log = DailyLog::firstOrFail();
 
         $other = app(\App\Services\FarmProvisioner::class)->create([
             'farm_name' => 'Telur Jaya', 'owner_name' => 'Ibu Putu', 'email' => 'jaya@farm.test', 'password' => 'rahasia123',
         ]);
+        $payload = $this->harvestPayload(['feeds' => [$this->layer(5)]]);
+        unset($payload['feed_stock_id'], $payload['feed_sacks'], $payload['extra_feed_kg']);
 
-        $this->actingAs($other)->get(route('feedings.edit', $feeding))->assertNotFound();
-        $this->actingAs($other)->delete(route('feedings.destroy', $feeding))->assertNotFound();
+        $this->actingAs($other)->get(route('daily-logs.edit', $log))->assertNotFound();
+        $this->actingAs($other)->put(route('daily-logs.update', $log), $payload)->assertNotFound();
+        $this->actingAs($other)->delete(route('daily-logs.destroy', $log))->assertNotFound();
+
+        $this->actAsFarm($this->farm);
+        $this->assertEquals(890, $this->feed->fresh()->stock_kg);
     }
 }
