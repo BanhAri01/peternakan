@@ -21,6 +21,7 @@ class ExportPdfController extends Controller
     // Ukuran kertas nota (dalam point; 1 inci = 72 pt)
     public const RECEIPT_PAPERS = [
         'continuous' => ['label' => 'Kertas kontinyu 9,5 x 11 inci (printer dot-matrix)', 'size' => [0, 0, 684, 792]],
+        'continuous_inkjet' => ['label' => 'Kertas kontinyu untuk printer tinta (Epson L3210 dll, 8,5 x 11 inci, pinggiran berlubang disobek)', 'size' => [0, 0, 612, 792]],
         'a4'         => ['label' => 'A4 (HVS biasa)', 'size' => 'a4'],
         'a5'         => ['label' => 'A5 mendatar (setengah A4)', 'size' => 'a5-landscape'],
     ];

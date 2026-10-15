@@ -145,11 +145,22 @@ class SalesTest extends TestCase
         $this->actingAs($this->owner)->post(route('sales.store'), $this->sale());
         $invoice = Invoice::first();
 
-        foreach (['continuous', 'a4', 'a5'] as $paper) {
+        foreach (['continuous', 'continuous_inkjet', 'a4', 'a5'] as $paper) {
             $response = $this->actingAs($this->owner)->get(route('sales.print-receipt', [$invoice, 'kertas' => $paper]));
             $response->assertOk();
             $this->assertStringStartsWith('%PDF', $response->getContent());
         }
+    }
+
+    public function test_nota_printer_tinta_selebar_kertas_letter_dan_satu_halaman(): void
+    {
+        $this->actingAs($this->owner)->post(route('sales.store'), $this->sale());
+        $invoice = Invoice::first();
+
+        $pdf = $this->actingAs($this->owner)->get(route('sales.print-receipt', [$invoice, 'kertas' => 'continuous_inkjet']))->getContent();
+
+        $this->assertStringContainsString('/MediaBox [0.000 0.000 612.000 792.000]', $pdf);
+        $this->assertStringContainsString('/Count 1', $pdf);
     }
 
     public function test_nomor_hp_wajib_diisi_jika_belum_lunas(): void
