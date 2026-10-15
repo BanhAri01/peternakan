@@ -6,6 +6,9 @@
 
 @section('content')
 <x-page-header title="Pelanggan & Piutang" subtitle="Daftar pembeli telur dan siapa saja yang masih punya utang. Pembeli baru otomatis masuk saat mencatat penjualan." icon="bi-person-lines-fill">
+    @if($brokers->isNotEmpty())
+        <a href="{{ route('customers.brokers') }}" class="btn btn-light"><i class="bi bi-person-badge"></i> Rekap Perantara</a>
+    @endif
     <a href="{{ route('sales.index') }}" class="btn btn-primary"><i class="bi bi-basket2-fill"></i> Catat Penjualan</a>
 </x-page-header>
 
@@ -20,6 +23,14 @@
     <x-slot:actions>
         <form method="GET" class="d-flex gap-2">
             <input type="search" name="q" value="{{ $search }}" class="form-control" style="min-height:44px" placeholder="Cari nama..." aria-label="Cari nama pelanggan">
+            @if($brokers->isNotEmpty())
+                <select name="dibawa" class="form-select" style="min-height:44px" aria-label="Dibawa oleh" onchange="this.form.submit()">
+                    <option value="">Semua pembeli</option>
+                    @foreach($brokers as $name)
+                        <option value="{{ $name }}" @selected($broker === $name)>Dibawa {{ $name }}</option>
+                    @endforeach
+                </select>
+            @endif
             <button class="btn btn-light btn-sm" data-no-lock aria-label="Cari"><i class="bi bi-search"></i></button>
         </form>
     </x-slot:actions>
@@ -33,7 +44,7 @@
                 <tbody>
                     @foreach($customers as $c)
                         <tr>
-                            <td class="title-cell"><a href="{{ route('customers.show', $c) }}" class="fw-800 text-decoration-none text-ink">{{ $c->name }}</a></td>
+                            <td class="title-cell"><a href="{{ route('customers.show', $c) }}" class="fw-800 text-decoration-none text-ink">{{ $c->name }}</a>@if($c->brought_by)<div class="text-muted small">Dibawa {{ $c->brought_by }}</div>@endif</td>
                             <td data-label="No. HP">{{ $c->phone ?: '-' }}</td>
                             <td data-label="Total belanja" class="num">@rupiah($c->total_bought ?? 0)<div class="text-muted small">{{ $c->invoices_count }} nota</div></td>
                             <td data-label="Belum dibayar" class="num">

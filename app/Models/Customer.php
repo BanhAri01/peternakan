@@ -14,7 +14,12 @@ class Customer extends Model
     // Link portal tagihan berlaku sampai akhir hari ke-7; pengingat otomatis (tiap 7 hari) selalu membawa link baru
     public const PORTAL_DAYS = 7;
 
-    protected $fillable = ['name', 'phone', 'address'];
+    protected $fillable = ['name', 'phone', 'address', 'brought_by'];
+
+    public static function broughtByNames()
+    {
+        return static::whereNotNull('brought_by')->distinct()->orderBy('brought_by')->pluck('brought_by');
+    }
 
     private ?float $debtTotal = null;
 

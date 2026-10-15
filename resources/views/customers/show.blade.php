@@ -5,7 +5,7 @@
 @php
     use App\Support\Format;
     $waText = $customer->buildDebtSummaryWaMessage();
-    $contact = collect([$customer->phone ? 'HP ' . $customer->phone : null, $customer->address])->filter()->join(' · ');
+    $contact = collect([$customer->phone ? 'HP ' . $customer->phone : null, $customer->address, $customer->brought_by ? 'Dibawa oleh ' . $customer->brought_by : null])->filter()->join(' · ');
 @endphp
 
 @section('content')

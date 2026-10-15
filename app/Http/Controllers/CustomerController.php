@@ -10,10 +10,13 @@ class CustomerController extends Controller
 {
     public function index(Request $request)
     {
-        $search = trim((string) $request->get('q'));
+        $search  = trim((string) $request->get('q'));
+        $broker  = trim((string) $request->get('dibawa'));
+        $brokers = Customer::broughtByNames();
 
         $customers = Customer::query()
             ->when($search, fn ($q) => $q->where('name', 'like', "%{$search}%"))
+            ->when($broker !== '', fn ($q) => $q->where('brought_by', $broker))
             ->withSum('sales as total_bought', 'total_amount')
             ->withSum('sales as total_debt', 'debt_amount')
             ->withCount('invoices')
@@ -26,7 +29,7 @@ class CustomerController extends Controller
         $totalDebt   = (float) \App\Models\EggSale::sum('debt_amount');
         $debtorCount = Customer::whereHas('sales', fn ($q) => $q->where('debt_amount', '>', 0))->count();
 
-        return view('customers.index', compact('customers', 'search', 'totalDebt', 'debtorCount'));
+        return view('customers.index', compact('customers', 'search', 'broker', 'brokers', 'totalDebt', 'debtorCount'));
     }
 
     public function show(Customer $customer)
@@ -49,9 +52,40 @@ class CustomerController extends Controller
         return view('customers.show', compact('customer', 'invoices', 'stats', 'unpaid', 'deposits'));
     }
 
+    public function brokers(Request $request)
+    {
+        $month = preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', (string) $request->get('bulan')) ? $request->get('bulan') : now()->format('Y-m');
+        $start = \Carbon\Carbon::createFromFormat('Y-m-d', $month . '-01')->startOfMonth();
+        $end   = $start->copy()->endOfMonth();
+        $inMonth = fn ($q) => $q->whereBetween('sale_date', [$start->toDateString(), $end->toDateString()]);
+
+        $customers = Customer::whereNotNull('brought_by')
+            ->withCount(['invoices as invoice_count' => $inMonth])
+            ->withSum(['sales as sold_kg' => $inMonth], 'weight_kg')
+            ->withSum(['sales as sold_total' => $inMonth], 'total_amount')
+            ->withSum(['sales as sold_paid' => $inMonth], 'paid_amount')
+            ->withSum(['sales as sold_debt' => $inMonth], 'debt_amount')
+            ->orderBy('name')
+            ->get();
+
+        $groups = $customers->groupBy('brought_by')->map(fn ($rows, $name) => [
+            'name'      => $name,
+            'customers' => $rows,
+            'invoices'  => (int) $rows->sum('invoice_count'),
+            'kg'        => (float) $rows->sum('sold_kg'),
+            'total'     => (float) $rows->sum('sold_total'),
+            'paid'      => (float) $rows->sum('sold_paid'),
+            'debt'      => (float) $rows->sum('sold_debt'),
+        ])->sortBy('name')->values();
+
+        return view('customers.brokers', compact('groups', 'month', 'start'));
+    }
+
     public function edit(Customer $customer)
     {
-        return view('customers.edit', compact('customer'));
+        $brokers = Customer::broughtByNames();
+
+        return view('customers.edit', compact('customer', 'brokers'));
     }
 
     public function update(Request $request, Customer $customer)
@@ -59,8 +93,11 @@ class CustomerController extends Controller
         $data = $request->validate([
             'name'    => 'required|string|max:255',
             'phone'   => 'nullable|string|max:30',
-            'address' => 'nullable|string|max:500',
+            'address'    => 'nullable|string|max:500',
+            'brought_by' => 'nullable|string|max:100',
         ]);
+
+        $data['brought_by'] = trim((string) ($data['brought_by'] ?? '')) ?: null;
 
         $customer->update($data);
 

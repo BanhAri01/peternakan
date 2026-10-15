@@ -186,6 +186,7 @@ Route::middleware('auth')->group(function () {
         Route::delete('/penjualan/nota/{invoice}', [EggSaleController::class, 'destroy'])->name('sales.destroy');
         Route::get('/penjualan/nota/{invoice}/cetak', [ExportPdfController::class, 'printReceipt'])->name('sales.print-receipt');
 
+        Route::get('/pelanggan/perantara', [CustomerController::class, 'brokers'])->name('customers.brokers');
         Route::resource('pelanggan', CustomerController::class)
             ->only(['index', 'show', 'edit', 'update'])
             ->parameters(['pelanggan' => 'customer'])
