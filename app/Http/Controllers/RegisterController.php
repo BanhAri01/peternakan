@@ -72,6 +72,6 @@ class RegisterController extends Controller
         $request->session()->regenerate();
 
         return redirect()->route('owner.dashboard')
-            ->with('success', 'Selamat datang di Ternaka! Masa coba gratis ' . Farm::TRIAL_DAYS . ' hari sudah aktif. Ikuti langkah awal di bawah ini.');
+            ->with('success', 'Selamat datang di Kandala! Masa coba gratis ' . Farm::TRIAL_DAYS . ' hari sudah aktif. Ikuti langkah awal di bawah ini.');
     }
 }

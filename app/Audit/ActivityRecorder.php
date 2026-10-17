@@ -98,7 +98,7 @@ class ActivityRecorder
         ActivityLog::create([
             'farm_id'       => $farmId,
             'user_id'       => $user?->id,
-            'user_name'     => $user ? Str::limit($user->name . (ImpersonationController::isActive() ? ' (dibantu admin Ternaka)' : ''), 97) : 'Sistem',
+            'user_name'     => $user ? Str::limit($user->name . (ImpersonationController::isActive() ? ' (dibantu admin Kandala)' : ''), 97) : 'Sistem',
             'event'         => $event,
             'subject_type'  => $type,
             'subject_id'    => $subjectId,

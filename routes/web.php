@@ -115,7 +115,7 @@ Route::middleware('auth')->group(function () {
     });
 
     // ---------------------------------------------------------------------
-    // ADMIN Ternaka: kelola semua peternakan
+    // ADMIN Kandala: kelola semua peternakan
     // ---------------------------------------------------------------------
     Route::middleware('role:superadmin')->prefix('admin')->name('admin.')->group(function () {
         Route::get('/peternakan', [AdminFarmController::class, 'index'])->name('farms.index');

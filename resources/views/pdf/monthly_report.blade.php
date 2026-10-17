@@ -26,7 +26,7 @@
     </style>
 </head>
 <body>
-    <div class="foot">{{ $farm['farm_name'] }} &middot; Laporan {{ $month->translatedFormat('F Y') }} &middot; dicetak {{ now()->translatedFormat('d M Y H:i') }} &middot; Ternaka</div>
+    <div class="foot">{{ $farm['farm_name'] }} &middot; Laporan {{ $month->translatedFormat('F Y') }} &middot; dicetak {{ now()->translatedFormat('d M Y H:i') }} &middot; Kandala</div>
 
     <table class="head">
         <tr>

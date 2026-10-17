@@ -69,7 +69,7 @@ class CustomerPortalController extends Controller
 
         $farm        = $customer->farm;
         $owner       = \App\Models\User::where('farm_id', $farm->id)->where('role', 'owner')->first();
-        $farmName    = Setting::get('farm_name', $farm->name ?? 'Ternaka');
+        $farmName    = Setting::get('farm_name', $farm->name ?? 'Kandala');
         $farmPhone   = Setting::get('farm_phone') ?: ($farm?->phone ?: ($owner?->phone ?: ''));
         $farmAddress = Setting::get('farm_address') ?: ($farm?->city ?: '');
         $farmOwner   = Setting::get('farm_owner') ?: ($farm?->owner_name ?: ($owner?->name ?: 'Pemilik Peternakan'));
@@ -138,7 +138,7 @@ class CustomerPortalController extends Controller
             return $back->with('success', 'Link baru sudah dikirim ke WhatsApp Anda. Silakan cek pesan WhatsApp.');
         }
 
-        $farmName = Setting::get('farm_name', $customer->farm->name ?? 'Ternaka');
+        $farmName = Setting::get('farm_name', $customer->farm->name ?? 'Kandala');
         $message  = "Halo {$customer->name}, ini link tagihan & nota terbaru dari {$farmName}:\n" . $customer->portalUrl()
             . "\n\nLink berlaku sampai " . Format::date(now()->addDays(Customer::PORTAL_DAYS)) . '.';
 
@@ -181,7 +181,7 @@ class CustomerPortalController extends Controller
         return response()->view('portal.expired', [
             'customer'  => $customer,
             'token'     => $token,
-            'farmName'  => Setting::get('farm_name', $farm->name ?? 'Ternaka'),
+            'farmName'  => Setting::get('farm_name', $farm->name ?? 'Kandala'),
             'farmPhone' => Setting::get('farm_phone') ?: ($farm->phone ?: ($owner?->phone ?: '')),
             'canResend' => (bool) $customer->wa_number,
         ], 410);

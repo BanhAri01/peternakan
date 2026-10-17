@@ -20,8 +20,8 @@ class PwaController extends Controller
     public function manifest()
     {
         return response()->json([
-            'name'             => 'Ternaka — Peternakan Ayam Petelur',
-            'short_name'       => 'Ternaka',
+            'name'             => 'Kandala — Peternakan Ayam Petelur',
+            'short_name'       => 'Kandala',
             'description'      => 'Catat panen, sortir, penjualan, dan keuangan peternakan ayam petelur.',
             'lang'             => 'id',
             'start_url'        => '/',

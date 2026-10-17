@@ -33,11 +33,11 @@ class MidtransGateway implements PaymentGateway
                 ],
                 'item_details'        => [[
                     'id'       => 'HEFAM-' . strtoupper($payment->plan) . '-' . $payment->months . 'BLN',
-                    'name'     => Str::limit('Ternaka ' . Plans::label($payment->plan) . ' ' . $payment->months . ' bulan', 50, ''),
+                    'name'     => Str::limit('Kandala ' . Plans::label($payment->plan) . ' ' . $payment->months . ' bulan', 50, ''),
                     'price'    => (int) $payment->amount,
                     'quantity' => 1,
                 ]],
-                // Hanya channel berbiaya rendah (biaya admin ditanggung Ternaka); kartu kredit & paylater jauh lebih mahal.
+                // Hanya channel berbiaya rendah (biaya admin ditanggung Kandala); kartu kredit & paylater jauh lebih mahal.
                 'enabled_payments'    => ['other_qris', 'gopay', 'shopeepay', 'bca_va', 'bni_va', 'bri_va', 'permata_va', 'echannel', 'other_va'],
                 'expiry'              => ['unit' => 'hour', 'duration' => (int) config('services.payment.expiry_hours')],
                 'callbacks'           => ['finish' => $finishUrl],

@@ -51,7 +51,7 @@ class ExcelExport
         $this->end   = $end->copy()->startOfDay();
 
         $book = new Spreadsheet();
-        $book->getProperties()->setCreator('Ternaka')->setTitle('Data ' . Setting::get('farm_name'));
+        $book->getProperties()->setCreator('Kandala')->setTitle('Data ' . Setting::get('farm_name'));
         $book->removeSheetByIndex(0);
 
         foreach (array_keys(self::SHEETS) as $key) {

@@ -16,7 +16,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
-// Panel admin Ternaka: kelola semua peternakan pelanggan
+// Panel admin Kandala: kelola semua peternakan pelanggan
 class FarmController extends Controller
 {
     public function index(Request $request)
@@ -131,7 +131,7 @@ class FarmController extends Controller
 
         ActivityRecorder::withoutRecording(fn () => $owner->forceFill(['password' => $password, 'remember_token' => Str::random(60)])->save());
 
-        ActivityRecorder::custom($owner, 'password', 'Admin Ternaka (' . $request->user()->name . ') membuat kata sandi baru untuk ' . $owner->name, [], $farm->id);
+        ActivityRecorder::custom($owner, 'password', 'Admin Kandala (' . $request->user()->name . ') membuat kata sandi baru untuk ' . $owner->name, [], $farm->id);
 
         return back()->with('new_password', ['email' => $owner->email, 'password' => $password]);
     }

@@ -9,7 +9,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 /**
- * Pengguna: superadmin (admin Ternaka), owner (pemilik peternakan), worker (pekerja kandang).
+ * Pengguna: superadmin (admin Kandala), owner (pemilik peternakan), worker (pekerja kandang).
  *
  * Sengaja TIDAK memakai scope peternakan otomatis, karena login dan sesi harus bisa
  * mencari user sebelum peternakan diketahui. Gunakan scopeOfCurrentFarm() di halaman peternakan.

@@ -150,9 +150,9 @@ class Farm extends Model
     public function blockedMessage(): string
     {
         return match (true) {
-            $this->status === 'suspended' => 'Peternakan ini sedang dibekukan. Silakan hubungi admin Ternaka.',
-            $this->status === 'trial'     => 'Masa coba gratis peternakan ini sudah habis. Hubungi admin Ternaka untuk berlangganan.',
-            default                       => 'Masa langganan peternakan ini sudah habis. Hubungi admin Ternaka untuk memperpanjang.',
+            $this->status === 'suspended' => 'Peternakan ini sedang dibekukan. Silakan hubungi admin Kandala.',
+            $this->status === 'trial'     => 'Masa coba gratis peternakan ini sudah habis. Hubungi admin Kandala untuk berlangganan.',
+            default                       => 'Masa langganan peternakan ini sudah habis. Hubungi admin Kandala untuk memperpanjang.',
         };
     }
 

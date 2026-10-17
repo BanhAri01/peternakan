@@ -133,7 +133,7 @@ class AssistantController extends Controller
         $record->updated_at = now();
         $record->save();
 
-        $text = "Kode Asisten Kandang Ternaka: *{$code}*\n\nMasukkan kode ini di halaman Asisten untuk menghubungkan nomor ini dengan {$farm->name}. Berlaku " . self::CODE_MINUTES . ' menit. Abaikan pesan ini kalau Anda tidak sedang mendaftar.';
+        $text = "Kode Asisten Kandang Kandala: *{$code}*\n\nMasukkan kode ini di halaman Asisten untuk menghubungkan nomor ini dengan {$farm->name}. Berlaku " . self::CODE_MINUTES . ' menit. Abaikan pesan ini kalau Anda tidak sedang mendaftar.';
 
         try {
             $whatsApp->send($phone, $text, config('hefam.assistant.fonnte_token') ?: null);

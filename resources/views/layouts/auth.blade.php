@@ -7,7 +7,7 @@
     <link rel="apple-touch-icon" href="{{ route('pwa.icon', 'apple-touch-icon.png') }}">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#1f2b20">
-    <title>@yield('title', 'Masuk') · {{ $brandName ?? 'Ternaka' }}</title>
+    <title>@yield('title', 'Masuk') · {{ $brandName ?? 'Kandala' }}</title>
     <script>
         try { var s = localStorage.getItem('hefam-size'); if (s) document.documentElement.setAttribute('data-size', s); } catch (e) {}
     </script>
@@ -65,7 +65,7 @@
     <aside class="auth-side">
         <div class="d-flex align-items-center gap-3 position-relative" style="z-index:1">
             <x-brand-logo />
-            <span><span class="brand-name">{{ $brandName ?? 'Ternaka' }}</span><span class="brand-sub">{{ !empty($device) ? 'Peternakan Ayam Petelur' : 'Sistem Peternakan Ayam Petelur' }}</span></span>
+            <span><span class="brand-name">{{ $brandName ?? 'Kandala' }}</span><span class="brand-sub">{{ !empty($device) ? 'Peternakan Ayam Petelur' : 'Sistem Peternakan Ayam Petelur' }}</span></span>
         </div>
         <div class="position-relative" style="z-index:1">
             <h1>Catat panen,<br><em>semudah menghitung telur.</em></h1>
@@ -76,7 +76,7 @@
                 <li><i class="bi bi-file-earmark-bar-graph-fill"></i> Laporan untung-rugi siap cetak</li>
             </ul>
         </div>
-        <small class="text-white-50 position-relative d-none d-lg-block" style="z-index:1">&copy; {{ date('Y') }} Ternaka &middot; Powered by HERMES</small>
+        <small class="text-white-50 position-relative d-none d-lg-block" style="z-index:1">&copy; {{ date('Y') }} Kandala &middot; Powered by HERMES</small>
     </aside>
 
     <main class="auth-main">

@@ -1,5 +1,5 @@
 {{--
-    Ternaka Design System
+    Kandala Design System
     - Huruf besar & kontras tinggi agar nyaman dibaca orang tua
     - Tombol & kolom isian minimal 48px agar mudah ditekan
     - Satu set warna, jarak, dan komponen dipakai di semua halaman

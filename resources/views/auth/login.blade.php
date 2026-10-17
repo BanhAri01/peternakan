@@ -1,7 +1,7 @@
 @php
     // Di HP kandang yang terdaftar, tab pekerja tampil lebih dulu
     $isOwner   = !$device || $errors->has('email') || old('email');
-    $brandName = $device?->farm?->name ?? 'Ternaka';
+    $brandName = $device?->farm?->name ?? 'Kandala';
 @endphp
 @extends('layouts.auth')
 

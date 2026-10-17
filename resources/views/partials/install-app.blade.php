@@ -4,8 +4,8 @@
             <div class="modal-body p-4">
                 <div class="text-center mb-3">
                     <img src="{{ route('pwa.icon', 'icon-192.png') }}" alt="" width="72" height="72" style="border-radius:18px">
-                    <h5 class="modal-title mt-3" id="installTitle">Pasang Ternaka di Layar Utama</h5>
-                    <p class="text-muted mb-0">Setelah dipasang, Ternaka bisa dibuka langsung dari ikon di HP, seperti aplikasi biasa.</p>
+                    <h5 class="modal-title mt-3" id="installTitle">Pasang Kandala di Layar Utama</h5>
+                    <p class="text-muted mb-0">Setelah dipasang, Kandala bisa dibuka langsung dari ikon di HP, seperti aplikasi biasa.</p>
                 </div>
 
                 <div data-install-guide="inapp" hidden>
@@ -36,7 +36,7 @@
                 <div data-install-guide="desktop" hidden>
                     <ol class="install-steps">
                         <li>Lihat ujung kanan kolom alamat browser, tekan ikon <b>Instal</b> <i class="bi bi-download"></i>.</li>
-                        <li>Jika ikonnya tidak ada, buka menu <b>titik tiga</b> <i class="bi bi-three-dots-vertical"></i>, lalu pilih <b>Instal Ternaka</b>.</li>
+                        <li>Jika ikonnya tidak ada, buka menu <b>titik tiga</b> <i class="bi bi-three-dots-vertical"></i>, lalu pilih <b>Instal Kandala</b>.</li>
                         <li>Tekan <b>Instal</b>.</li>
                     </ol>
                 </div>

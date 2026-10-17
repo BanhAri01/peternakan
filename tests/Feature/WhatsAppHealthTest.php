@@ -101,18 +101,18 @@ class WhatsAppHealthTest extends TestCase
 
     public function test_banner_muncul_untuk_pemilik_dan_admin_saat_terputus(): void
     {
-        $this->actingAs($this->owner)->get(route('owner.dashboard'))->assertDontSee('WhatsApp Ternaka terputus');
+        $this->actingAs($this->owner)->get(route('owner.dashboard'))->assertDontSee('WhatsApp Kandala terputus');
 
         $this->fakeDevices('disconnect');
         app(WhatsAppHealth::class)->check();
 
         $this->actingAs($this->owner)->get(route('owner.dashboard'))
-            ->assertSee('WhatsApp Ternaka terputus')
-            ->assertSee('Admin Ternaka sudah diberi tahu');
+            ->assertSee('WhatsApp Kandala terputus')
+            ->assertSee('Admin Kandala sudah diberi tahu');
 
         $admin = User::create(['name' => 'Admin', 'role' => 'superadmin', 'email' => 'admin@hefam.test', 'password' => 'rahasia123']);
         $this->actingAs($admin)->get(route('admin.farms.index'))
-            ->assertSee('WhatsApp Ternaka terputus')
+            ->assertSee('WhatsApp Kandala terputus')
             ->assertSee('Buka Fonnte');
     }
 

@@ -26,7 +26,7 @@ class BackupController extends Controller
         try {
             $result = $this->backup->run();
         } catch (\Throwable $e) {
-            Log::error('Backup Ternaka manual gagal: ' . $e->getMessage());
+            Log::error('Backup Kandala manual gagal: ' . $e->getMessage());
 
             return back()->with('error', 'Backup gagal: ' . $e->getMessage());
         }

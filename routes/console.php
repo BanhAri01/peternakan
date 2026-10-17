@@ -16,13 +16,13 @@ Artisan::command('hefam:backup {--connection=}', function (DatabaseBackup $backu
     try {
         $result = $backup->run($this->option('connection') ?: null);
     } catch (\Throwable $e) {
-        Log::error('Backup Ternaka gagal: ' . $e->getMessage());
+        Log::error('Backup Kandala gagal: ' . $e->getMessage());
         $this->error('Backup gagal: ' . $e->getMessage());
 
         return 1;
     }
 
-    Log::info('Backup Ternaka selesai: ' . $result['name']);
+    Log::info('Backup Kandala selesai: ' . $result['name']);
     $this->info('Backup selesai: ' . $result['path'] . ' (' . Format::fileSize($result['size']) . ')');
 
     if ($result['pruned'] > 0) {
@@ -30,7 +30,7 @@ Artisan::command('hefam:backup {--connection=}', function (DatabaseBackup $backu
     }
 
     return 0;
-})->purpose('Backup database Ternaka ke file .sql.gz');
+})->purpose('Backup database Kandala ke file .sql.gz');
 
 Artisan::command('hefam:pengingat {waktu : pagi atau sore} {--farm= : id peternakan} {--paksa : kirim ulang walau sudah terkirim hari ini}', function (FarmReminders $reminders) {
     $kind = $this->argument('waktu');
@@ -83,8 +83,8 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-// Membuat / mengatur ulang akun admin Ternaka (pengelola semua peternakan)
-Artisan::command('hefam:admin {email} {name=Admin Ternaka}', function (string $email, string $name) {
+// Membuat / mengatur ulang akun admin Kandala (pengelola semua peternakan)
+Artisan::command('hefam:admin {email} {name=Admin Kandala}', function (string $email, string $name) {
     $password = Str::password(14, symbols: false);
 
     $user = User::updateOrCreate(
@@ -92,10 +92,10 @@ Artisan::command('hefam:admin {email} {name=Admin Ternaka}', function (string $e
         ['name' => $name, 'role' => 'superadmin', 'farm_id' => null, 'password' => $password]
     );
 
-    $this->info('Akun admin Ternaka siap: ' . $user->email);
+    $this->info('Akun admin Kandala siap: ' . $user->email);
     $this->line('Kata sandi baru: ' . $password);
     $this->comment('Simpan kata sandi ini di tempat aman, lalu masuk lewat halaman login.');
-})->purpose('Buat atau atur ulang akun admin Ternaka');
+})->purpose('Buat atau atur ulang akun admin Kandala');
 
 // Uji coba dan demo interaktif Asisten Kandang (AI) langsung dari terminal
 Artisan::command('hefam:asisten {pertanyaan? : Pertanyaan tentang kandang} {--farm= : ID peternakan} {--mode= : Mode quick atau deep} {--driver= : Driver claude atau demo}', function () {

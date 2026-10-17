@@ -133,7 +133,7 @@ class WhatsAppHealth
         Cache::forget($key);
         Log::info("WhatsApp {$label} tersambung lagi");
         $this->mail(
-            '[Ternaka] WhatsApp tersambung lagi',
+            '[Kandala] WhatsApp tersambung lagi',
             self::LABELS[$label] . ' sudah tersambung lagi (terputus sejak ' . Carbon::parse($state['since'])->format('d M Y H:i') . ").\n\nPengingat dan tagihan yang tertunda akan dikirim otomatis pada jadwal berikutnya."
         );
     }
@@ -141,7 +141,7 @@ class WhatsAppHealth
     private function alert(string $label, string $what, string $reason): void
     {
         $this->mail(
-            '[Ternaka] PENTING: WhatsApp ' . $what,
+            '[Kandala] PENTING: WhatsApp ' . $what,
             self::LABELS[$label] . " {$what}.\nKeterangan dari Fonnte: {$reason}\n\n"
             . "Selama terputus, pengingat ke pemilik dan tagihan ke pembeli TIDAK terkirim (akan dicoba lagi otomatis).\n\n"
             . "Cara menyambungkan lagi:\n"

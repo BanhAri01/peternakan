@@ -1,8 +1,8 @@
 @php
     use App\Support\Format;
-    $waText  = rawurlencode('Halo admin Ternaka, saya peternak ayam petelur dan ingin tahu lebih lanjut tentang Ternaka.');
-    $title   = 'Aplikasi Pencatatan Peternakan Ayam Petelur · Ternaka';
-    $desc    = 'Ternaka adalah aplikasi pencatatan peternakan ayam petelur. Catat panen telur, sortir rak, pakan FCR, piutang bakul via WhatsApp, dan laba peternakan otomatis dari HP tanpa sinyal. Coba gratis ' . $trialDays . ' hari.';
+    $waText  = rawurlencode('Halo admin Kandala, saya peternak ayam petelur dan ingin tahu lebih lanjut tentang Kandala.');
+    $title   = 'Aplikasi Pencatatan Peternakan Ayam Petelur · Kandala';
+    $desc    = 'Kandala adalah aplikasi pencatatan peternakan ayam petelur. Catat panen telur, sortir rak, pakan FCR, piutang bakul via WhatsApp, dan laba peternakan otomatis dari HP tanpa sinyal. Coba gratis ' . $trialDays . ' hari.';
     $keywords = 'aplikasi pencatatan peternakan, software peternakan ayam petelur, aplikasi peternakan ayam, manajemen kandang ayam petelur, aplikasi catat panen telur, FCR ayam petelur, pembukuan peternakan telur, hefam';
 @endphp
 <!DOCTYPE html>
@@ -14,20 +14,20 @@
     <meta name="description" content="{{ $desc }}">
     <meta name="keywords" content="{{ $keywords }}">
     <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
-    <meta name="author" content="Ternaka">
+    <meta name="author" content="Kandala">
     <link rel="canonical" href="{{ url('/') }}">
 
     {{-- Open Graph (Facebook, WhatsApp, LinkedIn) --}}
     <meta property="og:type" content="website">
     <meta property="og:locale" content="id_ID">
-    <meta property="og:site_name" content="Ternaka">
+    <meta property="og:site_name" content="Kandala">
     <meta property="og:title" content="{{ $title }}">
     <meta property="og:description" content="{{ $desc }}">
     <meta property="og:url" content="{{ url('/') }}">
     <meta property="og:image" content="{{ route('pwa.icon', 'icon-512.png') }}">
     <meta property="og:image:width" content="512">
     <meta property="og:image:height" content="512">
-    <meta property="og:image:alt" content="Ternaka - Aplikasi Pencatatan Peternakan Ayam Petelur">
+    <meta property="og:image:alt" content="Kandala - Aplikasi Pencatatan Peternakan Ayam Petelur">
 
     {{-- Twitter Cards --}}
     <meta name="twitter:card" content="summary_large_image">
@@ -51,8 +51,8 @@
       "@graph": [
         {
           "@type": "SoftwareApplication",
-          "name": "Ternaka",
-          "alternateName": "Aplikasi Pencatatan Peternakan Ternaka",
+          "name": "Kandala",
+          "alternateName": "Aplikasi Pencatatan Peternakan Kandala",
           "applicationCategory": "BusinessApplication",
           "operatingSystem": "All, Web, Android, iOS",
           "inLanguage": "id",
@@ -67,7 +67,7 @@
         },
         {
           "@type": "Organization",
-          "name": "Ternaka",
+          "name": "Kandala",
           "url": "{{ url('/') }}",
           "logo": "{{ route('pwa.icon', 'icon-512.png') }}"
         },
@@ -76,7 +76,7 @@
           "mainEntity": [
             {
               "@type": "Question",
-              "name": "Apakah data catatan peternakan saya aman di Ternaka?",
+              "name": "Apakah data catatan peternakan saya aman di Kandala?",
               "acceptedAnswer": {
                 "@type": "Answer",
                 "text": "Data disimpan di server cloud dan dibackup otomatis setiap malam. Data tiap peternakan terpisah dan tidak bisa diakses peternakan lain."
@@ -87,12 +87,12 @@
               "name": "Apakah aplikasi bisa dipakai di kandang tanpa sinyal internet?",
               "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "Bisa. Ternaka memiliki teknologi Offline Mode. Catatan panen dan sortir tetap dapat diinput di kandang dan otomatis tersinkron begitu ada internet."
+                "text": "Bisa. Kandala memiliki teknologi Offline Mode. Catatan panen dan sortir tetap dapat diinput di kandang dan otomatis tersinkron begitu ada internet."
               }
             },
             {
               "@type": "Question",
-              "name": "Apakah pekerja kandang yang tidak punya email bisa menggunakan Ternaka?",
+              "name": "Apakah pekerja kandang yang tidak punya email bisa menggunakan Kandala?",
               "acceptedAnswer": {
                 "@type": "Answer",
                 "text": "Sangat bisa. Pekerja cukup memilih foto/namanya dan mengetik PIN 4 angka di HP kandang."
@@ -248,11 +248,11 @@
 
 <header>
     <div class="wrap nav">
-        <a href="{{ url('/') }}" class="brand"><img src="{{ route('pwa.icon', 'icon-192.png') }}" alt="" width="38" height="38"> Ternaka</a>
+        <a href="{{ url('/') }}" class="brand"><img src="{{ route('pwa.icon', 'icon-192.png') }}" alt="" width="38" height="38"> Kandala</a>
         <nav class="nav-links" aria-label="Menu halaman">
             <a href="#kalkulator-pakan">Kalkulator Pakan</a>
             <a href="#fitur">Fitur</a>
-            <a href="#perbandingan">Kenapa Ternaka</a>
+            <a href="#perbandingan">Kenapa Kandala</a>
             <a href="#harga">Harga</a>
             <a href="#tanya">Tanya Jawab</a>
             <a href="{{ route('legal.about') }}">Tentang Kami</a>
@@ -367,7 +367,7 @@
 
                         <div>
                             @php
-                                $waCalcText = rawurlencode('Halo admin Ternaka, saya peternak di Bali dan ingin konsultasi manajemen pakan.');
+                                $waCalcText = rawurlencode('Halo admin Kandala, saya peternak di Bali dan ingin konsultasi manajemen pakan.');
                             @endphp
                             <a id="btn-wa-calc" href="https://wa.me/{{ $adminWa }}?text={{ $waCalcText }}" target="_blank" rel="noopener" class="btn btn-wa" style="width:100%;font-size:1rem;padding:1rem">
                                 <i class="bi bi-whatsapp"></i> Konsultasi Pakan & Manajemen via WhatsApp
@@ -384,7 +384,7 @@
         <div class="wrap">
             <div class="section-head">
                 <h2>Masalah yang sering dialami peternak</h2>
-                <p>Ternaka dibuat dari pengalaman mengelola peternakan ayam petelur keluarga sendiri.</p>
+                <p>Kandala dibuat dari pengalaman mengelola peternakan ayam petelur keluarga sendiri.</p>
             </div>
             <div class="grid grid-2">
                 @foreach([
@@ -453,7 +453,7 @@
             </div>
             <div class="table-scroll">
                 <table class="compare">
-                    <thead><tr><th>Kemampuan</th><th>Excel</th><th>Google Sheets</th><th class="us">Ternaka</th></tr></thead>
+                    <thead><tr><th>Kemampuan</th><th>Excel</th><th>Google Sheets</th><th class="us">Kandala</th></tr></thead>
                     <tbody>
                         @foreach([
                             ['Pekerja catat dari HP tanpa email', 'no', 'no', 'Nama + PIN'],
@@ -531,7 +531,7 @@
                 ['Apakah data saya aman?', 'Data disimpan di server dan dibackup otomatis setiap malam. Data yang terhapus masuk Sampah dan bisa dipulihkan. Setiap perubahan tercatat: siapa, apa, dan kapan. Data tiap peternakan terpisah dan tidak bisa dilihat peternakan lain.'],
                 ['Pekerja saya sudah tua dan tidak punya email. Bisa?', 'Bisa. Pekerja cukup menekan namanya lalu mengetik PIN 4–6 angka di HP kandang. Hurufnya besar dan ukurannya bisa diperbesar lagi.'],
                 ['Kandang saya susah sinyal.', 'Halaman Catat Panen dan Sortir tetap bisa dipakai tanpa internet. Datanya disimpan di HP dan dikirim otomatis saat sinyal kembali, tanpa tercatat dua kali.'],
-                ['Perlu pasang aplikasi dari Play Store?', 'Tidak perlu. Buka lewat browser di HP, lalu tekan "Tambahkan ke layar utama". Ikon Ternaka akan muncul seperti aplikasi biasa.'],
+                ['Perlu pasang aplikasi dari Play Store?', 'Tidak perlu. Buka lewat browser di HP, lalu tekan "Tambahkan ke layar utama". Ikon Kandala akan muncul seperti aplikasi biasa.'],
                 ['Bagaimana cara bayar langganan?', 'Dari menu Langganan di dalam aplikasi: pilih paket Standar, Pro, atau Entrepreneur, lalu bayar lewat QRIS, GoPay, ShopeePay, atau transfer bank (virtual account). Langganan aktif otomatis setelah pembayaran diterima.'],
                 ['Bisa ganti paket di tengah jalan?', 'Bisa. Sisa hari paket lama tidak hangus, tetapi dikonversi sesuai nilainya ke paket baru.'],
                 ['Kalau berhenti berlangganan, data saya bagaimana?', 'Data tetap tersimpan aman dan bisa dipakai lagi saat berlangganan kembali. Paket Pro dan Entrepreneur juga bisa mengekspor semua data ke Excel.'],
@@ -569,7 +569,7 @@
 @include('legal.footer', ['biz' => config('hefam.business'), 'adminWa' => $adminWa])
 
 @if($adminWa)
-    <a href="https://wa.me/{{ $adminWa }}?text={{ $waText }}" target="_blank" rel="noopener" class="float-wa" aria-label="Chat WhatsApp admin Ternaka"><i class="bi bi-whatsapp"></i></a>
+    <a href="https://wa.me/{{ $adminWa }}?text={{ $waText }}" target="_blank" rel="noopener" class="float-wa" aria-label="Chat WhatsApp admin Kandala"><i class="bi bi-whatsapp"></i></a>
 @endif
 
 <script>
@@ -657,7 +657,7 @@
 
         var waBtn = document.getElementById('btn-wa-calc');
         if (waBtn && adminWaNumber) {
-            var msg = 'Halo admin Ternaka, saya peternak di Bali. Hasil hitung pakan saya:\n' +
+            var msg = 'Halo admin Kandala, saya peternak di Bali. Hasil hitung pakan saya:\n' +
                 '- Jenis: ' + currentCalcType.toUpperCase() + '\n' +
                 '- Populasi: ' + pop.toLocaleString('id') + ' ekor\n' +
                 '- Total Kebutuhan: ' + totalBags + ' sak (' + Math.round(totalKg) + ' kg)\n' +

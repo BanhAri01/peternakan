@@ -93,7 +93,7 @@
                         </x-field>
                     </div>
                 </div>
-                <x-field label="Catatan admin" name="admin_notes" optional hint="Hanya terlihat oleh admin Ternaka." class="mb-0">
+                <x-field label="Catatan admin" name="admin_notes" optional hint="Hanya terlihat oleh admin Kandala." class="mb-0">
                     <textarea id="admin_notes" name="admin_notes" rows="3" class="form-control" placeholder="Contoh: bayar via transfer BRI 10 Okt, paket 3 bulan">{{ old('admin_notes', $farm->admin_notes) }}</textarea>
                 </x-field>
                 <x-slot:footer>

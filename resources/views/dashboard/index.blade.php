@@ -25,7 +25,7 @@
 <x-alerts />
 
 @if($onboardingLeft > 0)
-    <x-panel title="Langkah awal memakai Ternaka" icon="bi-flag-fill" tone="egg" :subtitle="(count($onboarding) - $onboardingLeft) . ' dari ' . count($onboarding) . ' langkah selesai'">
+    <x-panel title="Langkah awal memakai Kandala" icon="bi-flag-fill" tone="egg" :subtitle="(count($onboarding) - $onboardingLeft) . ' dari ' . count($onboarding) . ' langkah selesai'">
         <div class="progress-thin mb-3"><span style="width: {{ (count($onboarding) - $onboardingLeft) / count($onboarding) * 100 }}%"></span></div>
         <div class="row g-2">
             @foreach($onboarding as $i => $step)

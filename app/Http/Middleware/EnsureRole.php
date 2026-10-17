@@ -15,7 +15,7 @@ class EnsureRole
         }
 
         if (!in_array($request->user()->role, $roles)) {
-            // Admin Ternaka tidak membuka halaman peternakan, arahkan ke panel admin
+            // Admin Kandala tidak membuka halaman peternakan, arahkan ke panel admin
             if ($request->user()->isSuperAdmin()) {
                 return redirect()->route('admin.farms.index');
             }

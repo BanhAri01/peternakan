@@ -24,7 +24,7 @@ class ImpersonationController extends Controller
         $request->session()->regenerate();
         $request->session()->put(self::SESSION_KEY, $admin->id);
 
-        ActivityRecorder::custom($owner, 'impersonate', $admin->name . ' (admin Ternaka) masuk sebagai ' . $owner->name . ' untuk memberi bantuan', [], $farm->id);
+        ActivityRecorder::custom($owner, 'impersonate', $admin->name . ' (admin Kandala) masuk sebagai ' . $owner->name . ' untuk memberi bantuan', [], $farm->id);
 
         return redirect()->route('owner.dashboard')->with('success', 'Mode bantuan: Anda melihat aplikasi sebagai ' . $owner->name . '. Semua perubahan tercatat atas nama admin.');
     }
@@ -37,7 +37,7 @@ class ImpersonationController extends Controller
         abort_unless($admin && $admin->isSuperAdmin(), 403);
 
         $owner = $request->user();
-        ActivityRecorder::custom($owner, 'impersonate_end', $admin->name . ' (admin Ternaka) selesai memberi bantuan', [], $owner->farm_id);
+        ActivityRecorder::custom($owner, 'impersonate_end', $admin->name . ' (admin Kandala) selesai memberi bantuan', [], $owner->farm_id);
 
         $request->session()->forget(self::SESSION_KEY);
         Auth::login($admin);

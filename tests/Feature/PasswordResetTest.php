@@ -25,7 +25,7 @@ class PasswordResetTest extends TestCase
         $this->get(route('password.request'))
             ->assertOk()
             ->assertSee('wa.me/6285133642784', false)
-            ->assertSee('Chat Admin Ternaka')
+            ->assertSee('Chat Admin Kandala')
             ->assertDontSee('name="email"', false);
     }
 
@@ -33,7 +33,7 @@ class PasswordResetTest extends TestCase
     {
         config(['hefam.admin_whatsapp' => '']);
 
-        $this->get(route('password.request'))->assertOk()->assertSee('Hubungi admin Ternaka')->assertDontSee('wa.me', false);
+        $this->get(route('password.request'))->assertOk()->assertSee('Hubungi admin Kandala')->assertDontSee('wa.me', false);
     }
 
     public function test_alur_reset_lewat_email_sudah_tidak_ada(): void

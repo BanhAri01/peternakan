@@ -5,7 +5,7 @@
 @php use App\Support\Format; @endphp
 
 @section('content')
-<x-page-header title="Semua Peternakan" subtitle="Pelanggan Ternaka: masa coba, langganan, dan keaktifan pemakaian." icon="bi-buildings-fill">
+<x-page-header title="Semua Peternakan" subtitle="Pelanggan Kandala: masa coba, langganan, dan keaktifan pemakaian." icon="bi-buildings-fill">
     <a href="{{ route('admin.farms.create') }}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Tambah Peternakan</a>
 </x-page-header>
 

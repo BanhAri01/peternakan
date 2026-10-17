@@ -20,13 +20,13 @@ class EnsureActiveFarm
             return $next($request);
         }
 
-        // Admin Ternaka tidak punya peternakan; arahkan ke panel admin tanpa mengeluarkannya
+        // Admin Kandala tidak punya peternakan; arahkan ke panel admin tanpa mengeluarkannya
         if ($request->user()?->isSuperAdmin()) {
             return redirect()->route('admin.farms.index');
         }
 
         $message = $farm === null
-            ? 'Akun ini belum terhubung ke peternakan mana pun. Silakan hubungi admin Ternaka.'
+            ? 'Akun ini belum terhubung ke peternakan mana pun. Silakan hubungi admin Kandala.'
             : $farm->blockedMessage();
 
         // Pemilik tetap boleh masuk untuk melihat info langganan, pekerja dikeluarkan
