@@ -4,7 +4,7 @@
     $isAdmin    = $user?->isSuperAdmin();
     $hasSidebar = $isOwner || $isAdmin;
     $farm       = app(\App\Tenancy\FarmContext::class)->get();
-    $farmName   = $isAdmin ? 'HEFAM Admin' : $farmName;
+    $farmName   = $isAdmin ? 'Ternaka Admin' : $farmName;
     $homeRoute  = $isAdmin ? route('admin.farms.index') : ($isOwner ? route('owner.dashboard') : url('/'));
 
     // Menu dikelompokkan sesuai alur kerja peternakan
@@ -50,7 +50,7 @@
 
     if ($isAdmin) {
         $menu = [
-            'Admin HEFAM' => [
+            'Admin Ternaka' => [
                 ['route' => 'admin.farms.index', 'match' => 'admin.farms.index|admin.farms.edit', 'icon' => 'bi-buildings-fill', 'label' => 'Semua Peternakan'],
                 ['route' => 'admin.farms.create', 'match' => 'admin.farms.create', 'icon' => 'bi-plus-circle-fill', 'label' => 'Tambah Peternakan'],
                 ['route' => 'admin.backups.index', 'match' => 'admin.backups.*', 'icon' => 'bi-database-fill-check', 'label' => 'Backup Database'],
@@ -115,7 +115,7 @@
     @if($hasSidebar)
         <aside class="sidebar" aria-label="Menu utama">
             <a href="{{ $homeRoute }}" class="sidebar-brand">
-                <span class="brand-mark"><i class="bi bi-egg-fried"></i></span>
+                <x-brand-logo />
                 <span>
                     <span class="brand-name">{{ $farmName }}</span>
                     <span class="brand-sub">{{ $isAdmin ? 'Pengelola Platform' : 'Peternakan Ayam Petelur' }}</span>
@@ -143,7 +143,7 @@
             @endforeach
 
             <div class="sidebar-foot">
-                &copy; {{ date('Y') }} HEFAM &middot; Powered by HERMES
+                &copy; {{ date('Y') }} Ternaka &middot; Powered by HERMES
             </div>
         </aside>
         <div class="sidebar-backdrop" data-menu-toggle></div>
@@ -158,7 +158,7 @@
             @endif
 
             <a href="{{ $homeRoute }}" class="brand-mobile" @if(!$hasSidebar) style="display:flex" @endif>
-                <span class="brand-mark"><i class="bi bi-egg-fried"></i></span>
+                <x-brand-logo />
                 <span class="name">{{ $farmName }}</span>
             </a>
 
@@ -179,14 +179,14 @@
                             <span class="user-avatar">{{ mb_strtoupper(mb_substr($user->name, 0, 1)) }}</span>
                             <span class="who text-start">
                                 <b>{{ $user->name }}</b>
-                                <span>{{ $isAdmin ? 'Admin HEFAM' : ($isOwner ? 'Pemilik' : 'Pekerja Kandang') }}</span>
+                                <span>{{ $isAdmin ? 'Admin Ternaka' : ($isOwner ? 'Pemilik' : 'Pekerja Kandang') }}</span>
                             </span>
                             <i class="bi bi-chevron-down text-muted me-1"></i>
                         </button>
                         <div class="dropdown-menu dropdown-menu-end p-2 shadow" style="min-width: 240px;">
                             <div class="px-2 py-2 border-bottom mb-2">
                                 <b class="d-block">{{ $user->name }}</b>
-                                <small class="text-muted">{{ $isAdmin ? 'Admin HEFAM' : (($isOwner ? 'Pemilik · ' : 'Pekerja · ') . ($farm->name ?? '')) }}</small>
+                                <small class="text-muted">{{ $isAdmin ? 'Admin Ternaka' : (($isOwner ? 'Pemilik · ' : 'Pekerja · ') . ($farm->name ?? '')) }}</small>
                             </div>
                             <div class="px-2 pb-2 d-sm-none">
                                 <small class="text-muted d-block mb-1 fw-bold">Ukuran huruf</small>
@@ -227,11 +227,11 @@
             <div class="wa-down-banner" role="alert">
                 <i class="bi bi-whatsapp"></i>
                 <span>
-                    WhatsApp HEFAM terputus sejak {{ collect($waDown)->min('since')->translatedFormat('j M H:i') }}.
+                    WhatsApp Ternaka terputus sejak {{ collect($waDown)->min('since')->translatedFormat('j M H:i') }}.
                     @if($isAdmin)
                         ({{ collect($waDown)->keys()->map(fn ($l) => \App\Services\WhatsAppHealth::LABELS[$l])->implode(', ') }}) Scan ulang QR di Fonnte.
                     @else
-                        Pengingat &amp; tagihan WhatsApp tertunda dan akan terkirim otomatis setelah tersambung lagi. Admin HEFAM sudah diberi tahu.
+                        Pengingat &amp; tagihan WhatsApp tertunda dan akan terkirim otomatis setelah tersambung lagi. Admin Ternaka sudah diberi tahu.
                     @endif
                 </span>
                 @if($isAdmin)
@@ -260,7 +260,7 @@
         </main>
 
         <footer class="app-footer">
-            &copy; {{ date('Y') }} {{ $farmName }} &middot; Sistem Manajemen Peternakan HEFAM &middot; Powered by HERMES
+            &copy; {{ date('Y') }} {{ $farmName }} &middot; Sistem Manajemen Peternakan Ternaka &middot; Powered by HERMES
         </footer>
     </div>
 

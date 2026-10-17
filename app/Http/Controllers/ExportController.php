@@ -46,7 +46,7 @@ class ExportController extends Controller
         @set_time_limit(300);
         $book = $export->build($start, $end, $data['sheets']);
 
-        $filename = 'HEFAM-' . Str::slug(Setting::get('farm_name')) . '-' . $start->format('Ymd') . '-' . $end->format('Ymd') . '.xlsx';
+        $filename = 'Ternaka-' . Str::slug(Setting::get('farm_name')) . '-' . $start->format('Ymd') . '-' . $end->format('Ymd') . '.xlsx';
 
         ActivityRecorder::custom($request->user(), 'export', 'Mengunduh ekspor Excel ' . $start->format('d/m/Y') . '–' . $end->format('d/m/Y') . ' (' . implode(', ', $data['sheets']) . ')');
 

@@ -38,8 +38,8 @@ class DemoFarmSeeder extends Seeder
 
         mt_srand(42);
 
-        // Admin HEFAM (pengelola semua peternakan)
-        User::create(['name' => 'Admin HEFAM', 'role' => 'superadmin', 'email' => 'admin@hefam.id', 'password' => 'password']);
+        // Admin Ternaka (pengelola semua peternakan)
+        User::create(['name' => 'Admin Ternaka', 'role' => 'superadmin', 'email' => 'admin@hefam.id', 'password' => 'password']);
 
         // Peternakan kedua (masa coba) untuk menguji pemisahan data antar peternakan
         app(FarmProvisioner::class)->create([

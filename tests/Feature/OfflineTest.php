@@ -23,7 +23,7 @@ class OfflineTest extends TestCase
 
     public function test_file_aplikasi_hp_bisa_diunduh_tanpa_login(): void
     {
-        $this->get(route('pwa.manifest'))->assertOk()->assertHeader('Content-Type', 'application/manifest+json')->assertJsonPath('short_name', 'HEFAM');
+        $this->get(route('pwa.manifest'))->assertOk()->assertHeader('Content-Type', 'application/manifest+json')->assertJsonPath('short_name', 'Ternaka');
         $this->get(route('pwa.sw'))->assertOk()->assertHeader('Service-Worker-Allowed', '/')->assertDontSee('__VERSION__');
         $this->get(route('pwa.icon', 'icon-192.png'))->assertOk()->assertHeader('Content-Type', 'image/png');
         $this->get(route('pwa.icon', '..%2F..%2F.env'))->assertNotFound();

@@ -1,12 +1,12 @@
 <?php
 
-// Pengaturan platform HEFAM (SaaS)
+// Pengaturan platform Ternaka (SaaS)
 return [
-    // Nomor WhatsApp admin HEFAM untuk pertanyaan langganan (format 62xxxxxxxxxx)
+    // Nomor WhatsApp admin Ternaka untuk pertanyaan langganan (format 62xxxxxxxxxx)
     'admin_whatsapp' => env('HEFAM_ADMIN_WA', ''),
 
     'business' => [
-        'brand'   => 'HEFAM',
+        'brand'   => 'Ternaka',
         'name'    => env('HEFAM_BUSINESS_NAME', 'Sinar Abadi Farm'),
         'owner'   => env('HEFAM_OWNER_NAME', ''),
         'address' => env('HEFAM_ADDRESS', 'Jl. Yudistira, Peninjoan, Kec. Tembuku, Kabupaten Bangli, Bali 80671'),

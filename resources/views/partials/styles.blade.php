@@ -1,5 +1,5 @@
 {{--
-    HEFAM Design System
+    Ternaka Design System
     - Huruf besar & kontras tinggi agar nyaman dibaca orang tua
     - Tombol & kolom isian minimal 48px agar mudah ditekan
     - Satu set warna, jarak, dan komponen dipakai di semua halaman
@@ -228,6 +228,8 @@
     }
 
     .topbar .brand-mobile .brand-mark { width: 38px; height: 38px; font-size: 1.1rem; background: var(--brand); color: #fff; }
+    .brand-mark.brand-logo { background: none; padding: 0; }
+    .brand-mark.brand-logo svg { width: 100%; height: 100%; display: block; }
     .topbar .brand-mobile span.name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
     .topbar-date { color: var(--muted); font-weight: 600; font-size: .95rem; }

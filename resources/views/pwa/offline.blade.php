@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#1f2b20">
-    <title>Tidak ada sinyal · HEFAM</title>
+    <title>Tidak ada sinyal · Ternaka</title>
     <style>
         * { box-sizing: border-box; }
         body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px;

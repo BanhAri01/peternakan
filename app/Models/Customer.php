@@ -145,7 +145,7 @@ class Customer extends Model
 
     public function buildDebtSummaryWaMessage(?Invoice $currentInvoice = null): string
     {
-        $farmName  = Setting::get('farm_name', 'HEFAM');
+        $farmName  = Setting::get('farm_name', 'Ternaka');
         $farmPhone = Setting::get('farm_phone');
         $today     = \Carbon\Carbon::today();
 

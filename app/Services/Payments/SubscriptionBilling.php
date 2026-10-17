@@ -39,10 +39,10 @@ class SubscriptionBilling
             throw ValidationException::withMessages(['months' => 'Pilih paket langganan yang tersedia.']);
         }
         if (!$this->available()) {
-            throw ValidationException::withMessages(['months' => 'Pembayaran online belum aktif. Silakan hubungi admin HEFAM.']);
+            throw ValidationException::withMessages(['months' => 'Pembayaran online belum aktif. Silakan hubungi admin Ternaka.']);
         }
         if ($farm->status === 'suspended') {
-            throw ValidationException::withMessages(['months' => 'Peternakan sedang dibekukan. Hubungi admin HEFAM.']);
+            throw ValidationException::withMessages(['months' => 'Peternakan sedang dibekukan. Hubungi admin Ternaka.']);
         }
         if ($farm->hasUnlimitedAccess()) {
             throw ValidationException::withMessages(['months' => 'Langganan Anda aktif tanpa batas waktu, tidak perlu membayar.']);

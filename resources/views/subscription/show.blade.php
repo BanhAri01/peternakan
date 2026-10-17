@@ -7,11 +7,11 @@
     use App\Support\Format;
     $end  = $farm->accessEndsAt();
     $days = $farm->daysLeft();
-    $msg  = 'Halo admin HEFAM, saya ' . ($farm->owner_name ?: auth()->user()->name) . ' dari ' . $farm->name . '. Saya ingin ' . ($farm->status === 'trial' ? 'berlangganan' : 'memperpanjang langganan') . ' HEFAM.';
+    $msg  = 'Halo admin Ternaka, saya ' . ($farm->owner_name ?: auth()->user()->name) . ' dari ' . $farm->name . '. Saya ingin ' . ($farm->status === 'trial' ? 'berlangganan' : 'memperpanjang langganan') . ' Ternaka.';
 @endphp
 
 @section('content')
-<x-page-header title="Langganan HEFAM" :subtitle="$farm->name" icon="bi-patch-check-fill" />
+<x-page-header title="Langganan Ternaka" :subtitle="$farm->name" icon="bi-patch-check-fill" />
 
 <x-alerts />
 
@@ -45,9 +45,9 @@
 
     <x-slot:footer>
         <div class="d-flex flex-wrap gap-2 align-items-center">
-            <span class="me-auto">{{ $canPay ? 'Ada pertanyaan? Hubungi admin HEFAM.' : 'Untuk berlangganan atau memperpanjang, hubungi admin HEFAM.' }}</span>
+            <span class="me-auto">{{ $canPay ? 'Ada pertanyaan? Hubungi admin Ternaka.' : 'Untuk berlangganan atau memperpanjang, hubungi admin Ternaka.' }}</span>
             @if($adminWa)
-                <a href="https://wa.me/{{ $adminWa }}?text={{ rawurlencode($msg) }}" target="_blank" rel="noopener" class="btn btn-wa"><i class="bi bi-whatsapp"></i> Chat admin HEFAM</a>
+                <a href="https://wa.me/{{ $adminWa }}?text={{ rawurlencode($msg) }}" target="_blank" rel="noopener" class="btn btn-wa"><i class="bi bi-whatsapp"></i> Chat admin Ternaka</a>
             @endif
         </div>
     </x-slot:footer>
@@ -76,7 +76,7 @@
     $limitText = fn ($v, $unit) => $v === null ? 'Tanpa batas ' . $unit : 'Maks ' . $v . ' ' . $unit;
 @endphp
 
-<x-panel title="Paket langganan" icon="bi-stars" :subtitle="$canPay ? 'Pilih lama langganan, lalu pilih paket. Bayar lewat QRIS, GoPay, ShopeePay, atau transfer bank. Aktif otomatis setelah pembayaran diterima.' : 'Perbandingan paket HEFAM. Untuk berlangganan, hubungi admin HEFAM.'"
+<x-panel title="Paket langganan" icon="bi-stars" :subtitle="$canPay ? 'Pilih lama langganan, lalu pilih paket. Bayar lewat QRIS, GoPay, ShopeePay, atau transfer bank. Aktif otomatis setelah pembayaran diterima.' : 'Perbandingan paket Ternaka. Untuk berlangganan, hubungi admin Ternaka.'"
 >
     <div x-data="{ months: 12, prices: @js($prices) }">
     <div class="choices mb-3" style="grid-template-columns: repeat(auto-fit, minmax(120px, 1fr))">

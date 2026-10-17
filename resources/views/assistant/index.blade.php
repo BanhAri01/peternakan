@@ -39,7 +39,7 @@
                     </span>
                 </div>
                 <div class="fw-bold fs-5 mb-1 text-truncate">
-                    {{ $driver === 'claude' ? 'Anthropic Claude' : 'Simulasi Offline HEFAM' }}
+                    {{ $driver === 'claude' ? 'Anthropic Claude' : 'Simulasi Offline Ternaka' }}
                 </div>
                 <div class="small text-muted">
                     {{ $driver === 'claude' ? 'Tanya Cepat (Haiku) & Analisis (Sonnet)' : 'Membaca data riil database tanpa memotong biaya API' }}

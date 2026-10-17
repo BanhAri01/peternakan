@@ -42,7 +42,7 @@ class ImpersonationTest extends TestCase
         $this->post(route('impersonate.stop'));
 
         $this->actAsFarm($this->farm);
-        $this->assertSame('Pemilik (dibantu admin HEFAM)', ActivityLog::where('event', 'updated')->where('subject_type', 'Coop')->value('user_name'));
+        $this->assertSame('Pemilik (dibantu admin Ternaka)', ActivityLog::where('event', 'updated')->where('subject_type', 'Coop')->value('user_name'));
         $this->assertSame(1, ActivityLog::where('event', 'impersonate')->count());
         $this->assertSame(1, ActivityLog::where('event', 'impersonate_end')->count());
     }

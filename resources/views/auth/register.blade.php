@@ -205,7 +205,7 @@
         <div class="form-check mb-3 mt-2">
             <input class="form-check-input" type="checkbox" name="agree" value="1" id="agree" @checked(old('agree')) required>
             <label class="form-check-label small" for="agree">
-                Saya menyetujui <a href="{{ route('legal.terms') }}" target="_blank">Syarat & Ketentuan</a> serta <a href="{{ route('legal.privacy') }}" target="_blank">Kebijakan Privasi</a> HEFAM untuk pengelolaan data peternakan.
+                Saya menyetujui <a href="{{ route('legal.terms') }}" target="_blank">Syarat & Ketentuan</a> serta <a href="{{ route('legal.privacy') }}" target="_blank">Kebijakan Privasi</a> Ternaka untuk pengelolaan data peternakan.
             </label>
         </div>
 

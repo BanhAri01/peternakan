@@ -180,7 +180,7 @@ class SaasTest extends TestCase
         $this->assertGuest();
     }
 
-    // ---------------- Admin HEFAM ----------------
+    // ---------------- Admin Ternaka ----------------
 
     public function test_admin_hefam_melihat_semua_peternakan_dan_memperpanjang_langganan(): void
     {

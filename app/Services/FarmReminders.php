@@ -51,7 +51,7 @@ class FarmReminders
         return '*' . Setting::get('farm_name') . "*\n"
             . $title . ', ' . Format::dayDate($today) . "\n\n"
             . implode("\n\n", $lines)
-            . "\n\nBuka HEFAM: " . url('/');
+            . "\n\nBuka Ternaka: " . url('/');
     }
 
     public function sendAll(string $kind, ?int $farmId = null, bool $force = false): array

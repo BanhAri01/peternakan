@@ -69,7 +69,7 @@ class SettingController extends Controller
 
         Setting::put(array_map(fn ($v) => $v ?? '', $data));
 
-        // Samakan identitas di data langganan (dipakai panel admin HEFAM)
+        // Samakan identitas di data langganan (dipakai panel admin Ternaka)
         $request->user()->farm?->update([
             'name'       => $data['farm_name'],
             'owner_name' => ($data['farm_owner'] ?? null) ?: $request->user()->farm->owner_name,
@@ -126,7 +126,7 @@ class SettingController extends Controller
 
         $today   = Carbon::today();
         $message = $reminders->build('pagi', $today) ?? $reminders->build('sore', $today)
-            ?? '*' . Setting::get('farm_name') . "*\nContoh pengingat HEFAM. Hari ini tidak ada yang perlu diingatkan.";
+            ?? '*' . Setting::get('farm_name') . "*\nContoh pengingat Ternaka. Hari ini tidak ada yang perlu diingatkan.";
 
         try {
             $whatsApp->send($target, $message);
@@ -137,6 +137,6 @@ class SettingController extends Controller
 
         return back()->with('success', $whatsApp->isLive()
             ? 'Contoh pengingat dikirim ke ' . $target . '.'
-            : 'Mode uji: pesan tidak benar-benar dikirim karena layanan WhatsApp belum disambungkan oleh admin HEFAM.');
+            : 'Mode uji: pesan tidak benar-benar dikirim karena layanan WhatsApp belum disambungkan oleh admin Ternaka.');
     }
 }

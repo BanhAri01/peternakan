@@ -303,7 +303,7 @@ class EggSaleController extends Controller
             return $invoice->customer->buildDebtSummaryWaMessage($invoice);
         }
 
-        $farmName     = Setting::get('farm_name', 'HEFAM');
+        $farmName     = Setting::get('farm_name', 'Ternaka');
         $customerName = 'Pelanggan';
         $date         = Format::date($invoice->sale_date);
 

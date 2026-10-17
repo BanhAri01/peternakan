@@ -17,7 +17,7 @@ class Setting extends Model
 
     // Nilai bawaan jika owner belum mengubah pengaturan
     public const DEFAULTS = [
-        'farm_name'        => 'HEFAM',
+        'farm_name'        => 'Ternaka',
         'farm_owner'       => '',
         'farm_address'     => '',
         'farm_phone'       => '',

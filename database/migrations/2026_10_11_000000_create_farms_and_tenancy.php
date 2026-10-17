@@ -45,7 +45,7 @@ return new class extends Migration {
             $table->timestamps();
         });
 
-        // Peran baru "superadmin" untuk admin HEFAM (pengelola semua peternakan)
+        // Peran baru "superadmin" untuk admin Ternaka (pengelola semua peternakan)
         Schema::table('users', function (Blueprint $table) {
             $table->string('role', 20)->default('worker')->change();
         });

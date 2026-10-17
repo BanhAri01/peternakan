@@ -15,7 +15,7 @@ class LegalPagesTest extends TestCase
         $this->setUpFarm();
         config([
             'hefam.admin_whatsapp' => '6285133642784',
-            'hefam.business.name' => 'HEFAM (Hermes Works)',
+            'hefam.business.name' => 'Ternaka (Hermes Works)',
             'hefam.business.owner' => 'Pemilik Uji',
             'hefam.business.address' => 'Jl. Uji No. 1, Bangli, Bali',
             'hefam.business.email' => 'halo@hermesworkss.com',
